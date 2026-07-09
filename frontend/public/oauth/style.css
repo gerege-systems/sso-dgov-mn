@@ -668,26 +668,33 @@ body.bg { display: flex; flex-direction: column; min-height: 100vh; }
   padding: 4px;
   margin-bottom: 18px;
   background: var(--surface-2);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 12px;
 }
 .method-tab {
   flex: 1 1 0;
   text-align: center;
   padding: 9px 12px;
+  /* <button> default chrome-ыг reset — segmented control болгоно */
+  border: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  line-height: 1.2;
   border-radius: 9px;
   font-size: 14px;
   font-weight: 600;
   color: var(--muted);
   text-decoration: none;
   cursor: pointer;
-  transition: background .12s ease, color .12s ease;
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
 }
-.method-tab:hover { color: var(--fg); }
+.method-tab:hover:not(.is-active) { color: var(--fg); }
 .method-tab.is-active {
   background: var(--surface);
   color: var(--dan-blue-text);
-  box-shadow: 0 1px 2px oklch(20% 0.02 260 / 0.08);
+  box-shadow: 0 1px 3px oklch(20% 0.02 260 / 0.12), 0 1px 1px oklch(20% 0.02 260 / 0.06);
 }
 .qr-wrap {
   display: flex;
