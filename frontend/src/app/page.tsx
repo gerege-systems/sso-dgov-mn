@@ -17,7 +17,11 @@ export default async function Home(props: {
   if (await hasSession()) redirect('/me/dashboard');
 
   const searchParams = await props.searchParams;
-  const next = safeNext(searchParams.next);
+  // Энэ хуудас өөрөө нэвтрэх дэлгэц (route '/') тул нэвтэрсний дараа '/' рүү
+  // түлхэх нь ижил зам дээр no-op болж "Шилжиж байна…" дээр гацдаг. Тиймээс
+  // тодорхой next байхгүй бол нэвтэрсэн хэрэглэгчийн нүүр рүү (/me/dashboard).
+  const safe = safeNext(searchParams.next);
+  const next = safe === '/' ? '/me/dashboard' : safe;
 
   return (
     <SigninShell>
