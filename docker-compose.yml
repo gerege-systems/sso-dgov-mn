@@ -170,10 +170,11 @@ services:
       DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/hydra?sslmode=disable
       URLS_SELF_ISSUER: ${HYDRA_PUBLIC_URL:?set in env}
       URLS_SELF_PUBLIC: ${HYDRA_PUBLIC_URL}
-      URLS_LOGIN: ${HYDRA_PUBLIC_URL}/login
-      URLS_CONSENT: ${HYDRA_PUBLIC_URL}/consent
-      URLS_LOGOUT: ${HYDRA_PUBLIC_URL}/logout
-      URLS_ERROR: ${HYDRA_PUBLIC_URL}/oauth-error
+      # Тусдаа /oauth/* зам — dan-ийн өөрийн /login хуудастай мөргөлдөхгүй.
+      URLS_LOGIN: ${HYDRA_PUBLIC_URL}/oauth/login
+      URLS_CONSENT: ${HYDRA_PUBLIC_URL}/oauth/consent
+      URLS_LOGOUT: ${HYDRA_PUBLIC_URL}/oauth/logout
+      URLS_ERROR: ${HYDRA_PUBLIC_URL}/oauth/error
       URLS_POST_LOGOUT_REDIRECT: ${HYDRA_POST_LOGOUT_REDIRECT:-${HYDRA_PUBLIC_URL}/}
       SECRETS_SYSTEM: ${HYDRA_SYSTEM_SECRET:?set in env}
       SECRETS_COOKIE: ${HYDRA_COOKIE_SECRET:?set in env}
