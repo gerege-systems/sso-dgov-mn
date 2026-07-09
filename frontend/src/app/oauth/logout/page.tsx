@@ -8,7 +8,7 @@ export default async function OAuthLogoutPage(props: {
 }) {
   const { logout_challenge: challenge } = await props.searchParams;
   return (
-    <section className="signin-card signin-card--narrow" aria-labelledby="logout-title">
+    <section className="signin-card" aria-labelledby="logout-title">
       <OAuthLogoutClient challenge={challenge ?? ''} />
     </section>
   );

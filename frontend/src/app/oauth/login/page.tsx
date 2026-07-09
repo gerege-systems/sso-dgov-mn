@@ -29,7 +29,7 @@ export default async function OAuthLoginPage(props: {
   if (info.ok && info.data) rpName = info.data.ClientName || info.data.ClientID || '';
 
   return (
-    <section className="signin-card signin-card--narrow" aria-labelledby="login-title">
+    <section className="signin-card" aria-labelledby="login-title">
       {rpName && (
         <div
           style={{

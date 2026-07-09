@@ -9,7 +9,7 @@ export default async function OAuthErrorPage(props: {
 }) {
   const sp = await props.searchParams;
   return (
-    <section className="signin-card signin-card--narrow">
+    <section className="signin-card">
       <div className="form-grid">
         <div>
           <h1>Нэвтрэлтийн алдаа</h1>
