@@ -364,7 +364,10 @@ func NewApp() (*App, error) {
 	if config.AppConfig.ProviderConfigured() {
 		devAppsStore := devapps.New(pool)
 		adminKeyStore := adminkeys.New(pool, config.AppConfig.SSOAdminAPIKeysList())
-		r.Mount("/admin", adminapi.New(hydraAdmin, devAppsStore, adminKeyStore).Router())
+		// chi.Mount нь plain http.Handler-ийн r.URL.Path-аас prefix-ыг хасдаггүй
+		// тул StripPrefix-ээр хасна — ингэснээр доторх ServeMux нь /api/v1/...
+		// pattern-тэй таарна.
+		r.Mount("/admin", http.StripPrefix("/admin", adminapi.New(hydraAdmin, devAppsStore, adminKeyStore).Router()))
 		logger.Info("OIDC provider admin surface mounted at /admin", logger.Fields{
 			"hydra_admin": config.AppConfig.HydraAdminURL,
 		})
