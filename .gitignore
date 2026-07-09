@@ -1,0 +1,35 @@
+# Government Template Platform V3.0 → DAN-Government SSO
+
+# Secrets — never commit (see docs/DEPLOYMENT.md)
+.env
+backend.env
+backend.env.*
+/backend/internal/config/.env
+/backend/internal/config/.env.*
+!*.env.example
+frontend/.env.local
+*.key
+*.pem
+
+# Go
+/backend/bin/
+/backend/tmp/
+*.test
+*.out
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+*.tsbuildinfo
+
+# Build / deploy artifacts
+deploy.log
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

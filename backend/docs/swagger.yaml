@@ -1,0 +1,4046 @@
+basePath: /api/v1
+definitions:
+  template_internal_http_datatransfers_requests.AIAudio:
+    properties:
+      data:
+        maxLength: 716800
+        type: string
+      mime:
+        enum:
+        - audio/webm
+        - audio/ogg
+        - audio/wav
+        - audio/mpeg
+        - audio/mp3
+        - audio/mp4
+        - audio/m4a
+        - audio/aac
+        - audio/flac
+        type: string
+    required:
+    - data
+    - mime
+    type: object
+  template_internal_http_datatransfers_requests.AIChatRequest:
+    properties:
+      audio:
+        $ref: '#/definitions/template_internal_http_datatransfers_requests.AIAudio'
+      history:
+        items:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AIChatTurn'
+        maxItems: 20
+        type: array
+      message:
+        maxLength: 4000
+        type: string
+    type: object
+  template_internal_http_datatransfers_requests.AIChatTurn:
+    properties:
+      role:
+        enum:
+        - user
+        - model
+        type: string
+      text:
+        maxLength: 4000
+        type: string
+    required:
+    - role
+    - text
+    type: object
+  template_internal_http_datatransfers_requests.AIPromptUpdateRequest:
+    properties:
+      content:
+        maxLength: 4000
+        type: string
+    type: object
+  template_internal_http_datatransfers_requests.AISTTRequest:
+    properties:
+      audio:
+        $ref: '#/definitions/template_internal_http_datatransfers_requests.AIAudio'
+    required:
+    - audio
+    type: object
+  template_internal_http_datatransfers_requests.AITTSRequest:
+    properties:
+      text:
+        maxLength: 2000
+        type: string
+      voice:
+        maxLength: 40
+        type: string
+    required:
+    - text
+    type: object
+  template_internal_http_datatransfers_requests.AITranslateRequest:
+    properties:
+      audio:
+        $ref: '#/definitions/template_internal_http_datatransfers_requests.AIAudio'
+      speak:
+        type: boolean
+      target_lang:
+        maxLength: 20
+        minLength: 2
+        type: string
+      text:
+        maxLength: 4000
+        type: string
+    required:
+    - target_lang
+    type: object
+  template_internal_http_datatransfers_requests.AddEIDSignerRequest:
+    properties:
+      role:
+        maxLength: 100
+        type: string
+      signer_reg_no:
+        maxLength: 20
+        minLength: 8
+        type: string
+    required:
+    - signer_reg_no
+    type: object
+  template_internal_http_datatransfers_requests.AddMemberRequest:
+    properties:
+      role:
+        enum:
+        - owner
+        - admin
+        - member
+        type: string
+      user_id:
+        type: string
+    required:
+    - user_id
+    type: object
+  template_internal_http_datatransfers_requests.AssetURLRequest:
+    properties:
+      url:
+        maxLength: 1000
+        type: string
+    required:
+    - url
+    type: object
+  template_internal_http_datatransfers_requests.ChangePasswordRequest:
+    properties:
+      current_password:
+        maxLength: 72
+        minLength: 1
+        type: string
+      new_password:
+        maxLength: 72
+        minLength: 12
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
+  template_internal_http_datatransfers_requests.ConnectIntegrationRequest:
+    properties:
+      access_token:
+        maxLength: 4096
+        type: string
+      expires_at_ms:
+        description: ExpiresAtMs нь токены дуусах epoch миллисекунд (0 бол хугацаагүй).
+        type: integer
+      provider:
+        maxLength: 32
+        type: string
+      refresh_token:
+        maxLength: 4096
+        type: string
+    required:
+    - access_token
+    - provider
+    type: object
+  template_internal_http_datatransfers_requests.CreateOrgRequest:
+    properties:
+      name:
+        maxLength: 200
+        minLength: 2
+        type: string
+      name_latin:
+        maxLength: 200
+        type: string
+      reg_no:
+        maxLength: 40
+        type: string
+    required:
+    - name
+    - reg_no
+    type: object
+  template_internal_http_datatransfers_requests.EIDOrgRegisterRequest:
+    properties:
+      reg_no:
+        maxLength: 16
+        minLength: 4
+        type: string
+    required:
+    - reg_no
+    type: object
+  template_internal_http_datatransfers_requests.EIDPollRequest:
+    properties:
+      google_link_token:
+        description: |-
+          GoogleLinkToken нь Google-ээр эхний удаа нэвтэрсэн хэрэглэгч eID-ээр
+          баталгаажуулж байгаа үед л ирнэ (сонголттой).
+        type: string
+      session_id:
+        type: string
+    required:
+    - session_id
+    type: object
+  template_internal_http_datatransfers_requests.EIDStartByNationalIDRequest:
+    properties:
+      callbackUrl:
+        description: |-
+          CallbackUrl (сонголт): SAME-DEVICE (утасны browser) үед <origin>/auth/eid/callback; хоосон
+          бол CROSS-DEVICE (desktop). Backend force-normalize хийнэ.
+        type: string
+      national_id:
+        type: string
+    required:
+    - national_id
+    type: object
+  template_internal_http_datatransfers_requests.ForgotPasswordRequest:
+    properties:
+      email:
+        maxLength: 50
+        type: string
+    required:
+    - email
+    type: object
+  template_internal_http_datatransfers_requests.GSpaceUploadRequest:
+    properties:
+      data:
+        maxLength: 2900000
+        type: string
+      name:
+        maxLength: 200
+        type: string
+    required:
+    - data
+    - name
+    type: object
+  template_internal_http_datatransfers_requests.GatewayConsumerRequest:
+    properties:
+      custom_id:
+        maxLength: 80
+        type: string
+      enabled:
+        type: boolean
+      tags:
+        items:
+          type: string
+        type: array
+      username:
+        maxLength: 80
+        minLength: 2
+        type: string
+    required:
+    - username
+    type: object
+  template_internal_http_datatransfers_requests.GatewayKeyRequest:
+    properties:
+      expires_at:
+        type: string
+      label:
+        maxLength: 80
+        type: string
+    type: object
+  template_internal_http_datatransfers_requests.GatewayPolicyRequest:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      enabled:
+        type: boolean
+      route_id:
+        type: string
+      type:
+        enum:
+        - rate-limit
+        - key-auth
+        - cors
+        - ip-restriction
+        - request-transform
+        type: string
+    required:
+    - type
+    type: object
+  template_internal_http_datatransfers_requests.GatewayRouteRequest:
+    properties:
+      enabled:
+        type: boolean
+      methods:
+        items:
+          type: string
+        type: array
+      name:
+        maxLength: 80
+        minLength: 2
+        type: string
+      paths:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      preserve_host:
+        type: boolean
+      service_id:
+        type: string
+      strip_path:
+        type: boolean
+    required:
+    - name
+    - paths
+    - service_id
+    type: object
+  template_internal_http_datatransfers_requests.GatewayServiceRequest:
+    properties:
+      connect_timeout_ms:
+        maximum: 600000
+        minimum: 100
+        type: integer
+      enabled:
+        type: boolean
+      host:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 80
+        minLength: 2
+        type: string
+      path:
+        maxLength: 255
+        type: string
+      port:
+        maximum: 65535
+        minimum: 1
+        type: integer
+      protocol:
+        enum:
+        - http
+        - https
+        type: string
+      retries:
+        maximum: 10
+        minimum: 0
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+    required:
+    - host
+    - name
+    type: object
+  template_internal_http_datatransfers_requests.GoogleLoginRequest:
+    properties:
+      code:
+        type: string
+      redirect_uri:
+        type: string
+    required:
+    - code
+    - redirect_uri
+    type: object
+  template_internal_http_datatransfers_requests.GovApplyRequest:
+    properties:
+      note:
+        maxLength: 500
+        type: string
+      service_id:
+        type: string
+    required:
+    - service_id
+    type: object
+  template_internal_http_datatransfers_requests.GovBookRequest:
+    properties:
+      location:
+        maxLength: 200
+        type: string
+      note:
+        maxLength: 500
+        type: string
+      scheduled_at:
+        type: string
+      service_id:
+        type: string
+    required:
+    - scheduled_at
+    type: object
+  template_internal_http_datatransfers_requests.GovReferenceRequest:
+    properties:
+      type:
+        enum:
+        - residence
+        - birth
+        - marriage
+        - tax
+        - social_ins
+        - criminal
+        type: string
+    required:
+    - type
+    type: object
+  template_internal_http_datatransfers_requests.IngestSecurityEventRequest:
+    properties:
+      detail:
+        additionalProperties: {}
+        type: object
+      kind:
+        maxLength: 80
+        type: string
+      severity:
+        enum:
+        - low
+        - medium
+        - high
+        - critical
+        type: string
+      source:
+        maxLength: 80
+        type: string
+    required:
+    - kind
+    type: object
+  template_internal_http_datatransfers_requests.LatinNameRequest:
+    properties:
+      first_name_en:
+        maxLength: 120
+        type: string
+      last_name_en:
+        maxLength: 120
+        type: string
+    type: object
+  template_internal_http_datatransfers_requests.LoginRequest:
+    properties:
+      email:
+        maxLength: 50
+        type: string
+      password:
+        maxLength: 72
+        minLength: 1
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  template_internal_http_datatransfers_requests.LogoutRequest:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  template_internal_http_datatransfers_requests.OrgNameLatinRequest:
+    properties:
+      name_latin:
+        maxLength: 200
+        type: string
+    type: object
+  template_internal_http_datatransfers_requests.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  template_internal_http_datatransfers_requests.RegisterRequest:
+    properties:
+      email:
+        maxLength: 50
+        type: string
+      first_name:
+        description: нэр (монгол)
+        maxLength: 50
+        minLength: 1
+        type: string
+      first_name_en:
+        description: нэр (англи)
+        maxLength: 50
+        type: string
+      last_name:
+        description: овог (монгол)
+        maxLength: 50
+        minLength: 1
+        type: string
+      last_name_en:
+        description: овог (англи)
+        maxLength: 50
+        type: string
+      password:
+        maxLength: 72
+        minLength: 12
+        type: string
+      username:
+        maxLength: 25
+        minLength: 3
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - username
+    type: object
+  template_internal_http_datatransfers_requests.ResetPasswordRequest:
+    properties:
+      code:
+        type: string
+      email:
+        maxLength: 50
+        type: string
+      new_password:
+        maxLength: 72
+        minLength: 12
+        type: string
+    required:
+    - code
+    - email
+    - new_password
+    type: object
+  template_internal_http_datatransfers_requests.SSONativeRequest:
+    properties:
+      code:
+        type: string
+      code_verifier:
+        type: string
+      redirect_uri:
+        description: |-
+          RedirectURI нь native client-д бүртгэгдсэн (жишээ
+          geregetemp://oauth2/callback) байх ёстой — code exchange-д яг тааруулна.
+        type: string
+    required:
+    - code
+    - code_verifier
+    - redirect_uri
+    type: object
+  template_internal_http_datatransfers_requests.SendOTPRequest:
+    properties:
+      email:
+        maxLength: 50
+        type: string
+    required:
+    - email
+    type: object
+  template_internal_http_datatransfers_requests.SuperadminCreateAdminRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        maxLength: 100
+        type: string
+      first_name_en:
+        maxLength: 100
+        type: string
+      last_name:
+        maxLength: 100
+        type: string
+      last_name_en:
+        maxLength: 100
+        type: string
+      password:
+        maxLength: 128
+        minLength: 8
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  template_internal_http_datatransfers_requests.UpdateMemberRoleRequest:
+    properties:
+      role:
+        enum:
+        - owner
+        - admin
+        - member
+        type: string
+    required:
+    - role
+    type: object
+  template_internal_http_datatransfers_requests.VerifyOTPRequest:
+    properties:
+      code:
+        type: string
+      email:
+        maxLength: 50
+        type: string
+    required:
+    - code
+    - email
+    type: object
+  template_internal_http_datatransfers_responses.AIAudioOut:
+    properties:
+      data:
+        type: string
+      mime:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.AIChatResponse:
+    properties:
+      degraded:
+        type: boolean
+      reply:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/template_internal_http_datatransfers_responses.AIChatStep'
+        type: array
+    type: object
+  template_internal_http_datatransfers_responses.AIChatStep:
+    properties:
+      args:
+        additionalProperties: {}
+        type: object
+      result:
+        additionalProperties: {}
+        type: object
+      tool:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.AIPromptResponse:
+    properties:
+      content:
+        type: string
+      key:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.AISTTResponse:
+    properties:
+      text:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.AITranslateResponse:
+    properties:
+      audio:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.AIAudioOut'
+      source_text:
+        type: string
+      translated:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.AuditLogResponse:
+    properties:
+      action:
+        type: string
+      actor_user_id:
+        type: string
+      category:
+        type: string
+      chain_hash:
+        type: string
+      id:
+        type: integer
+      metadata:
+        additionalProperties: {}
+        type: object
+      occurred_at:
+        type: string
+      prev_hash:
+        type: string
+      request_id:
+        type: string
+      target:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.AuditVerifyResponse:
+    properties:
+      broken_id:
+        type: integer
+      ok:
+        type: boolean
+    type: object
+  template_internal_http_datatransfers_responses.EIDActivityCounts:
+    properties:
+      authentication:
+        type: integer
+      signature:
+        type: integer
+    type: object
+  template_internal_http_datatransfers_responses.EIDActivityItem:
+    properties:
+      doc_text:
+        type: string
+      flow:
+        type: string
+      outcome:
+        type: string
+      session_id:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.EIDActivityResponse:
+    properties:
+      counts:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDActivityCounts'
+      sessions:
+        items:
+          $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDActivityItem'
+        type: array
+      total:
+        type: integer
+    type: object
+  template_internal_http_datatransfers_responses.EIDCertCounts:
+    properties:
+      expired:
+        type: integer
+      revoked:
+        type: integer
+      suspended:
+        type: integer
+      total:
+        type: integer
+      valid:
+        type: integer
+    type: object
+  template_internal_http_datatransfers_responses.EIDCertificate:
+    properties:
+      issuer:
+        type: string
+      key_type:
+        type: string
+      not_after:
+        type: string
+      not_before:
+        type: string
+      serial:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.EIDCertificatesResponse:
+    properties:
+      certificates:
+        items:
+          $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDPersonCert'
+        type: array
+      counts:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDCertCounts'
+    type: object
+  template_internal_http_datatransfers_responses.EIDDevicesResponse:
+    properties:
+      active_count:
+        type: integer
+      devices:
+        items:
+          $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDPersonDevice'
+        type: array
+      total:
+        type: integer
+    type: object
+  template_internal_http_datatransfers_responses.EIDInfo:
+    properties:
+      certificate:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDCertificate'
+      civil_id:
+        type: string
+      document_number:
+        type: string
+      kyc_level:
+        description: сертификатын түвшин
+        type: string
+      national_id:
+        description: регистрийн дугаар
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.EIDPersonCert:
+    properties:
+      certificate_level:
+        type: string
+      document_number:
+        type: string
+      issuer_dn:
+        type: string
+      not_after:
+        type: string
+      not_before:
+        type: string
+      serial_number:
+        type: string
+      status:
+        type: string
+      type:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.EIDPersonDevice:
+    properties:
+      active:
+        type: boolean
+      deactivated_at:
+        type: string
+      document_number:
+        type: string
+      enrolled_at:
+        type: string
+      platform:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.EIDPollResponse:
+    properties:
+      created_at:
+        type: string
+      eid:
+        allOf:
+        - $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDInfo'
+        description: |-
+          EID нь eID-ээр нэвтэрсэн хэрэглэгчийн identity + сертификатын мэдээлэл.
+          Нууц үгээр бүртгүүлсэн хэрэглэгчид nil (omitempty).
+      email:
+        type: string
+      first_name:
+        type: string
+      first_name_en:
+        type: string
+      full_name:
+        type: string
+      full_name_en:
+        type: string
+      google:
+        allOf:
+        - $ref: '#/definitions/template_internal_http_datatransfers_responses.GoogleInfo'
+        description: |-
+          Google нь холбогдсон Google account-аас хадгалсан профайл. Google
+          холбоогүй хэрэглэгчид nil (omitempty).
+      id:
+        type: string
+      last_name:
+        type: string
+      last_name_en:
+        type: string
+      refresh_token:
+        type: string
+      role_id:
+        type: integer
+      state:
+        type: string
+      token:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.EIDStartResponse:
+    properties:
+      device_link_url:
+        type: string
+      expires_at:
+        type: string
+      session_id:
+        type: string
+      verification_code:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.EIDSummaryResponse:
+    properties:
+      activity:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDActivityCounts'
+      certificates:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDCertCounts'
+      devices_active:
+        type: integer
+      devices_total:
+        type: integer
+      given_name:
+        type: string
+      representation_count:
+        type: integer
+      surname:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.GoogleInfo:
+    properties:
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      linked_at:
+        type: string
+      name:
+        type: string
+      picture:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.GoogleLoginResponse:
+    properties:
+      email:
+        type: string
+      link_token:
+        type: string
+      linked:
+        type: boolean
+      user:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.UserResponse'
+    type: object
+  template_internal_http_datatransfers_responses.IntegrationResponse:
+    properties:
+      connected:
+        type: boolean
+      connected_at:
+        type: string
+      expires_at:
+        type: string
+      provider:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.IntegrationTokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at_ms:
+        type: integer
+      refresh_token:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.OrgMemberResponse:
+    properties:
+      created_at:
+        type: string
+      org_id:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.OrgPendingConfirmationResponse:
+    properties:
+      session_id:
+        type: string
+      signer_etsi:
+        type: string
+      signer_reg_no:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.OrgRepresentationResponse:
+    properties:
+      org_etsi:
+        type: string
+      org_name:
+        type: string
+      org_name_en:
+        type: string
+      org_register:
+        type: string
+      right_type:
+        type: string
+      role:
+        type: string
+      valid_from:
+        type: string
+      valid_to:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.OrgResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      name_latin:
+        type: string
+      reg_no:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.OrgSignerResponse:
+    properties:
+      name:
+        type: string
+      name_en:
+        type: string
+      person_etsi:
+        type: string
+      reg_no:
+        type: string
+      right_type:
+        type: string
+      role:
+        type: string
+      self:
+        type: boolean
+      source:
+        type: string
+      status:
+        description: ACTIVE | PENDING (sign-push баталгаажуулалт)
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.OrgSignersResultResponse:
+    properties:
+      pending_confirmation:
+        $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgPendingConfirmationResponse'
+      signers:
+        items:
+          $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgSignerResponse'
+        type: array
+    type: object
+  template_internal_http_datatransfers_responses.SecurityEventResponse:
+    properties:
+      detail:
+        additionalProperties: {}
+        type: object
+      id:
+        type: integer
+      ip:
+        type: string
+      kind:
+        type: string
+      received_at:
+        type: string
+      severity:
+        type: string
+      source:
+        type: string
+      user_agent:
+        type: string
+      user_id:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.UserResponse:
+    properties:
+      created_at:
+        type: string
+      eid:
+        allOf:
+        - $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDInfo'
+        description: |-
+          EID нь eID-ээр нэвтэрсэн хэрэглэгчийн identity + сертификатын мэдээлэл.
+          Нууц үгээр бүртгүүлсэн хэрэглэгчид nil (omitempty).
+      email:
+        type: string
+      first_name:
+        type: string
+      first_name_en:
+        type: string
+      full_name:
+        type: string
+      full_name_en:
+        type: string
+      google:
+        allOf:
+        - $ref: '#/definitions/template_internal_http_datatransfers_responses.GoogleInfo'
+        description: |-
+          Google нь холбогдсон Google account-аас хадгалсан профайл. Google
+          холбоогүй хэрэглэгчид nil (omitempty).
+      id:
+        type: string
+      last_name:
+        type: string
+      last_name_en:
+        type: string
+      refresh_token:
+        type: string
+      role_id:
+        type: integer
+      token:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  template_internal_http_handlers_v1.BaseResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      request_id:
+        type: string
+      status:
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Government Template Platform V3.0
+    url: https://github.com/snykk/go-rest-boilerplate
+  description: chi (net/http) + pgx (PostgreSQL) + Redis дээр суурилсан Clean Architecture
+    бүхий Go backend. Нээлттэй эхийн snykk/go-rest-boilerplate (MIT, зохиогч Najib
+    Fikri)-ээс үүсэлтэй; HTTP давхаргыг chi, өгөгдлийн давхаргыг pgx руу хөрвүүлсэн.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://github.com/snykk/go-rest-boilerplate
+  title: Government Template Platform V3.0 API
+  version: "1.0"
+paths:
+  /admin/ai/prompts:
+    get:
+      description: Тохируулдаг prompt давхаргуудыг (scope — хамрах хүрээ, instructions
+        — нэмэлт заавар) буцаана. Suurь (base) дүрэм кодод хатуу бичигдсэн тул энд
+        харагдахгүй, өөрчлөгдөхгүй.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Prompt layers
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.AIPromptResponse'
+                  type: array
+              type: object
+        "401":
+          description: Missing/invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Missing settings.manage permission
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: AI prompt давхаргуудыг жагсаах
+      tags:
+      - admin
+  /admin/ai/prompts/{key}:
+    put:
+      consumes:
+      - application/json
+      description: Нэг давхаргын (scope | instructions) агуулгыг солино. Өөрчлөлт
+        нэн даруй үйлчилнэ (prompt кэш хүчингүй болдог). AI зөвхөн scope-д заасан
+        хүрээнд ажиллана.
+      parameters:
+      - description: Prompt key (scope | instructions)
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: New content
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AIPromptUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Unknown key / malformed body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing/invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Missing settings.manage permission
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: AI prompt давхаргыг шинэчлэх
+      tags:
+      - admin
+  /ai/chat:
+    post:
+      consumes:
+      - application/json
+      description: Хэрэглэгчийн мессежийг (текст эсвэл audio — дуут мессежийг AI шууд
+        ойлгоно) Gemini AI pipeline-аар боловсруулж Монгол хариулт буцаана. AI шаардлагатай
+        үед backend tool-уудыг (function calling) ашигладаг; гүйцэтгэсэн алхмууд steps
+        талбарт ил гарна. AI үйлчилгээ түр унавал degraded=true + fallback мессеж
+        буцаана (5xx биш).
+      parameters:
+      - description: Chat message (text and/or audio) + optional history
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AIChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: AI reply
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.AIChatResponse'
+              type: object
+        "400":
+          description: Malformed JSON body / missing message and audio
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing/invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: AI туслахтай чатлах (текст/дуут мессеж)
+      tags:
+      - ai
+  /ai/stt:
+    post:
+      consumes:
+      - application/json
+      description: Base64 кодлогдсон audio (webm/ogg/wav/mp3 г.м.)-г Gemini-ээр текст
+        болгоно. Яриа илрээгүй бол хоосон text буцаана.
+      parameters:
+      - description: Audio (base64)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AISTTRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transcript
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.AISTTResponse'
+              type: object
+        "400":
+          description: Malformed JSON body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing/invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Яриаг текст болгох (STT)
+      tags:
+      - ai
+  /ai/translate:
+    post:
+      consumes:
+      - application/json
+      description: Текст эсвэл audio-г зорилтот хэл рүү орчуулна. Audio өгвөл эхлээд
+        STT хийгээд орчуулдаг; speak=true бол орчуулгын дуут (TTS) хувилбарыг хамт
+        буцаана. Live орчуулга = богино audio chunk-уудыг энэ endpoint руу дараалан
+        илгээх урсгал. Чимээгүй chunk-д хоосон үр дүн буцаана.
+      parameters:
+      - description: Text or audio + target_lang
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AITranslateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Translation
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.AITranslateResponse'
+              type: object
+        "400":
+          description: Malformed JSON body / missing text and audio
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing/invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Шууд (live) орчуулга
+      tags:
+      - ai
+  /ai/tts:
+    post:
+      consumes:
+      - application/json
+      description: 'Текстийг Gemini TTS model-ээр дуут (audio/wav, base64) болгоно.
+        voice нь сонголттой prebuilt дуу хоолой (өгөгдмөл: Kore).'
+      parameters:
+      - description: Text + optional voice
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AITTSRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: WAV audio (base64)
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.AIAudioOut'
+              type: object
+        "400":
+          description: Malformed JSON body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing/invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Текстийг яриа болгох (TTS)
+      tags:
+      - ai
+  /auth/eid/poll:
+    post:
+      consumes:
+      - application/json
+      description: session_id-ийн төлвийг IdP-ээс long-poll-оор (≤25с) асууна. state
+        нь RUNNING/COMPLETE/EXPIRED/REFUSED. COMPLETE үед identity-аар хэрэглэгчийг
+        бүртгэж/шинэчилж, access+refresh токен хосыг /login-той ижил хэлбэрээр буцаана.
+      parameters:
+      - description: eID session id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.EIDPollRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Session state (with tokens if COMPLETE)
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDPollResponse'
+              type: object
+        "400":
+          description: Malformed JSON body or missing session_id
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "500":
+          description: Failed to reach eID provider
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: eID session-ийн төлвийг асуух (long-poll)
+      tags:
+      - auth
+  /auth/eid/start:
+    post:
+      consumes:
+      - application/json
+      description: Гадаад eID identity provider дээр QR/deep-link нэвтрэлтийг эхлүүлж,
+        клиент харуулах session мэдээллийг (session_id, device_link_url, verification_code,
+        expires_at) буцаана. Дараа нь /auth/eid/poll руу session_id-г дамжуулж төлвийг
+        асууна.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: eID session started
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDStartResponse'
+              type: object
+        "500":
+          description: Failed to reach eID provider
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: eID нэвтрэлт эхлүүлэх (QR / deep-link)
+      tags:
+      - auth
+  /auth/eid/start-id:
+    post:
+      consumes:
+      - application/json
+      description: Иргэний РД (national_id)-аар нэвтрэлтийг эхлүүлж, тухайн РД-тэй
+        холбоотой бүртгэлтэй төхөөрөмж рүү баталгаажуулах prompt push хийлгэнэ. QR/device_link
+        шаардлагагүй тул зөвхөн session_id, verification_code, expires_at буцна. Дараа
+        нь /auth/eid/poll руу session_id-г дамжуулж төлвийг асууна.
+      parameters:
+      - description: Иргэний РД
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.EIDStartByNationalIDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: eID session started
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDStartResponse'
+              type: object
+        "400":
+          description: Malformed JSON body or missing national_id
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "500":
+          description: Failed to reach eID provider
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: eID нэвтрэлт эхлүүлэх (РД-аар push)
+      tags:
+      - auth
+  /auth/google:
+    post:
+      consumes:
+      - application/json
+      description: Google OAuth callback-ийн code-ийг боловсруулна. Холбогдсон account
+        бол шууд токен олгоно; эхний удаа бол eID-ээр баталгаажуулах link_token буцаана.
+      parameters:
+      - description: OAuth code + redirect_uri
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GoogleLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Linked → tokens, эсвэл эхний удаа → link_token
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.GoogleLoginResponse'
+              type: object
+        "400":
+          description: Invalid code
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Google-ээр нэвтрэх (eID холболттой)
+      tags:
+      - auth
+  /auth/google/link:
+    delete:
+      description: Нэвтэрсэн хэрэглэгчийн Google холболтыг (sub + профайл) арилгана.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Google холболтыг салгах
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Access токен (богино TTL) болон refresh токен (урт TTL) буцаана.
+        Хэрэглэгчийг тоолохоос сэргийлэхийн тулд буруу нууц үг болон тодорхойгүй email
+        ижил хугацаа зарцуулна.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens issued
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.UserResponse'
+              type: object
+        "400":
+          description: Malformed JSON body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Invalid email or password
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Account not yet activated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Баталгаажуулж токен хос олгох
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: /auth/refresh татгалзахын тулд refresh-токены jti-г Redis-ээс устгана.
+        access_token өгөгдсөн бол түүний jti-г deny-list-д нэмж access токеныг ч мөн
+        шууд хүчингүй болгоно (өгөөгүй бол байгалийн хугацаа дуустлаа хүчинтэй үлдэнэ).
+      parameters:
+      - description: Refresh token to revoke + optional access token to deny
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Refresh token invalid
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Токенуудыг хүчингүй болгох
+      tags:
+      - auth
+  /auth/password/change:
+    put:
+      consumes:
+      - application/json
+      description: Одоогийн нууц үгийг шалгаж, шинээр сольж, цуцлалтын хязгаарыг тэмдэглэдэг
+        тул одооноос өмнө олгогдсон refresh токенууд татгалзагдана.
+      parameters:
+      - description: Current + new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Malformed JSON body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Current password incorrect
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Баталгаажуулагдсан хэрэглэгчийн нууц үгийг солих
+      tags:
+      - auth
+  /auth/password/forgot:
+    post:
+      consumes:
+      - application/json
+      description: Хаяг руу нэг удаагийн OTP кодыг (GeregeCloud Verify) и-мэйлээр
+        илгээнэ. Хэрэглэгчийг тоолохоос сэргийлэхийн тулд email бүртгэлгүй байсан
+        ч үргэлж 200 буцаана.
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset email queued (or email not registered — same response
+            either way)
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Malformed JSON body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Нууц үг сэргээх OTP код илгээх
+      tags:
+      - auth
+  /auth/password/reset:
+    post:
+      consumes:
+      - application/json
+      description: ForgotPassword-ийн email-ээр илгээсэн OTP кодыг GeregeCloud Verify-ээр
+        баталгаажуулж, шинэ нууц үг тогтоож, токены цуцлалтын хязгаарыг урагшлуулна.
+      parameters:
+      - description: Email + OTP code + new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Malformed JSON body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Reset code invalid or expired
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: OTP кодоор шинэ нууц үг тогтоох
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Өгөгдсөн refresh токеныг шалгаж, шинэ access+refresh хос үүсгэж,
+        хуучин jti-г Redis-д хүчингүй болгоно. Аль хэдийн сэлгэгдсэн токеныг дахин
+        тоглуулах нь 401 буцаана.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New token pair
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.UserResponse'
+              type: object
+        "401":
+          description: Refresh token invalid, expired, or already revoked
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Account no longer active
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Refresh токеныг сэлгэж, шинэ хос буцаах
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Хэрэглэгчийн бүртгэлийг идэвхгүй төлөвт үүсгэнэ. Дуудагч нь /auth/login
+        амжилттай болохоос өмнө бүртгэлийг идэвхжүүлэхийн тулд /auth/send-otp + /auth/verify-otp-г
+        дагах ёстой.
+      parameters:
+      - description: Registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.UserResponse'
+              type: object
+        "400":
+          description: Malformed JSON body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "409":
+          description: Email or username already in use
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error (per-field detail in data.errors)
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "500":
+          description: Internal error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Шинэ хэрэглэгч бүртгэх
+      tags:
+      - auth
+  /auth/send-otp:
+    post:
+      consumes:
+      - application/json
+      description: GeregeCloud Verify API-аар OTP илгээж, буцаасан request_id-г TTL-тэйгээр
+        Redis-д хадгална. Кодын үүсгэлт/хадгалалт/илгээлтийг Verify үйлчилгээ хариуцна.
+      parameters:
+      - description: Email to send OTP to
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.SendOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP enqueued
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Account already activated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Email not registered
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "500":
+          description: Failed to enqueue mail
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Хэрэглэгчийн email рүү OTP код илгээх
+      tags:
+      - auth
+  /auth/verify-otp:
+    post:
+      consumes:
+      - application/json
+      description: Өгөгдсөн кодыг Redis-тэй тулгаж шалгаж, амжилттай үед хэрэглэгчийн
+        active flag-г true болгоно. Brute-force-оос хамгаалагдсан — OTP_MAX_ATTEMPTS
+        алдаа (өгөгдмөл 5) гарсны дараа зөв кодтой ч email нь OTP TTL цонхны турш
+        түгжигдэнэ.
+      parameters:
+      - description: Email + OTP code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.VerifyOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account activated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Invalid OTP code
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Locked out — too many invalid attempts
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Email not registered
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: OTP кодыг шалгаж бүртгэлийг идэвхжүүлэх
+      tags:
+      - auth
+  /core/organizations:
+    get:
+      description: core.dgov.mn /api/organization/find — search_text (регистр г.м.).
+        Хариуг дамжуулна.
+      parameters:
+      - description: regno / нэр
+        in: query
+        name: search_text
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Gerege Core байгууллага хайх
+      tags:
+      - core
+  /core/users:
+    get:
+      description: core.dgov.mn /api/user/find — search_text (core_id эсвэл регистр).
+        Хариуг дамжуулна.
+      parameters:
+      - description: core_id / regno
+        in: query
+        name: search_text
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Gerege Core хэрэглэгч хайх
+      tags:
+      - core
+  /gateway/consumers:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Consumer-уудыг жагсаах
+      tags:
+      - gateway
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Consumer
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayConsumerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Consumer үүсгэх
+      tags:
+      - gateway
+  /gateway/consumers/{id}:
+    delete:
+      parameters:
+      - description: Consumer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Consumer устгах
+      tags:
+      - gateway
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Consumer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Consumer
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayConsumerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Consumer шинэчлэх
+      tags:
+      - gateway
+  /gateway/consumers/{id}/keys:
+    get:
+      parameters:
+      - description: Consumer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Consumer-ийн API key-үүдийг жагсаах
+      tags:
+      - gateway
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Consumer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Key
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Consumer-д шинэ API key үүсгэх (plaintext-ийг нэг удаа буцаана)
+      tags:
+      - gateway
+  /gateway/keys/{keyId}:
+    delete:
+      parameters:
+      - description: Key ID
+        in: path
+        name: keyId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: API key-г устгах
+      tags:
+      - gateway
+  /gateway/keys/{keyId}/revoke:
+    post:
+      parameters:
+      - description: Key ID
+        in: path
+        name: keyId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: API key-г хүчингүй болгох (revoke)
+      tags:
+      - gateway
+  /gateway/logs:
+    get:
+      parameters:
+      - description: Max rows (default 100, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Gateway-ийн сүүлийн хүсэлтийн log
+      tags:
+      - gateway
+  /gateway/overview:
+    get:
+      description: Сүүлийн 24 цагийн хүсэлт/алдааны хувь/латентаас бүрдсэн dashboard
+        нэгтгэл.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: API Gateway-ийн нэгтгэсэн статистик
+      tags:
+      - gateway
+  /gateway/policies:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Policy (plugin)-уудыг жагсаах
+      tags:
+      - gateway
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Policy
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayPolicyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Policy үүсгэх
+      tags:
+      - gateway
+  /gateway/policies/{id}:
+    delete:
+      parameters:
+      - description: Policy ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Policy устгах
+      tags:
+      - gateway
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Policy ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Policy
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayPolicyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Policy шинэчлэх
+      tags:
+      - gateway
+  /gateway/routes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Route-уудыг жагсаах
+      tags:
+      - gateway
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Route
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayRouteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Route үүсгэх
+      tags:
+      - gateway
+  /gateway/routes/{id}:
+    delete:
+      parameters:
+      - description: Route ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Route устгах
+      tags:
+      - gateway
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Route ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Route
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayRouteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Route шинэчлэх
+      tags:
+      - gateway
+  /gateway/services:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Upstream service-үүдийг жагсаах
+      tags:
+      - gateway
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Service
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Upstream service үүсгэх
+      tags:
+      - gateway
+  /gateway/services/{id}:
+    delete:
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Upstream service устгах
+      tags:
+      - gateway
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Service
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Upstream service шинэчлэх
+      tags:
+      - gateway
+  /gov/applications:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Миний хүсэлтүүд
+      tags:
+      - gov
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Apply
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GovApplyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Үйлчилгээнд хүсэлт гаргах
+      tags:
+      - gov
+  /gov/applications/{id}/cancel:
+    post:
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Хүсэлт цуцлах
+      tags:
+      - gov
+  /gov/appointments:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Цаг захиалгууд
+      tags:
+      - gov
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Book
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GovBookRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Цаг захиалах
+      tags:
+      - gov
+  /gov/appointments/{id}/cancel:
+    post:
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Цаг захиалга цуцлах
+      tags:
+      - gov
+  /gov/notifications:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Мэдэгдлүүд
+      tags:
+      - gov
+  /gov/notifications/{id}/read:
+    post:
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Мэдэгдлийг уншсан болгох
+      tags:
+      - gov
+  /gov/notifications/read-all:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Бүх мэдэгдлийг уншсан болгох
+      tags:
+      - gov
+  /gov/overview:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Иргэний нүүр хуудасны нэгтгэл
+      tags:
+      - gov
+  /gov/payments:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Төлбөрүүд
+      tags:
+      - gov
+  /gov/payments/{id}/pay:
+    post:
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Төлбөр төлөх
+      tags:
+      - gov
+  /gov/references:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Миний лавлагаа
+      tags:
+      - gov
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Reference
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GovReferenceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Лавлагаа захиалах
+      tags:
+      - gov
+  /gov/services:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Төрийн үйлчилгээний каталог
+      tags:
+      - gov
+  /integrations:
+    get:
+      description: Тухайн хэрэглэгчийн холбосон провайдеруудыг буцаана (токенгүй —
+        зөвхөн provider + хугацаа).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Connected providers
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.IntegrationResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Холбосон интеграцийг жагсаах
+      tags:
+      - integrations
+    post:
+      consumes:
+      - application/json
+      description: Гуравдагч этгээдийн (Google Drive/Meet, Dropbox) OAuth токеныг
+        тухайн хэрэглэгчид холбон шифрлэн хадгална. Frontend BFF нь token exchange-ийн
+        дараа дуудна. Давхцвал шинэчилнэ.
+      parameters:
+      - description: Provider tokens
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ConnectIntegrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Stored
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Malformed body / unknown provider
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Интеграцийн токеныг хадгалах
+      tags:
+      - integrations
+  /integrations/{provider}:
+    delete:
+      description: Тухайн хэрэглэгчийн нэг провайдерын хадгалсан токеныг устгана (idempotent).
+      parameters:
+      - description: Provider id (google-drive, dropbox, google-meet)
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Disconnected
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Unknown provider
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Интеграцийг салгах
+      tags:
+      - integrations
+  /integrations/{provider}/token:
+    get:
+      description: Тухайн хэрэглэгчийн нэг провайдерын decrypt хийсэн токеныг буцаана.
+        Зөвхөн BFF дотроос дуудагдана — токен browser руу гарахгүй.
+      parameters:
+      - description: Provider id
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.IntegrationTokenResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Not connected
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Провайдерын токеныг авах (server-тал, BFF)
+      tags:
+      - integrations
+  /me/latin-name:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Латин нэр
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.LatinNameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Латин нэр засах
+      tags:
+      - users
+  /me/org-name-latin/{regNo}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      - description: Латин нэр
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.OrgNameLatinRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Байгууллагын латин нэр засах (ADMIN)
+      tags:
+      - users
+  /me/orgstamp/{regNo}:
+    delete:
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Байгууллагын тамга устгах (ADMIN)
+      tags:
+      - users
+    get:
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Байгууллагын тамга авах
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      - description: Зургийн URL
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AssetURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Байгууллагын тамга хадгалах (ADMIN)
+      tags:
+      - users
+  /me/signature:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гарын үсэг устгах
+      tags:
+      - users
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гарын үсэг (eID) авах
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Зургийн URL
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AssetURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гарын үсэг (eID) хадгалах
+      tags:
+      - users
+  /sso/callback:
+    post:
+      consumes:
+      - application/json
+      description: authorize callback-ийн state+code-ийг шалгаж, code-ийг токен болгож
+        солин, иргэнийг sso_sub-ээр upsert хийж, JWT хос олгоно.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: dgov SSO callback
+      tags:
+      - sso
+  /sso/logout:
+    post:
+      consumes:
+      - application/json
+      description: logout ref-ээр (callback-д олгосон) SSO (Hydra) end_session_endpoint
+        URL-ийг байгуулна. BFF browser-ийг тийш чиглүүлж SSO дээрх session-ийг дуусгана.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: dgov SSO logout URL
+      tags:
+      - sso
+  /sso/native:
+    post:
+      consumes:
+      - application/json
+      description: Mobile app (iOS/Android) ASWebAuthenticationSession-ийн PKCE code-ийг
+        public client-ээр (client_secret-гүй, code_verifier-тэй) солин, иргэнийг upsert
+        хийж JWT хос олгоно. State шалгалтгүй (PKCE хамгаална). BFF нь token/refresh_token-ийг
+        httpOnly cookie-д суулгана.
+      parameters:
+      - description: Native PKCE code exchange
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.SSONativeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Missing code/code_verifier
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: dgov SSO native (mobile PKCE) нэвтрэлт
+      tags:
+      - sso
+  /sso/start:
+    post:
+      description: sso.dgov.mn (OIDC) authorize URL-ийг state-тэй буцаана. BFF browser-ийг
+        тийш чиглүүлнэ.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: dgov SSO нэвтрэлт эхлүүлэх
+      tags:
+      - sso
+  /users/me:
+    get:
+      description: Authorization header дахь JWT-ээс баталгаажуулагдсан хэрэглэгчийг
+        уншиж, тохирох бичлэгийг буцаана (эхлээд in-memory кэш, олдоогүй үед Postgres).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.UserResponse'
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: User no longer exists
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Одоогийн хэрэглэгчийн профайлыг буцаах
+      tags:
+      - users
+  /users/me/eid/activity:
+    get:
+      parameters:
+      - description: хуудасны хэмжээ (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: эхлэх байрлал
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDActivityResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: eID auth/sign түүх + тоо (RP-scoped)
+      tags:
+      - users
+  /users/me/eid/certificates:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDCertificatesResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: eID гэрчилгээний жагсаалт + тоо
+      tags:
+      - users
+  /users/me/eid/devices:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDDevicesResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: eID холбоотой төхөөрөмжүүд
+      tags:
+      - users
+  /users/me/eid/organizations:
+    get:
+      description: Нэвтэрсэн eID хэрэглэгчийн eidmongolia.mn-д бүртгэлтэй, төлөөлж
+        чадах байгууллагуудыг буцаана. eID-ээр нэвтрээгүй хэрэглэгчид хоосон жагсаалт.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Representations
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgRepresentationResponse'
+                  type: array
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "500":
+          description: eID provider error
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Төлөөлдөг байгууллагууд (eID)
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Улсын бүртгэлээс (XYP) байгууллагыг регистрийн дугаараар хайж,
+        нэвтэрсэн иргэнийг (eID РД нь тухайн байгууллагын захирал/үүсгэн байгуулагч/хувь
+        эзэмшигч бол) eidmongolia.mn-д төлөөлөл болгон холбоно. Иргэний бүх төлөөлдөг
+        байгууллагыг буцаана.
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.EIDOrgRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Representations
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgRepresentationResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not authorized to represent this organization
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Organization not found
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Байгууллага холбох (eID)
+      tags:
+      - users
+  /users/me/eid/organizations/{regNo}:
+    delete:
+      description: Нэвтэрсэн иргэн өөрийн төлөөлдөг байгууллагын (регистрийн дугаараар)
+        холбоосыг цуцлана. Иргэний үлдсэн төлөөлдөг байгууллагыг буцаана.
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgRepresentationResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Байгууллага салгах (eID)
+      tags:
+      - users
+  /users/me/eid/organizations/{regNo}/signers:
+    delete:
+      description: Нэвтэрсэн иргэний төлөөлдөг байгууллагаас гарын үсэг зурагчийг
+        (регистрийн дугаараар) хасна.
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      - description: Хасах гарын үсэг зурагчийн РД
+        in: query
+        name: signer
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgSignerResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Гарын үсэг зурагч хасах (eID)
+      tags:
+      - users
+    get:
+      description: Нэвтэрсэн иргэний төлөөлдөг байгууллагын гарын үсэг зурах эрхтэй
+        хүмүүс. Иргэн тухайн байгууллагын төлөөлөгч байх ёстой.
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgSignerResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Байгууллагын гарын үсэг зурагчид (eID)
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Нэвтэрсэн иргэний төлөөлдөг байгууллагад өөр eID иргэнийг (регистрийн
+        дугаараар) гарын үсэг зурах эрхтэй болгож нэмнэ.
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      - description: Гарын үсэг зурагчийн РД + үүрэг
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AddEIDSignerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Signers + pending confirmation
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgSignersResultResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Гарын үсэг зурагч нэмэх (eID)
+      tags:
+      - users
+  /users/me/eid/organizations/{regNo}/signers/resend:
+    post:
+      description: Баталгаажаагүй (PENDING) гарын үсэг зурагч руу eID sign-push баталгаажуулах
+        хүсэлтийг дахин илгээнэ.
+      parameters:
+      - description: Байгууллагын регистрийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      - description: Гарын үсэг зурагчийн РД
+        in: query
+        name: signer
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgSignersResultResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Баталгаажуулах хүсэлт дахин илгээх (eID)
+      tags:
+      - users
+  /users/me/eid/summary:
+    get:
+      description: Нэвтэрсэн иргэний гэрчилгээ/auth-sign/төхөөрөмж/байгууллагын нэгдсэн
+        тоолол (PKI_READ эрхтэй RP). Эрхгүй бол 403.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.EIDSummaryResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: eID PKI самбарын нэгдсэн тоо
+      tags:
+      - users
+  /v1/audit:
+    get:
+      description: Hash-chained, append-only audit log-ийг хуудаслан буцаана. action
+        / actor query параметрээр шүүж болно. Зөвхөн admin.
+      parameters:
+      - description: action-аар шүүх
+        in: query
+        name: action
+        type: string
+      - description: actor_user_id-аар шүүх (uuid)
+        in: query
+        name: actor
+        type: string
+      - description: хуудасны хэмжээ (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: эхлэх байрлал (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Audit entries
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.AuditLogResponse'
+                  type: array
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not an admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Audit log жагсаах (admin)
+      tags:
+      - audit
+  /v1/audit/verify:
+    get:
+      description: Audit log-ийн hash гинжийг genesis-ээс эхлэн дахин тооцоолж бүрэн
+        бүтэн эсэхийг шалгана. ok=false бол broken_id нь эвдэрсэн эхний мөрийн id.
+        Зөвхөн admin.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Chain integrity status
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.AuditVerifyResponse'
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not an admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Audit гинж шалгах (admin)
+      tags:
+      - audit
+  /v1/gspace:
+    delete:
+      parameters:
+      - description: Файлын нэр
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Gerege Space-с файл устгах
+      tags:
+      - gspace
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Gerege Space товч (файлууд + квот)
+      tags:
+      - gspace
+  /v1/gspace/download:
+    get:
+      parameters:
+      - description: Файлын нэр
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      security:
+      - BearerAuth: []
+      summary: Gerege Space-с файл татах
+      tags:
+      - gspace
+  /v1/gspace/upload:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Файл (base64)
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.GSpaceUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Gerege Space-д файл оруулах
+      tags:
+      - gspace
+  /v1/org:
+    get:
+      description: Нэвтэрсэн хэрэглэгч гишүүн болсон бүх байгууллагыг буцаана.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organizations
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgResponse'
+                  type: array
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Өөрийн байгууллагуудыг жагсаах
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Нэвтэрсэн хэрэглэгч шинэ байгууллага бүртгэнэ; үүсгэгч автоматаар
+        owner гишүүн болно.
+      parameters:
+      - description: Байгууллагын мэдээлэл
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.CreateOrgRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created organization
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "409":
+          description: Registration number already exists
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Шинэ байгууллага үүсгэх
+      tags:
+      - organizations
+  /v1/org/{id}:
+    get:
+      description: ID-аар байгууллагыг буцаана; дуудагч заавал гишүүн (эсвэл admin)
+        байх ёстой.
+      parameters:
+      - description: Байгууллагын ID (uuid)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgResponse'
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Organization not found or not accessible
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Нэг байгууллагыг харах
+      tags:
+      - organizations
+  /v1/org/{id}/members:
+    get:
+      description: Тухайн байгууллагын бүх гишүүнийг буцаана; дуудагч гишүүн байх
+        ёстой.
+      parameters:
+      - description: Байгууллагын ID (uuid)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Members
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgMemberResponse'
+                  type: array
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not a member
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Байгууллагын гишүүдийг жагсаах
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Байгууллагад гишүүн нэмнэ; дуудагч owner/admin байх ёстой.
+      parameters:
+      - description: Байгууллагын ID (uuid)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Гишүүний мэдээлэл
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.AddMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Membership
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgMemberResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not allowed to manage members
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "409":
+          description: Already a member
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гишүүн нэмэх
+      tags:
+      - organizations
+  /v1/org/{id}/members/{userID}:
+    delete:
+      description: Байгууллагаас гишүүнийг хасна; дуудагч owner/admin байх ёстой.
+        Owner-ийг хасах боломжгүй.
+      parameters:
+      - description: Байгууллагын ID (uuid)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Гишүүн хэрэглэгчийн ID (uuid)
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member removed
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Cannot remove owner
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not allowed to manage members
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Membership not found
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гишүүн хасах
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Гишүүний дүрийг (owner/admin/member) солино; дуудагч owner/admin
+        байх ёстой.
+      parameters:
+      - description: Байгууллагын ID (uuid)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Гишүүн хэрэглэгчийн ID (uuid)
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Шинэ дүр
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.UpdateMemberRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role updated
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not allowed to manage members
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Membership not found
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гишүүний дүр солих
+      tags:
+      - organizations
+  /v1/org/lookup/{regNo}:
+    get:
+      description: Улсын бүртгэлийн дугаараар байгууллагыг хайна (зөвхөн дуудагчид
+        харагдах org).
+      parameters:
+      - description: Бүртгэлийн дугаар
+        in: path
+        name: regNo
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.OrgResponse'
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Organization not found
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Бүртгэлийн дугаараар хайх
+      tags:
+      - organizations
+  /v1/security/events:
+    get:
+      description: RASP-style security event-үүдийг хуудаслан буцаана. Зөвхөн admin.
+      parameters:
+      - description: хуудасны хэмжээ (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: эхлэх байрлал (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Security events
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.SecurityEventResponse'
+                  type: array
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not an admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Security event жагсаах (admin)
+      tags:
+      - security
+    post:
+      consumes:
+      - application/json
+      description: Нэвтэрсэн хэрэглэгч RASP-style security event илгээнэ (jailbreak,
+        integrity, anomaly г.м.). Клиентийн IP + user-agent-г сервер тэмдэглэнэ. Хэрэглэгч
+        зөвхөн өөрийнхөө тухай event илгээнэ.
+      parameters:
+      - description: Security event
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.IngestSecurityEventRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Event recorded
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Security event илгээх
+      tags:
+      - security
+  /v1/sign/{id}:
+    get:
+      description: Session-ийн төлөв (running|completed|failed|rejected). Зөвхөн эзэмшигч
+        иргэн хандана.
+      parameters:
+      - description: session_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: session олдсонгүй
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гарын үсгийн session төлөв
+      tags:
+      - sign
+  /v1/sign/{id}/download:
+    get:
+      description: PAdES гарын үсэг шигтгэсэн PDF-ийг урсгана. Зөвхөн эзэмшигч иргэн,
+        completed session.
+      parameters:
+      - description: session_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: session олдсонгүй
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Гарын үсэгтэй PDF татах
+      tags:
+      - sign
+  /v1/sign/init:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Нэвтэрсэн иргэний eID регистрээр /v3 PIN2 гарын үсэг эхлүүлж, session_id
+        + verification_code буцаана. Иргэн утсан дээрээ PIN2-оор зөвшөөрнө.
+      parameters:
+      - description: Гарын үсэг зурах PDF (≤25MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Байгууллагын etsi (NTRMN-<РД>) — тухайн байгууллагын нэрийн өмнөөс
+          зурах. Хоосон бол хувь хүний гарын үсэг.
+        in: formData
+        name: onBehalfOf
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: session_id + verification_code
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: invalid form / регистр олдсонгүй
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: PDF гарын үсэг эхлүүлэх (eID PIN2)
+      tags:
+      - sign
+  /v1/superadmin/admins:
+    get:
+      description: Админ түвшний бүх бүртгэлийг (super admin + admin) буцаана. Зөвхөн
+        super admin хандана.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Admins fetched
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not a super admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Админуудыг жагсаах
+      tags:
+      - superadmin
+    post:
+      consumes:
+      - application/json
+      description: Шинэ, идэвхтэй admin бүртгэл (нэр/и-мэйл/нууц үг) үүсгэнэ. Зөвхөн
+        super admin хандана.
+      parameters:
+      - description: New admin
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.SuperadminCreateAdminRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Admin created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not a super admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "409":
+          description: Email already in use
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Шинэ админ үүсгэх
+      tags:
+      - superadmin
+  /v1/superadmin/admins/{id}:
+    delete:
+      description: Admin-ийн эрхийг хасч, энгийн хэрэглэгч болгоно. Super admin-г
+        хасахгүй, өөрийгөө хасахгүй. Зөвхөн super admin хандана.
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Admin revoked
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: User is not an admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not a super admin / cannot revoke self or super admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Админ эрхийг хасах
+      tags:
+      - superadmin
+  /v1/superadmin/admins/{id}/grant:
+    put:
+      description: Байгаа хэрэглэгчийг admin болгоно. Зөвхөн super admin хандана.
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Admin granted
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: Not a super admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "409":
+          description: Already an admin
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Хэрэглэгчид админ эрх олгох
+      tags:
+      - superadmin
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: /auth/login эсвэл /auth/refresh-аас олгогдсон Bearer хандах токен
+      (access token).
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
