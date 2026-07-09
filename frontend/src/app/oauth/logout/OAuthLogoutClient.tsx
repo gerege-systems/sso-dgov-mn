@@ -1,8 +1,7 @@
 // eID based AI enabled Government Template Platform V3.0
-// UI-г sso.dgov.mn-ээс (logout.html) хуулав. Гарах товч дарахад ЭХЛЭЭД dan-ий
-// өөрийн session-ыг цэвэрлээд (/api/auth/logout), дараа нь Hydra logout challenge-
-// ыг accept хийж (/api/provider/logout/accept) RP руу буцна — "dan дээрээ ирж
-// logout хийгээд буцна".
+// Logout — dan-ий өөрийн дизайн. Гарах товч дарахад ЭХЛЭЭД dan-ий session-ыг
+// цэвэрлээд (/api/auth/logout), дараа нь Hydra logout challenge-ыг accept хийж
+// (/api/provider/logout/accept) RP руу буцна.
 'use client';
 
 import Link from 'next/link';
@@ -19,9 +18,7 @@ export default function OAuthLogoutClient({ challenge }: { challenge: string }) 
       return;
     }
     setBusy(true);
-    // 1) dan-ий өөрийн session-ыг цэвэрлэнэ (refresh blacklist + cookie устгах).
     await postJSON('/api/auth/logout', undefined).catch(() => {});
-    // 2) Hydra logout challenge-ыг accept хийж RP руу буцна.
     const r = await postJSON<{ redirect_to?: string }>('/api/provider/logout/accept', {
       logout_challenge: challenge,
     });
@@ -34,26 +31,27 @@ export default function OAuthLogoutClient({ challenge }: { challenge: string }) 
   }
 
   return (
-    <div className="card">
-      <div className="eyebrow">Гарах</div>
-      <h1 className="title">Та үнэхээр гарах уу?</h1>
-      <p className="sub">
-        Энэ нь таныг <strong>dan.dgov.mn</strong>-аас гаргахаас гадна холбогдсон үйлчилгээ рүү
-        single-logout сигнал явуулна.
-      </p>
-
-      <div className="alert alert-info">
-        Single Sign-Out — нэг товшилтоор бүх RP-аас гарна. Дахин нэвтрэхдээ eID Mongolia аппаараа
-        дахин баталгаажуулна.
+    <div className="form-grid">
+      <div>
+        <h1 id="logout-title">Та үнэхээр гарах уу?</h1>
+        <p className="signin-card__lede" style={{ marginTop: 6, fontSize: 14 }}>
+          Энэ нь таныг dan.dgov.mn-аас гаргаж, холбогдсон үйлчилгээ рүү single-logout сигнал
+          явуулна. Дахин нэвтрэхдээ eID Mongolia аппаараа дахин баталгаажуулна.
+        </p>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="field__error">{error}</div>}
 
-      <div className="actions">
-        <Link className="btn btn-secondary" href="/">
+      <div style={{ display: 'flex', gap: 10 }}>
+        <Link className="btn btn--secondary btn--lg btn--block" href="/">
           Цуцлах
         </Link>
-        <button className="btn btn-primary" type="button" disabled={busy} onClick={confirmLogout}>
+        <button
+          className="btn btn--primary btn--lg btn--block"
+          type="button"
+          disabled={busy}
+          onClick={confirmLogout}
+        >
           Тийм, гарна
         </button>
       </div>

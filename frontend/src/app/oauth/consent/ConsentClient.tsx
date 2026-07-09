@@ -1,5 +1,6 @@
 // eID based AI enabled Government Template Platform V3.0
-// UI-г sso.dgov.mn-ээс (consent.html) хуулав; wiring нь dan-ий /api/provider.
+// Consent — dan-ий өөрийн дизайн (form-grid / signin-card / btn--*). Логик нь
+// /api/provider/consent-д холбогдоно.
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -12,7 +13,6 @@ type ConsentInfo = {
   Skip: boolean;
 };
 
-// scopeHelp — sso.dgov.mn-ий тайлбаруудыг хуулав.
 function scopeHelp(s: string): string {
   switch (s) {
     case 'openid':
@@ -80,19 +80,14 @@ export default function ConsentClient({ challenge }: { challenge: string }) {
     }
   }
 
-  if (error) {
-    return (
-      <div className="card">
-        <div className="alert alert-error">{error}</div>
-      </div>
-    );
-  }
   if (!info) {
     return (
-      <div className="card">
-        <div className="status status-running">
-          <div className="spinner" aria-hidden="true" />
-          <span className="status-text">Ачааллаж байна…</span>
+      <div className="form-grid" aria-live="polite">
+        <div>
+          <h1 id="consent-title">Хандах эрх</h1>
+          <p className="signin-card__lede" style={{ marginTop: 6, fontSize: 14 }}>
+            {error || 'Ачааллаж байна…'}
+          </p>
         </div>
       </div>
     );
@@ -100,63 +95,63 @@ export default function ConsentClient({ challenge }: { challenge: string }) {
 
   const grant = scopes.filter((s) => checked[s]);
   return (
-    <div className="card">
-      <span className="rp-chip">
-        <span className="rp-chip-icon">RP</span>
-        <span>{info.ClientName || info.ClientID}</span>
-      </span>
-      <div className="eyebrow">Хандах эрх олгох</div>
-      <h1 className="title">
-        Энэхүү үйлчилгээ танаас
-        <br />
-        дараах мэдээлэлд хандах эрх хүсэж байна
-      </h1>
-      <p className="sub">
-        Шаардлагатай scope-уудыг тэмдэглээд <strong>Зөвшөөрөх</strong> дарна уу, эсвэл бүхэлд нь{' '}
-        <strong>Татгалзаж</strong> болно.
-      </p>
-
-      <div className="scope-form">
-        <ul className="scopes">
-          {scopes.map((s) => (
-            <li key={s}>
-              <label>
-                <input
-                  type="checkbox"
-                  name="scope"
-                  value={s}
-                  checked={!!checked[s]}
-                  onChange={(e) => setChecked((c) => ({ ...c, [s]: e.target.checked }))}
-                />
-                <span className="scope-key">{s}</span>
-                <span className="scope-desc">{scopeHelp(s)}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-
-        <div className="actions">
-          <button
-            className="btn btn-danger"
-            type="button"
-            disabled={busy}
-            onClick={() => submit('reject', [])}
-          >
-            Татгалзах
-          </button>
-          <button
-            className="btn btn-primary"
-            type="button"
-            disabled={busy}
-            onClick={() => submit('accept', grant)}
-          >
-            Зөвшөөрөх
-          </button>
-        </div>
+    <div className="form-grid">
+      <div>
+        <h1 id="consent-title">{info.ClientName || info.ClientID}</h1>
+        <p className="signin-card__lede" style={{ marginTop: 6, fontSize: 14 }}>
+          Энэ үйлчилгээ танаас доорх мэдээлэлд хандах зөвшөөрөл хүсэж байна.
+        </p>
       </div>
 
-      <p className="hint">
-        Client ID: <code>{info.ClientID}</code>
+      {error && <div className="field__error">{error}</div>}
+
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
+        {scopes.map((s) => (
+          <li
+            key={s}
+            style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '10px 12px' }}
+          >
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!!checked[s]}
+                onChange={(e) => setChecked((c) => ({ ...c, [s]: e.target.checked }))}
+                style={{ marginTop: 3 }}
+              />
+              <span>
+                <span className="mono" style={{ fontWeight: 600 }}>
+                  {s}
+                </span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--muted)' }}>
+                  {scopeHelp(s)}
+                </span>
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button
+          className="btn btn--secondary btn--lg btn--block"
+          type="button"
+          disabled={busy}
+          onClick={() => submit('reject', [])}
+        >
+          Татгалзах
+        </button>
+        <button
+          className="btn btn--primary btn--lg btn--block"
+          type="button"
+          disabled={busy}
+          onClick={() => submit('accept', grant)}
+        >
+          Зөвшөөрөх
+        </button>
+      </div>
+
+      <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', margin: 0 }}>
+        Client ID: <span className="mono">{info.ClientID}</span>
       </p>
     </div>
   );

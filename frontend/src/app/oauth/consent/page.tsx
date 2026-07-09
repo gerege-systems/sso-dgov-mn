@@ -16,5 +16,9 @@ export default async function OAuthConsentPage(props: {
     const ret = `/oauth/consent?consent_challenge=${encodeURIComponent(challenge)}`;
     redirect(`/login?next=${encodeURIComponent(ret)}`);
   }
-  return <ConsentClient challenge={challenge} />;
+  return (
+    <section className="signin-card signin-card--narrow" aria-labelledby="consent-title">
+      <ConsentClient challenge={challenge} />
+    </section>
+  );
 }
