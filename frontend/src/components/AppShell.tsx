@@ -127,6 +127,7 @@ const SYSTEMS: NavSystem[] = [
         // ХУВИЙН-д тул энд давхардуулахгүй).
         labelKey: 'group.eid',
         items: [
+          { href: '/me/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
           { href: '/me/eid/id', labelKey: 'nav.eidId', icon: CreditCard },
           { href: '/me/eid/certificates', labelKey: 'nav.eidCerts', icon: KeyRound },
           { href: '/me/eid/devices', labelKey: 'nav.eidDevices', icon: Smartphone },
@@ -140,7 +141,6 @@ const SYSTEMS: NavSystem[] = [
         // Профайл, Тохиргоо нь баруун дээд dropdown-д байгаа тул зүүн цэсэнд давхардуулахгүй.
         // Гарын үсэг зурах нь ХУВИЙН-д.
         items: [
-          { href: '/me/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
           { href: '/me/integrations', labelKey: 'nav.integrations', icon: Plug },
           { href: '/me/ai', labelKey: 'nav.ai', icon: Bot },
           { href: '/me/translate', labelKey: 'nav.translate', icon: Languages },
