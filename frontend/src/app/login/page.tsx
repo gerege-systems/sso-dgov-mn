@@ -17,7 +17,7 @@ export default async function LoginPage(
 
   return (
     <SigninShell>
-      <section className="signin-card signin-card--narrow" aria-labelledby="login-title">
+      <section className="signin-card" aria-labelledby="login-title">
         <LoginForm
           next={next}
           notice={searchParams.notice}
