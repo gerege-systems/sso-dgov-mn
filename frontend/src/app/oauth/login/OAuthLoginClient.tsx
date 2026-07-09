@@ -43,11 +43,13 @@ export default function OAuthLoginClient({
     }
   }, [challenge]);
 
-  // Нэвтрэлтийг цуцлах — Hydra login-ыг reject хийж (цэвэрлэгээ) dan-ий НҮҮР
-  // хуудас руу буцна. RP-ийн login дэлгэц рүү дахин орохгүй.
+  // Нэвтрэлтийг цуцлах — Hydra login-ыг reject хийж, ХААНААС ЭХЭЛСЭН (RP) тийш нь
+  // буцна (Hydra-ийн redirect_to нь RP руу access_denied-ээр буцаана).
   const cancel = useCallback(async () => {
-    await postJSON('/api/provider/login/reject', { login_challenge: challenge }).catch(() => {});
-    window.location.href = '/';
+    const r = await postJSON<{ redirect_to?: string }>('/api/provider/login/reject', {
+      login_challenge: challenge,
+    });
+    window.location.href = r.ok && r.data?.redirect_to ? r.data.redirect_to : '/';
   }, [challenge]);
 
   useEffect(() => {
@@ -272,6 +274,20 @@ export default function OAuthLoginClient({
           </button>
         </div>
       </form>
+
+      {/* Google-ээр нэвтрэх — анх удаа eID-ээр баталгаажуулж бодит хэрэглэгчийг
+          холбоно; дараа нь /oauth/login руу буцаж challenge-ыг accept хийнэ. */}
+      <div className="divider">
+        <span>эсвэл</span>
+      </div>
+      <a
+        className="btn-block"
+        href={`/api/auth/google/start?next=${encodeURIComponent(`/oauth/login?login_challenge=${challenge}`)}`}
+      >
+        <span className="btn-icon">G</span>
+        Google-ээр нэвтрэх
+      </a>
+      <p className="hint-small">Анх удаа нэвтэрсэн бол eID Mongolia-аар баталгаажуулна.</p>
 
       <div className="actions" style={{ marginTop: 4 }}>
         <button className="btn btn-ghost" type="button" onClick={cancel}>

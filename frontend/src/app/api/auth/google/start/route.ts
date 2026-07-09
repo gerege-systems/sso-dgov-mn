@@ -16,7 +16,16 @@ export async function GET(req: Request) {
   }
 
   const state = crypto.randomUUID();
-  (await cookies()).set('g_oauth_state', state, { ...cookieOptions(600), maxAge: 600 }); // 10 мин
+  const jar = await cookies();
+  jar.set('g_oauth_state', state, { ...cookieOptions(600), maxAge: 600 }); // 10 мин
+  // SSO provider урсгал (/oauth/login) энд next-ээр буцах хаягаа дамжуулна —
+  // callback дараа нь тэр рүү (эсвэл glink eID алхмаар дамжуулан) буцна.
+  const next = new URL(req.url).searchParams.get('next');
+  if (next && next.startsWith('/')) {
+    jar.set('g_oauth_next', next, { ...cookieOptions(600), maxAge: 600 });
+  } else {
+    jar.delete('g_oauth_next');
+  }
 
   const redirectUri = `${origin}/api/auth/google/callback`;
   const params = new URLSearchParams({

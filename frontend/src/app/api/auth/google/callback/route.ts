@@ -34,6 +34,12 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${origin}/login?gerror=state_mismatch`);
   }
 
+  // SSO provider урсгалын буцах хаяг (start дээр тавьсан). Байвал /me/dashboard-
+  // ийн оронд тэр рүү (эсвэл glink eID алхмаар дамжуулан) буцна.
+  const nextCookie = (await cookies()).get('g_oauth_next')?.value;
+  (await cookies()).delete('g_oauth_next');
+  const nextPath = nextCookie && nextCookie.startsWith('/') ? nextCookie : '';
+
   const redirectUri = `${origin}/api/auth/google/callback`;
   const result = await backendFetch<GoogleData>('/auth/google', {
     method: 'POST',
@@ -46,16 +52,22 @@ export async function GET(req: Request) {
 
   const data = result.data;
 
-  // Аль хэдийн холбогдсон → шууд нэвтрүүлнэ.
+  // Аль хэдийн холбогдсон → шууд нэвтрүүлнэ (SSO урсгалд next-ийн /oauth/login
+  // руу буцаж challenge-ыг accept хийнэ).
   if (data.linked && data.user?.token && data.user?.refresh_token) {
     await setSession(data.user.token, data.user.refresh_token);
-    return NextResponse.redirect(`${origin}/me/dashboard`);
+    return NextResponse.redirect(`${origin}${nextPath || '/me/dashboard'}`);
   }
 
   // Эхний удаа → link_token-ийг богино хугацааны cookie-д хадгалаад eID алхам руу.
+  // next байвал /login-д дамжуулна — eID-ээр холбосны дараа тэр рүү (SSO бол
+  // /oauth/login) буцаж, бодит хэрэглэгчийг холбоно.
   if (data.link_token) {
     (await cookies()).set('g_link', data.link_token, { ...cookieOptions(900), maxAge: 900 }); // 15 мин
-    return NextResponse.redirect(`${origin}/login?glink=1`);
+    const glinkURL = nextPath
+      ? `${origin}/login?glink=1&next=${encodeURIComponent(nextPath)}`
+      : `${origin}/login?glink=1`;
+    return NextResponse.redirect(glinkURL);
   }
 
   return NextResponse.redirect(`${origin}/login?gerror=google_failed`);
