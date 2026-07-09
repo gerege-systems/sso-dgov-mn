@@ -43,12 +43,11 @@ export default function OAuthLoginClient({
     }
   }, [challenge]);
 
-  // Нэвтрэлтийг цуцлах — Hydra login-ыг reject хийж RP руу access_denied-ээр буцна.
+  // Нэвтрэлтийг цуцлах — Hydra login-ыг reject хийж (цэвэрлэгээ) dan-ий НҮҮР
+  // хуудас руу буцна. RP-ийн login дэлгэц рүү дахин орохгүй.
   const cancel = useCallback(async () => {
-    const r = await postJSON<{ redirect_to?: string }>('/api/provider/login/reject', {
-      login_challenge: challenge,
-    });
-    window.location.href = r.ok && r.data?.redirect_to ? r.data.redirect_to : '/';
+    await postJSON('/api/provider/login/reject', { login_challenge: challenge }).catch(() => {});
+    window.location.href = '/';
   }, [challenge]);
 
   useEffect(() => {
