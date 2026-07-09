@@ -7,8 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getJSON } from '@/lib/client';
 import {
   LayoutDashboard, User, ShieldCheck, HelpCircle, LogOut, Menu, Search,
-  Users, ShieldHalf, UserCircle, Briefcase, Bot, Languages, Building2,
-  ScrollText, ShieldAlert, CreditCard, KeyRound, Smartphone,
+  Users, ShieldHalf, UserCircle, Briefcase, Bot, Languages,
+  ScrollText, ShieldAlert, KeyRound,
   Landmark, FileText, FileCheck, CalendarClock, Wallet, Bell, Plug,
   FileSignature, Gauge, Server, Route, Crown,
 } from 'lucide-react';
@@ -123,28 +123,6 @@ const SYSTEMS: NavSystem[] = [
     icon: UserCircle,
     groups: [
       {
-        labelKey: 'group.personal',
-        // Профайл, Тохиргоо нь баруун дээд dropdown-д байгаа тул зүүн цэсэнд давхардуулахгүй.
-        items: [
-          { href: '/me/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-          { href: '/me/integrations', labelKey: 'nav.integrations', icon: Plug },
-          { href: '/me/ai', labelKey: 'nav.ai', icon: Bot },
-          { href: '/me/translate', labelKey: 'nav.translate', icon: Languages },
-        ],
-      },
-      {
-        labelKey: 'group.eid',
-        items: [
-          { href: '/me/eid/id', labelKey: 'nav.eidId', icon: CreditCard },
-          { href: '/me/eid/certificates', labelKey: 'nav.eidCerts', icon: KeyRound },
-          { href: '/me/eid/devices', labelKey: 'nav.eidDevices', icon: Smartphone },
-          { href: '/me/eid/logs', labelKey: 'nav.eidLogs', icon: ScrollText },
-          { href: '/me/eid/security', labelKey: 'nav.eidSecurity', icon: ShieldCheck },
-          { href: '/me/eid/sign', labelKey: 'nav.eidSign', icon: FileSignature },
-          { href: '/me/organizations', labelKey: 'nav.org', icon: Building2 },
-        ],
-      },
-      {
         labelKey: 'group.govServices',
         items: [
           { href: '/me/services', labelKey: 'nav.govServices', icon: Landmark },
@@ -153,6 +131,18 @@ const SYSTEMS: NavSystem[] = [
           { href: '/me/appointments', labelKey: 'nav.govAppointments', icon: CalendarClock },
           { href: '/me/payments', labelKey: 'nav.govPayments', icon: Wallet },
           { href: '/me/notifications', labelKey: 'nav.govNotifications', icon: Bell },
+        ],
+      },
+      {
+        labelKey: 'group.personal',
+        // Профайл, Тохиргоо нь баруун дээд dropdown-д байгаа тул зүүн цэсэнд давхардуулахгүй.
+        // Гарын үсэг зурах нь ХУВИЙН-д (eID бүлгийг хассан).
+        items: [
+          { href: '/me/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+          { href: '/me/integrations', labelKey: 'nav.integrations', icon: Plug },
+          { href: '/me/ai', labelKey: 'nav.ai', icon: Bot },
+          { href: '/me/translate', labelKey: 'nav.translate', icon: Languages },
+          { href: '/me/eid/sign', labelKey: 'nav.eidSign', icon: FileSignature },
         ],
       },
     ],
