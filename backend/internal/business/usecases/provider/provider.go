@@ -247,6 +247,12 @@ func claimsForScopes(scopes []string, u domain.User) (idToken, accessToken map[s
 			setIfNonEmpty(idToken, "register_number", u.CivilID)
 		}
 	}
+	// Google холболт — иргэн DAN дээр Google-ээр нэвтэрсэн/холбосон бол RP-д
+	// дамжуулна (RP өөр дээрээ "Google холбогдсон" гэж тооцно).
+	if strings.TrimSpace(u.GoogleSub) != "" {
+		idToken["google_sub"] = u.GoogleSub
+		setIfNonEmpty(idToken, "google_email", u.GoogleEmail)
+	}
 	return idToken, accessToken
 }
 
