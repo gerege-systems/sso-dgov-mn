@@ -79,7 +79,10 @@ func NewUsecase(h *hydra.Admin, users UserLookup, firstPartyClients []string) Us
 	return &usecase{hydra: h, users: users, firstParty: fp}
 }
 
-const rememberFor = 3600 // session-ийг санах хугацаа (секунд)
+const (
+	rememberFor        = 3600           // login session-ийг санах хугацаа (секунд)
+	consentRememberFor = 30 * 24 * 3600 // consent-ыг санах хугацаа (30 хоног)
+)
 
 func (u *usecase) GetLogin(ctx context.Context, challenge string) (LoginInfo, error) {
 	if challenge == "" {
@@ -178,15 +181,16 @@ func (u *usecase) AcceptConsent(ctx context.Context, userID, challenge string, g
 		idClaims, atClaims = claimsForScopes(granted, resp.User)
 	}
 
-	_, firstParty := u.firstParty[req.Client.ClientID]
 	redirect, err := u.hydra.AcceptConsent(ctx, challenge, hydra.ConsentAccept{
 		GrantScope: granted,
 		Session: hydra.ConsentSession{
 			IDToken:     idClaims,
 			AccessToken: atClaims,
 		},
-		Remember:    firstParty, // first-party апп-д дахин асуухгүй
-		RememberFor: rememberFor,
+		// Эхний зөвшөөрлийг санана — дараагийн нэвтрэлтэд Hydra consent-ыг skip
+		// болгож дахин асуухгүй (ConsentClient skip дээр автоматаар accept хийнэ).
+		Remember:    true,
+		RememberFor: consentRememberFor,
 	})
 	if err != nil {
 		return "", apperror.InternalCause(fmt.Errorf("hydra accept consent: %w", err))
