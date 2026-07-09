@@ -60,6 +60,7 @@ import (
 	"template/internal/provider/adminapi"
 	"template/internal/provider/adminkeys"
 	"template/internal/provider/devapps"
+	"template/internal/provider/signrelay"
 	"template/pkg/eid"
 	"template/pkg/gemini"
 	"template/pkg/google"
@@ -371,6 +372,18 @@ func NewApp() (*App, error) {
 		logger.Info("OIDC provider admin surface mounted at /admin", logger.Fields{
 			"hydra_admin": config.AppConfig.HydraAdminURL,
 		})
+	}
+
+	// Sign relay — 3 дагч RP (template.dgov.mn гэх мэт) dan-аар ДАМЖИН eID гарын
+	// үсэг зурах reverse-proxy (/rp/sign/*). dan-ий eidmongolia RP creds шаардана.
+	if config.AppConfig.SignRelayToken != "" && config.AppConfig.EIDRPSecret != "" {
+		if relay, rerr := signrelay.New(config.AppConfig.EIDBaseURL, config.AppConfig.EIDRPSecret, config.AppConfig.SignRelayToken); rerr != nil {
+			logger.Warn("sign relay init failed", logger.Fields{"error": rerr.Error()})
+		} else {
+			r.Handle("/rp/sign/*", relay)
+			r.Handle("/rp/sign", relay)
+			logger.Info("sign relay mounted at /rp/sign (RP eID signing via dan)", logger.Fields{})
+		}
 	}
 
 	// Серверийн түвшний timeout-ууд (slowloris / удаан client-ийн эсрэг):

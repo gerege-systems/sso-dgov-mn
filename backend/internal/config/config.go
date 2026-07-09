@@ -71,6 +71,12 @@ type Config struct {
 	EIDCertLevel   string `mapstructure:"EID_CERT_LEVEL"`
 	EIDCallbackURL string `mapstructure:"EID_CALLBACK_URL"`
 	EIDDisplayText string `mapstructure:"EID_DISPLAY_TEXT"`
+	// SignRelayToken — 3 дагч RP (жишээ template.dgov.mn) dan-аар ДАМЖИН eID
+	// гарын үсэг зурахад ашиглах shared token. dan нь /rp/sign/* дор eidmongolia-
+	// ий signature API-г урдаа тавьж, өөрийн EID_RP_SECRET-ыг нэмж дамжуулна.
+	// Хоосон бол relay идэвхгүй. RP нь энэ token-ыг EID_RP_SECRET болгож,
+	// EID_BASE_URL-аа https://dan.dgov.mn/rp/sign/v3 руу заана (RPUUID нь dan-ийх).
+	SignRelayToken string `mapstructure:"SIGN_RELAY_TOKEN"`
 
 	// PDF гарын үсгийн (PAdES) серверийн БАЙНГЫН Document-Signer гэрчилгээ +
 	// ECDSA түлхүүрийн PEM файлын зам. Production-д ЗААВАЛ (fail-closed):
@@ -274,6 +280,7 @@ func InitializeAppConfig() error {
 	_ = viper.BindEnv("SSO_FIRSTPARTY_CLIENTS")
 	_ = viper.BindEnv("SSO_ADMIN_API_KEYS")
 	_ = viper.BindEnv("SSO_ADMIN_SUBS")
+	_ = viper.BindEnv("SIGN_RELAY_TOKEN")
 	// .env файл байхгүй байх нь алдаа БИШ — контейнер / 12-factor орчинд
 	// тохиргоог зөвхөн environment-ээс уншина. Зөвхөн жинхэнэ задлан унших
 	// (parse) алдааг л буцаана.
