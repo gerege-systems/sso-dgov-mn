@@ -71,6 +71,10 @@ services:
       dockerfile: deploy/Dockerfile
     volumes:
       - ./backend.env:/app/.env:ro
+    # Loopback-д гаргана — nginx нь /rp/sign (3 дагч RP-ийн eID sign relay)-ыг энэ
+    # порт руу проксилно. Бусад бүх app траффик web BFF-ээр л явна.
+    ports:
+      - "127.0.0.1:${API_RELAY_PORT:-8091}:8080"
     environment:
       # RLS enforcement: the api connects as the least-privilege app role, NOT
       # the superuser the migrate step uses, so Row-Level Security is enforced.
