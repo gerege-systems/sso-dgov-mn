@@ -30,6 +30,7 @@ import (
 	"template/internal/business/usecases/gspace"
 	"template/internal/business/usecases/integrations"
 	"template/internal/business/usecases/org"
+	provideruc "template/internal/business/usecases/provider"
 	"template/internal/business/usecases/rbac"
 	"template/internal/business/usecases/security"
 	"template/internal/business/usecases/sign"
@@ -320,6 +321,16 @@ func NewApp() (*App, error) {
 	// Уншилтад хамаарахгүй; ~30/мин (burst 15) нь энгийн хэрэглээнд элбэг зайтай.
 	govWriteRateLimiter := middlewares.NewRateLimiter(rate.Limit(30.0/60.0), 15)
 
+	// OIDC provider (dan.dgov.mn = SSO) — Hydra урдаа тавьсан login/consent/logout
+	// цөм. Зөвхөн Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс
+	// бөгөөс providerUC == nil тул route бүртгэгдэхгүй (inert).
+	var providerUC provideruc.Usecase
+	var hydraAdmin *hydra.Admin
+	if config.AppConfig.ProviderConfigured() {
+		hydraAdmin = hydra.NewAdmin(config.AppConfig.HydraAdminURL)
+		providerUC = provideruc.NewUsecase(hydraAdmin, usersUC, config.AppConfig.SSOFirstPartyClientsList())
+	}
+
 	// API Route-ууд
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/", routes.RootHandler)
@@ -341,13 +352,16 @@ func NewApp() (*App, error) {
 		routes.NewAuditRoute(api, auditUC, authMiddleware).Routes()
 		routes.NewSecurityRoute(api, securityUC, authMiddleware).Routes()
 		routes.NewSignRoute(api, signUC, usersUC, assetsUC, authMiddleware).Routes()
+		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
+		if providerUC != nil {
+			routes.NewProviderRoute(api, providerUC, authMiddleware).Routes()
+		}
 	})
 
 	// OIDC provider — /admin оператор гадаргуу (RP OAuth2 client бүртгэл/удирдлага
 	// + admin API key). dan.dgov.mn нь Ory Hydra-г урдаа тавьж SSO болно. Зөвхөн
 	// Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс бөгөөс inert.
 	if config.AppConfig.ProviderConfigured() {
-		hydraAdmin := hydra.NewAdmin(config.AppConfig.HydraAdminURL)
 		devAppsStore := devapps.New(pool)
 		adminKeyStore := adminkeys.New(pool, config.AppConfig.SSOAdminAPIKeysList())
 		r.Mount("/admin", adminapi.New(hydraAdmin, devAppsStore, adminKeyStore).Router())
