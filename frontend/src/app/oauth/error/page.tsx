@@ -1,5 +1,7 @@
 // eID based AI enabled Government Template Platform V3.0
 // OIDC provider алдааны хуудас — Hydra URLS_ERROR энд чиглүүлнэ.
+import Link from 'next/link';
+
 export const dynamic = 'force-dynamic';
 
 export default async function OAuthErrorPage(props: {
@@ -11,7 +13,7 @@ export default async function OAuthErrorPage(props: {
       <h1 style={{ fontSize: 20, fontWeight: 600, color: '#b00020' }}>Нэвтрэлтийн алдаа</h1>
       <p style={{ marginTop: 8 }}>{sp.error_description || sp.error || 'Тодорхойгүй алдаа'}</p>
       <p style={{ marginTop: 16 }}>
-        <a href="/">Нүүр хуудас руу буцах</a>
+        <Link href="/">Нүүр хуудас руу буцах</Link>
       </p>
     </main>
   );
