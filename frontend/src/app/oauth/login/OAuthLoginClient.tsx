@@ -43,6 +43,14 @@ export default function OAuthLoginClient({
     }
   }, [challenge]);
 
+  // Нэвтрэлтийг цуцлах — Hydra login-ыг reject хийж RP руу access_denied-ээр буцна.
+  const cancel = useCallback(async () => {
+    const r = await postJSON<{ redirect_to?: string }>('/api/provider/login/reject', {
+      login_challenge: challenge,
+    });
+    window.location.href = r.ok && r.data?.redirect_to ? r.data.redirect_to : '/';
+  }, [challenge]);
+
   useEffect(() => {
     mounted.current = true;
     getJSON<LoginInfo>(`/api/provider/login?login_challenge=${encodeURIComponent(challenge)}`)
@@ -171,6 +179,9 @@ export default function OAuthLoginClient({
           <button className="btn btn-ghost" type="button" onClick={() => switchMethod(method)}>
             Дахин эхлүүлэх
           </button>
+          <button className="btn btn-ghost" type="button" onClick={cancel}>
+            Цуцлах
+          </button>
         </div>
       </div>
     );
@@ -256,6 +267,12 @@ export default function OAuthLoginClient({
           </button>
         </div>
       </form>
+
+      <div className="actions" style={{ marginTop: 4 }}>
+        <button className="btn btn-ghost" type="button" onClick={cancel}>
+          Цуцлах
+        </button>
+      </div>
     </div>
   );
 }
