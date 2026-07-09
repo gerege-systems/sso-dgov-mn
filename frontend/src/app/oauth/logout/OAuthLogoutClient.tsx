@@ -5,6 +5,7 @@
 // logout хийгээд буцна".
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { postJSON } from '@/lib/client';
 
@@ -49,9 +50,9 @@ export default function OAuthLogoutClient({ challenge }: { challenge: string }) 
       {error && <div className="alert alert-error">{error}</div>}
 
       <div className="actions">
-        <a className="btn btn-secondary" href="/">
+        <Link className="btn btn-secondary" href="/">
           Цуцлах
-        </a>
+        </Link>
         <button className="btn btn-primary" type="button" disabled={busy} onClick={confirmLogout}>
           Тийм, гарна
         </button>
