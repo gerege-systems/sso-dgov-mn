@@ -703,3 +703,8 @@ body.bg { display: flex; flex-direction: column; min-height: 100vh; }
   border-radius: 14px;
   image-rendering: pixelated;
 }
+
+/* dan: RP толгойг бүх /oauth/login дэлгэц дээр — доод талаас тусгаарлана */
+.rp-head { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+.rp-head .rp-title { margin: 0; }
+.rp-head .rp-tagline { margin: 4px 0 0; }

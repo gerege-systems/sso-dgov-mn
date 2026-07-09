@@ -126,10 +126,19 @@ export default function OAuthLoginClient({
 
   const vcode = start?.verification_code;
 
+  // Бүх дэлгэц дээр тавих толгой — аль RP-ээс нэвтэрч буй.
+  const rpHeader = info?.ClientName ? (
+    <div className="rp-head">
+      <h1 className="rp-title">{info.ClientName}</h1>
+      <p className="rp-tagline">DAN — нэгдсэн нэвтрэлтээр нэвтрэх гэж байна</p>
+    </div>
+  ) : null;
+
   // --- accepting / redirecting ---
   if (phase === 'accepting') {
     return (
       <div className="card">
+        {rpHeader}
         <div className="status status-running">
           <div className="spinner" aria-hidden="true" />
           <span className="status-text">Нэвтрэлтийг баталгаажуулж байна…</span>
@@ -142,6 +151,7 @@ export default function OAuthLoginClient({
   if (phase === 'waiting') {
     return (
       <div className="card">
+        {rpHeader}
         <div className="eyebrow">eID апп дээр баталгаажуулна уу</div>
         <h1 className="title">
           Доорх дугаар утсан дээр
@@ -197,6 +207,7 @@ export default function OAuthLoginClient({
           : error || 'Алдаа гарлаа.';
     return (
       <div className="card">
+        {rpHeader}
         <div className="alert alert-error">{msg}</div>
         <div className="actions actions-fill" style={{ marginTop: 12 }}>
           <button className="btn btn-primary" type="button" onClick={() => switchMethod('id')}>
@@ -210,12 +221,7 @@ export default function OAuthLoginClient({
   // --- form (choose method + input) ---
   return (
     <div className="card card-relative">
-      {info?.ClientName && (
-        <>
-          <h1 className="rp-title">{info.ClientName}</h1>
-          <p className="rp-tagline">DAN — нэгдсэн нэвтрэлтээр нэвтрэх гэж байна</p>
-        </>
-      )}
+      {rpHeader}
 
       <div className="method-tabs" role="tablist" aria-label="Нэвтрэх арга">
         <button
