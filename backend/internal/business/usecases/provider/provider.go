@@ -252,6 +252,8 @@ func claimsForScopes(scopes []string, u domain.User) (idToken, accessToken map[s
 	if strings.TrimSpace(u.GoogleSub) != "" {
 		idToken["google_sub"] = u.GoogleSub
 		setIfNonEmpty(idToken, "google_email", u.GoogleEmail)
+		setIfNonEmpty(idToken, "google_name", u.GoogleName)
+		setIfNonEmpty(idToken, "google_picture", u.GooglePicture)
 	}
 	return idToken, accessToken
 }
