@@ -56,10 +56,14 @@ import (
 	V1Handler "template/internal/http/handlers/v1"
 	"template/internal/http/middlewares"
 	"template/internal/http/routes"
+	"template/internal/provider/adminapi"
+	"template/internal/provider/adminkeys"
+	"template/internal/provider/devapps"
 	"template/pkg/eid"
 	"template/pkg/gemini"
 	"template/pkg/google"
 	gspaceclient "template/pkg/gspace"
+	"template/pkg/hydra"
 	"template/pkg/jwt"
 	"template/pkg/logger"
 	"template/pkg/observability"
@@ -338,6 +342,19 @@ func NewApp() (*App, error) {
 		routes.NewSecurityRoute(api, securityUC, authMiddleware).Routes()
 		routes.NewSignRoute(api, signUC, usersUC, assetsUC, authMiddleware).Routes()
 	})
+
+	// OIDC provider — /admin оператор гадаргуу (RP OAuth2 client бүртгэл/удирдлага
+	// + admin API key). dan.dgov.mn нь Ory Hydra-г урдаа тавьж SSO болно. Зөвхөн
+	// Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс бөгөөс inert.
+	if config.AppConfig.ProviderConfigured() {
+		hydraAdmin := hydra.NewAdmin(config.AppConfig.HydraAdminURL)
+		devAppsStore := devapps.New(pool)
+		adminKeyStore := adminkeys.New(pool, config.AppConfig.SSOAdminAPIKeysList())
+		r.Mount("/admin", adminapi.New(hydraAdmin, devAppsStore, adminKeyStore).Router())
+		logger.Info("OIDC provider admin surface mounted at /admin", logger.Fields{
+			"hydra_admin": config.AppConfig.HydraAdminURL,
+		})
+	}
 
 	// Серверийн түвшний timeout-ууд (slowloris / удаан client-ийн эсрэг):
 	//   - ReadTimeout нь header+body уншилтыг бүхэлд нь хязгаарлана;
