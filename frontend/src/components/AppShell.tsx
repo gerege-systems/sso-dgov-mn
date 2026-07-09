@@ -119,7 +119,7 @@ const SYSTEMS: NavSystem[] = [
   {
     key: 'me',
     labelKey: 'sys.user',
-    brand: 'Me System',
+    brand: 'My System',
     icon: UserCircle,
     groups: [
       {
