@@ -9,12 +9,13 @@ export default async function OAuthErrorPage(props: {
 }) {
   const sp = await props.searchParams;
   return (
-    <main style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 600, color: '#b00020' }}>Нэвтрэлтийн алдаа</h1>
-      <p style={{ marginTop: 8 }}>{sp.error_description || sp.error || 'Тодорхойгүй алдаа'}</p>
-      <p style={{ marginTop: 16 }}>
-        <Link href="/">Нүүр хуудас руу буцах</Link>
+    <div className="card">
+      <div className="eyebrow">Алдаа</div>
+      <h1 className="title">Нэвтрэлтийн алдаа</h1>
+      <div className="alert alert-error">{sp.error_description || sp.error || 'Тодорхойгүй алдаа'}</div>
+      <p className="hint" style={{ marginTop: 16 }}>
+        <Link href="/">← Нүүр хуудас руу буцах</Link>
       </p>
-    </main>
+    </div>
   );
 }
