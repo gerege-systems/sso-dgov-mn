@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { ShieldCheck, RefreshCw, HelpCircle } from 'lucide-react';
 import Alert from '@/components/Alert';
@@ -43,7 +42,6 @@ type Phase = 'idle' | 'starting' | 'waiting' | 'expired' | 'refused' | 'error' |
 const POLL_INTERVAL_MS = 2500;
 
 export default function LoginForm({ next, notice, googleLink, googleError }: { next: string; notice?: string; googleLink?: boolean; googleError?: boolean }) {
-  const router = useRouter();
   const { T } = useT();
 
   const [method, setMethod] = useState<Method>('id');
@@ -93,8 +91,10 @@ export default function LoginForm({ next, notice, googleLink, googleError }: { n
       if (state === 'COMPLETE') {
         stopTimers();
         setPhase('success');
-        router.push(safeNext(next));
-        router.refresh();
+        // Бүтэн хуудас шилжилт — router.push+refresh нь энд race болж, шинэ
+        // session cookie-той хуудас руу заримдаа шилжихгүй "Шилжиж байна…"
+        // дээр гацдаг. Hard redirect нь session-ийг найдвартай ачаална.
+        window.location.assign(safeNext(next));
         return;
       }
       if (state === 'EXPIRED') {
@@ -109,7 +109,7 @@ export default function LoginForm({ next, notice, googleLink, googleError }: { n
       }
       // RUNNING — үргэлжлүүлэн хүлээнэ.
     },
-    [next, router, stopTimers],
+    [next, stopTimers],
   );
 
   // start өгөгдөл хүлээн авсны дараа poll болон expiry timer-уудыг тохируулна.
