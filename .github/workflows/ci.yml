@@ -86,4 +86,4 @@ jobs:
           echo "gitleaks v$ver"
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${ver}/gitleaks_${ver}_linux_x64.tar.gz" \
             | tar -xz gitleaks
-          ./gitleaks detect --no-git --source . --redact --no-banner
+          ./gitleaks detect --no-git --source . --config .gitleaks.toml --redact --no-banner

@@ -1,0 +1,16 @@
+# gitleaks config — CI secrets scan (see .github/workflows/ci.yml).
+# Extends the built-in ruleset and allowlists known non-secrets: dummy values
+# in Go test files and documented placeholders in *.env.example templates.
+# Real secrets live only in gitignored .env files and must never be committed.
+title = "gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixtures and documented example placeholders — not real secrets."
+paths = [
+  '''.*_test\.go$''',
+  '''.*\.env\.example$''',
+  '''.*\.env\.sample$''',
+]
