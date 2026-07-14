@@ -86,7 +86,7 @@ func (a *Admin) AcceptLogin(ctx context.Context, challenge string, body LoginAcc
 	return out.RedirectTo, err
 }
 
-func (a *Admin) RejectLogin(ctx context.Context, challenge string, errCode, errDescription string) (string, error) {
+func (a *Admin) RejectLogin(ctx context.Context, challenge, errCode, errDescription string) (string, error) {
 	body := map[string]string{
 		"error":             errCode,
 		"error_description": errDescription,
@@ -139,7 +139,7 @@ func (a *Admin) AcceptConsent(ctx context.Context, challenge string, body Consen
 	return out.RedirectTo, err
 }
 
-func (a *Admin) RejectConsent(ctx context.Context, challenge string, errCode, errDescription string) (string, error) {
+func (a *Admin) RejectConsent(ctx context.Context, challenge, errCode, errDescription string) (string, error) {
 	body := map[string]string{
 		"error":             errCode,
 		"error_description": errDescription,
