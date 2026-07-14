@@ -1432,7 +1432,10 @@ html[lang="en"] .i18n-banner { display: block; }
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-body);
-  overflow-x: hidden;
+  /* clip (биш hidden) — hidden нь scroll container үүсгэж .lp-nav-ийн
+     position: sticky-г эвддэг. clip нь хэвтээ халилтыг таслах хэрнээ
+     sticky-г ажиллуулна. */
+  overflow-x: clip;
 }
 .lp *,
 .lp *::before,
