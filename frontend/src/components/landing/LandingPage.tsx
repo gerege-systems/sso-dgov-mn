@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 import { useLang } from '@/lib/lang';
 import LoginForm from '@/app/login/LoginForm';
-import { landingCopy } from './copy';
+import { landingCopy, type LandingCopy } from './copy';
+import { deepMerge } from '@/lib/theme';
 
 // «Бүх боломж» хэсгийн жижиг картуудын icon-ууд (copy.ts-ийн items дараалалтай нэг эрэмбэ).
 const EVERYTHING_ICONS = [Fingerprint, Globe, KeyRound, ScrollText, CheckCircle2, Languages, Gauge, ShieldAlert];
@@ -21,6 +22,8 @@ interface Props {
   notice?: string;
   googleLink?: boolean;
   googleError?: boolean;
+  /** Идэвхтэй theme-ийн landing текст/цэс (mn/en) — copy.ts default дээр давхарлана. */
+  themeLanding?: { mn?: Partial<LandingCopy>; en?: Partial<LandingCopy> };
 }
 
 /**
@@ -29,9 +32,12 @@ interface Props {
  * картыг (SigninShell доторх `.signin-card` + LoginForm) шигтгэв. Брэнд токен
  * (DAN blue + gold, light/dark) дээр найруулав.
  */
-export default function LandingPage({ next, notice, googleLink, googleError }: Props) {
+export default function LandingPage({ next, notice, googleLink, googleError, themeLanding }: Props) {
   const { lang, setLang } = useLang();
-  const t = landingCopy[lang];
+  // Идэвхтэй theme-ийн текст байвал copy.ts default дээр гүн merge хийнэ.
+  const override = themeLanding?.[lang];
+  const t = override ? deepMerge(landingCopy[lang], override) : landingCopy[lang];
+  const brand = t.brand || 'DAN-Government SSO';
 
   return (
     <div className="lp">
@@ -41,7 +47,7 @@ export default function LandingPage({ next, notice, googleLink, googleError }: P
           <a className="lp-nav__brand" href="#top">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="lp-nav__mark" src="/brand.webp" alt="" aria-hidden="true" />
-            <span className="lp-nav__name">DAN-Government SSO</span>
+            <span className="lp-nav__name">{brand}</span>
           </a>
 
           <nav className="lp-nav__links" aria-label="Хэсгүүд">
@@ -290,7 +296,7 @@ export default function LandingPage({ next, notice, googleLink, googleError }: P
             <div className="lp-footer__mark">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/brand.webp" alt="" aria-hidden="true" />
-              <span>DAN-Government SSO</span>
+              <span>{brand}</span>
             </div>
             <p>{t.footer.tagline}</p>
           </div>

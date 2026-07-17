@@ -6,6 +6,8 @@
 // энд төвлөрүүлэв. Бүх түлхүүр хоёр хэлэнд адил байх ёстой (i18n.ts-тэй нэг зарчим).
 
 export interface LandingCopy {
+  /** Брэнд нэр (nav + footer). Хоосон бол 'DAN-Government SSO'. Theme-ээр солино. */
+  brand?: string;
   nav: { features: string; security: string; tech: string; login: string };
   hero: {
     badge: string;

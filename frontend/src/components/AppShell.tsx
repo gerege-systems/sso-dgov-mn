@@ -10,7 +10,7 @@ import {
   Users, ShieldHalf, UserCircle, Briefcase, Bot, Languages, Building2,
   ScrollText, ShieldAlert, CreditCard, KeyRound, Smartphone,
   Plug,
-  FileSignature, Gauge, Server, Route, Crown,
+  FileSignature, Gauge, Server, Route, Crown, Palette,
 } from 'lucide-react';
 import UserMenu from './UserMenu';
 import NavSearch, { type SearchItem } from './NavSearch';
@@ -79,6 +79,7 @@ const SYSTEMS: NavSystem[] = [
           { href: '/admin/core', labelKey: 'nav.coreSearch', icon: Search, perm: 'users.manage' },
           { href: '/admin/roles', labelKey: 'nav.roles', icon: ShieldHalf, perm: 'roles.manage' },
           { href: '/admin/settings', labelKey: 'nav.settings', icon: ShieldCheck, perm: 'settings.manage' },
+          { href: '/admin/themes', labelKey: 'themes.title', icon: Palette, perm: 'settings.manage' },
         ],
       },
       {
@@ -229,9 +230,9 @@ export default function AppShell({ user, children }: Props) {
   return (
     <div className={`shell2${collapsed ? ' is-collapsed' : ''}`}>
       <aside className="iconrail">
-        <Link href="/" className="iconrail__brand" aria-label="Government Template v3.0">
+        <Link href="/" className="iconrail__brand" aria-label="DAN-Government SSO">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand.webp" alt="Government Template v3.0" />
+          <img src="/brand.webp" alt="DAN-Government SSO" />
         </Link>
         <nav className="iconrail__nav" aria-label={T('shell.menu')}>
           {systems.map((s) => {

@@ -4,7 +4,7 @@ import type { Envelope, BackendUser, MeData, SessionUser } from './types';
 import { toSessionUser } from './types';
 import { getAccessToken, getRefreshToken, setSession, canPersistSession } from './session';
 
-// Серверийн талд gerege-backend-template-v27 рүү хандах цорын ганц цэг.
+// Серверийн талд backend рүү хандах цорын ганц цэг.
 // Browser энд хэзээ ч хүрэхгүй — зөвхөн route handler ба server component.
 
 const BASE = (process.env.BACKEND_URL ?? 'http://localhost:8080').replace(/\/$/, '') + '/api/v1';
@@ -46,7 +46,7 @@ export async function backendFetch<T>(path: string, init?: RequestInit): Promise
     return {
       ok: false,
       status: 503,
-      message: 'Backend-тэй холбогдож чадсангүй. gerege-backend-template-v27 ажиллаж байгаа эсэхийг шалгана уу.',
+      message: 'Backend-тэй холбогдож чадсангүй. DAN сервер ажиллаж байгаа эсэхийг шалгана уу.',
     };
   }
 
@@ -187,6 +187,16 @@ export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
   style: 'comfortable',
   theme: 'light',
 };
+
+/** GET /themes/active — нийтийн (auth-гүй) идэвхтэй landing theme-ийн config.
+ *  Landing SSR энэ config-оор харагдац (палетр/фонт/стиль/загвар) + бүх текст/цэс-
+ *  ийг рендерлэнэ. Backend унтарсан/theme байхгүй бол хоосон config (frontend нь
+ *  copy.ts + globals.css default-ээ хэрэглэнэ) — хуудас хэзээ ч унахгүй. */
+export async function fetchActiveTheme(): Promise<import('./theme').ThemeConfig> {
+  const r = await backendFetch<{ config?: unknown }>('/themes/active', { method: 'GET' });
+  const cfg = r.ok && r.data && typeof r.data.config === 'object' ? r.data.config : null;
+  return (cfg as import('./theme').ThemeConfig) ?? { appearance: {}, landing: {} };
+}
 
 /** GET /site/appearance — нийтийн (auth-гүй) харагдацын default. Landing SSR-д
  *  <html>-ийн эхний data-* болон bootstrap fallback-д ашиглана. Backend унтарсан

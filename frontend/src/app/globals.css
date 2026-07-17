@@ -171,6 +171,38 @@ html[data-theme="dark"][data-accent="custom"] {
 }
 
 /* ============================================================================
+   Landing theme — бүрэн палетр. Админ theme-ийн base токенуудыг (--bg --surface
+   --surface-2 --fg --muted --border --border-strong --dan-blue --gold --success
+   --danger) <html>-д inline тавихад hover/soft/text хувилбарыг эндээс color-mix-
+   ээр гаргана. ЗӨВХӨН нийтийн (landing/login) хуудсанд bootstrap data-theme-custom
+   тавина. --on-dan-blue цагаан хэвээр (админ хангалттай гүн danBlue сонгоно).
+   ============================================================================ */
+html[data-theme-custom] {
+  --dan-blue-hover:  color-mix(in oklab, var(--dan-blue), black 12%);
+  --dan-blue-active: color-mix(in oklab, var(--dan-blue), black 22%);
+  --dan-blue-soft:   color-mix(in oklab, var(--dan-blue), white 88%);
+  --dan-blue-text:   color-mix(in oklab, var(--dan-blue), black 10%);
+  --gold-soft:       color-mix(in oklab, var(--gold), white 88%);
+  --gold-text:       color-mix(in oklab, var(--gold), black 22%);
+  --success-soft:    color-mix(in oklab, var(--success), white 88%);
+  --danger-hover:    color-mix(in oklab, var(--danger), black 12%);
+  --danger-soft:     color-mix(in oklab, var(--danger), white 88%);
+  --faint:           color-mix(in oklab, var(--muted), var(--surface) 45%);
+}
+html[data-theme="dark"][data-theme-custom] {
+  --dan-blue-hover:  color-mix(in oklab, var(--dan-blue), white 12%);
+  --dan-blue-active: color-mix(in oklab, var(--dan-blue), white 24%);
+  --dan-blue-soft:   color-mix(in oklab, var(--dan-blue), black 62%);
+  --dan-blue-text:   color-mix(in oklab, var(--dan-blue), white 26%);
+  --gold-soft:       color-mix(in oklab, var(--gold), black 62%);
+  --gold-text:       color-mix(in oklab, var(--gold), white 20%);
+  --success-soft:    color-mix(in oklab, var(--success), black 62%);
+  --danger-hover:    color-mix(in oklab, var(--danger), white 12%);
+  --danger-soft:     color-mix(in oklab, var(--danger), black 62%);
+  --faint:           color-mix(in oklab, var(--muted), var(--surface) 45%);
+}
+
+/* ============================================================================
    Фонт — data-font нь эцсийн --font-display / --font-body-г бүхэлд нь дарж
    бичнэ. Гэр бүлүүд next/font-оор self-host (layout.tsx). Mono тогтмол.
    Анхдагч "inter" нь :root-ийн утга тул тусдаа блок хэрэггүй.
@@ -1941,3 +1973,61 @@ html[lang="en"] .i18n-banner { display: block; }
   color: var(--fg);
   margin-bottom: 14px;
 }
+
+/* ============================================================================
+   Landing theme builder (админ) — жагсаалт, засварлагч, preview
+   ============================================================================ */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: var(--radius-input);
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.icon-btn:hover { color: var(--fg); border-color: var(--border-strong); }
+.icon-btn--danger:hover { color: var(--danger); border-color: var(--danger); }
+
+.theme-list { display: grid; gap: 8px; }
+.theme-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-card);
+  background: var(--surface); flex-wrap: wrap;
+}
+.theme-row.is-active { border-color: var(--dan-blue); background: var(--dan-blue-soft); }
+.theme-row__main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.theme-row__name { font-weight: 600; font-size: 14px; color: var(--fg); }
+.theme-row__badge {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600;
+  color: var(--dan-blue-text); background: var(--surface); border-radius: var(--radius-chip);
+  padding: 2px 8px; border: 1px solid var(--dan-blue);
+}
+.theme-row__actions { display: flex; align-items: center; gap: 6px; }
+
+.theme-editor__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .theme-editor__grid { grid-template-columns: 1fr; } }
+
+.theme-section { border: 1px solid var(--border); border-radius: var(--radius-card); padding: 16px; display: grid; gap: 12px; }
+.theme-section > h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+
+.color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.color-field { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--fg); }
+
+.copy-group { display: grid; gap: 10px; }
+.copy-nest { border-left: 2px solid var(--border); padding-left: 12px; display: grid; gap: 8px; }
+.copy-nest__label { font-size: 12px; font-weight: 600; color: var(--dan-blue-text); text-transform: capitalize; }
+.copy-textarea { resize: vertical; font-size: 13px; line-height: 1.4; }
+.copy-array { display: grid; gap: 8px; }
+.copy-array__item { border: 1px dashed var(--border); border-radius: var(--radius-input); padding: 10px; display: grid; gap: 8px; }
+.copy-array__head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--muted); }
+
+/* Preview — draft палетрыг inline хувьсагчаар тусгана (sticky) */
+.theme-preview {
+  position: sticky; top: 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-card);
+  overflow: hidden; background: var(--bg); color: var(--fg);
+}
+.theme-preview__bar { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--surface-2); padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.theme-preview__body { padding: 22px; display: grid; gap: 12px; }
+.theme-preview__brand { font-weight: 700; font-size: 15px; }
+.theme-preview__hero { font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
+.theme-preview__lede { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin: 0; }
+.theme-preview__btn { display: inline-flex; align-items: center; padding: 9px 16px; border-radius: var(--radius-input); font-size: 13px; font-weight: 600; }
+.theme-preview__nav { font-size: 12.5px; color: var(--dan-blue-text); }
