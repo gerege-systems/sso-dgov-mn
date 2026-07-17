@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Inbox, X, Copy, Check, Settings2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Inbox, X, Copy, Check, Settings2, RefreshCw, Pencil } from 'lucide-react';
 import { getJSON, sendJSON, postJSON } from '@/lib/client';
 import type { GwService } from '@/lib/gatewayTypes';
 import type { Application, AppType } from '@/lib/applicationTypes';
@@ -131,13 +131,10 @@ export default function ApplicationsView() {
                   <td className="mono muted" style={{ wordBreak: 'break-all' }}>{a.client_id}</td>
                   <td><span className="badge badge--primary" style={{ fontSize: 11 }}>{typeLabel(a.app_type)}</span></td>
                   <td><Tags tags={a.tags} /></td>
-                  <td>
-                    <button className="btn btn--ghost btn--sm" type="button" onClick={() => setOpenId(openId === a.id ? null : a.id)}>
-                      <Settings2 size={14} /> {a.service_ids.length}
-                    </button>
-                  </td>
+                  <td><span className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Settings2 size={14} /> {a.service_ids.length}</span></td>
                   <td><EnabledChip enabled={a.enabled} /></td>
                   <td className="users-table__actions">
+                    <button className="btn btn--ghost btn--sm" type="button" title={T('apps.edit')} onClick={() => setOpenId(openId === a.id ? null : a.id)}><Pencil size={14} /></button>
                     <button className="btn btn--ghost btn--sm" type="button" title={T('apps.delete')} onClick={() => remove(a)}><Trash2 size={14} /></button>
                   </td>
                 </tr>
@@ -151,7 +148,7 @@ export default function ApplicationsView() {
         const app = items.find((a) => a.id === openId);
         if (!app) return null;
         return (
-          <ManagePanel
+          <EditPanel
             app={app}
             services={services}
             servicesLoading={svcQ.isPending}
@@ -214,25 +211,40 @@ function SecretBox({ app, onClose, clientIdLabel, secretLabel }: {
   );
 }
 
-// ManagePanel нь нэг application-ий зөвшөөрөгдсөн service-үүд + secret rotate-ийг удирдана.
-function ManagePanel({ app, services, servicesLoading, onClose, onChanged }: {
+// EditPanel нь нэг application-ийн бүх талбар (нэр/төрөл/redirect/tag/төлөв/
+// service) засах + secret rotate-ийг удирдана.
+function EditPanel({ app, services, servicesLoading, onClose, onChanged }: {
   app: Application; services: GwService[]; servicesLoading: boolean;
   onClose: () => void; onChanged: () => void;
 }) {
-  const { T } = useT();
+  const { T, lang } = useT();
+  const [name, setName] = useState(app.name);
+  const [appType, setAppType] = useState<AppType>(app.app_type);
+  const [redirects, setRedirects] = useState((app.redirect_uris ?? []).join(', '));
+  const [tags, setTags] = useState((app.tags ?? []).join(', '));
+  const [enabled, setEnabled] = useState(app.enabled);
   const [checked, setChecked] = useState<string[]>(app.service_ids);
   const [rotated, setRotated] = useState<Application | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [err, setErr] = useState('');
 
   const toggle = (id: string) =>
     setChecked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const saveServices = async () => {
-    setErr(''); setSaving(true);
-    const res = await sendJSON(`/api/applications/${app.id}/services`, 'PUT', { service_ids: checked });
+  const save = async () => {
+    setErr(''); setSaved(false); setSaving(true);
+    const res = await sendJSON(`/api/applications/${app.id}`, 'PUT', {
+      name,
+      app_type: appType,
+      redirect_uris: needsRedirect(appType) ? splitList(redirects) : [],
+      tags: splitList(tags),
+      service_ids: checked,
+      enabled,
+    });
     setSaving(false);
-    if (res.ok) onChanged(); else setErr(res.message || T('apps.saveErr'));
+    if (res.ok) { setSaved(true); onChanged(); }
+    else setErr(res.message || T('apps.saveErr'));
   };
 
   const rotate = async () => {
@@ -246,27 +258,51 @@ function ManagePanel({ app, services, servicesLoading, onClose, onChanged }: {
   return (
     <section className="card" style={{ padding: 18, marginTop: 16, borderTop: '3px solid var(--dan-blue-text, #2563eb)' }}>
       <div className="card__head card__head--with-sub">
-        <div className="card__title"><Settings2 size={18} style={{ color: 'var(--dan-blue-text)' }} /><h2>{app.name}</h2></div>
+        <div className="card__title"><Pencil size={18} style={{ color: 'var(--dan-blue-text)' }} /><h2>{app.name}</h2></div>
         <button className="btn btn--ghost btn--sm" type="button" onClick={onClose}><X size={14} /> {T('apps.close')}</button>
       </div>
 
       {err && <div className="alert alert--danger" role="alert">{err}</div>}
-
+      {saved && <div className="alert alert--success" role="status">{T('apps.saved')}</div>}
       {rotated && <SecretBox app={rotated} onClose={() => setRotated(null)} clientIdLabel={T('apps.clientId')} secretLabel={T('apps.secretOnce')} />}
 
-      <div style={{ margin: '8px 0 14px' }}>
-        <span className="sidepanel__group-label" style={{ display: 'block', marginBottom: 6 }}>{T('apps.services')}</span>
-        <ServiceChecklist services={services} loading={servicesLoading} checked={checked} onToggle={toggle} emptyLabel={T('apps.noServices')} />
-        <div style={{ marginTop: 10 }}>
-          <button className="btn btn--primary btn--sm" type="button" onClick={saveServices} disabled={saving}>{T('apps.save')}</button>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 12, marginTop: 8 }}>
+        <label>{T('apps.name')}
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label>{T('apps.type')}
+          <select className="input" value={appType} onChange={(e) => setAppType(e.target.value as AppType)}>
+            {APP_TYPES.map((t) => <option key={t.value} value={t.value}>{lang === 'en' ? t.en : t.mn}</option>)}
+          </select>
+        </label>
+        <label>{T('apps.tags')}
+          <input className="input" value={tags} onChange={(e) => setTags(e.target.value)} />
+        </label>
       </div>
 
-      {isConfidential(app.app_type) && (
-        <div style={{ borderTop: '1px solid var(--border,#e5e7eb)', paddingTop: 12 }}>
-          <button className="btn btn--ghost btn--sm" type="button" onClick={rotate}><RefreshCw size={14} /> {T('apps.rotateSecret')}</button>
-        </div>
+      {needsRedirect(appType) && (
+        <label style={{ display: 'block', marginTop: 12 }}>{T('apps.redirectUris')}
+          <textarea className="input" rows={3} value={redirects} onChange={(e) => setRedirects(e.target.value)} />
+          <span className="muted" style={{ fontSize: 12 }}>{T('apps.redirectHint')}</span>
+        </label>
       )}
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+        <span>{T('apps.enabledField')}</span>
+      </label>
+
+      <div style={{ marginTop: 12 }}>
+        <span className="sidepanel__group-label" style={{ display: 'block', marginBottom: 6 }}>{T('apps.services')}</span>
+        <ServiceChecklist services={services} loading={servicesLoading} checked={checked} onToggle={toggle} emptyLabel={T('apps.noServices')} />
+      </div>
+
+      <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn btn--primary btn--sm" type="button" onClick={save} disabled={saving || !name}>{T('apps.save')}</button>
+        {isConfidential(app.app_type) && (
+          <button className="btn btn--ghost btn--sm" type="button" onClick={rotate}><RefreshCw size={14} /> {T('apps.rotateSecret')}</button>
+        )}
+      </div>
     </section>
   );
 }

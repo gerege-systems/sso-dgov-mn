@@ -9,6 +9,13 @@ import { Loading, EnabledChip, Tags, splitList } from './gwShared';
 
 const empty = { name: '', protocol: 'https', host: '', port: 443, path: '/', tags: '' };
 
+// upstreamURL нь default портыг (https→443, http→80) харуулахгүй — эдгээр нь
+// протоколын анхдагч тул илүүц.
+function upstreamURL(protocol: string, host: string, port: number, path: string): string {
+  const isDefault = (protocol === 'https' && port === 443) || (protocol === 'http' && port === 80);
+  return `${protocol}://${host}${isDefault ? '' : `:${port}`}${path}`;
+}
+
 export default function GatewayServicesView() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
@@ -90,7 +97,7 @@ export default function GatewayServicesView() {
               {items.map((s) => (
                 <tr key={s.id}>
                   <td>{s.name}</td>
-                  <td className="mono">{s.protocol}://{s.host}:{s.port}{s.path}</td>
+                  <td className="mono">{upstreamURL(s.protocol, s.host, s.port, s.path)}</td>
                   <td><Tags tags={s.tags} /></td>
                   <td><EnabledChip enabled={s.enabled} /></td>
                   <td className="users-table__actions">
