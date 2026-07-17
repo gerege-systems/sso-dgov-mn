@@ -1,5 +1,5 @@
 import React from 'react';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
 import { LangProvider } from '@/lib/lang';
 import Providers from '@/components/Providers';
@@ -27,6 +27,15 @@ const jbMono = JetBrains_Mono({
   display: 'swap',
 });
 
+// Сонголттой serif гэр бүл — html[data-font="serif"] үед --font-serif-stack-аар
+// display/body-д тэжээгдэнэ. next/font build-time host хийдэг тул CSP 'self' хэвээр.
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-serif-stack',
+  display: 'swap',
+});
+
 export const metadata = {
   title: 'DAN-Government SSO',
   description:
@@ -37,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="mn"
-      className={`${inter.variable} ${interBody.variable} ${jbMono.variable}`}
+      className={`${inter.variable} ${interBody.variable} ${jbMono.variable} ${sourceSerif.variable}`}
       // theme-bootstrap.js нь hydration-аас өмнө <html>-д data-theme-pref
       // тавьдаг тул server/client attribute зөрүүгийн warning-ийг дарна.
       suppressHydrationWarning

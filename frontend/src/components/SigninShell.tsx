@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AnonThemeToggle from './AnonThemeToggle';
+import AnonAppearanceMenu from './AnonAppearanceMenu';
 
 interface Props {
   /** topbar баруун талын нэмэлт навигаци (анхдагч: загвар солигч). */
@@ -24,7 +25,12 @@ export default function SigninShell({ rightNav, hideFooter, children }: Props) {
             <span className="topbar__brand-name">DAN-Government SSO</span>
           </div>
         </Link>
-        {rightNav ?? <AnonThemeToggle />}
+        {rightNav ?? (
+          <div className="signin-shell__actions">
+            <AnonAppearanceMenu />
+            <AnonThemeToggle />
+          </div>
+        )}
       </header>
 
       <main className="signin-shell__body">{children}</main>

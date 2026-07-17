@@ -18,5 +18,16 @@
     var lang = localStorage.getItem('gerege.lang');
     if (lang !== 'mn' && lang !== 'en') lang = 'mn';
     document.documentElement.setAttribute('lang', lang);
+
+    /* Харагдац — өнгө/фонт/нягтрал. preferences.ts дахь DEFAULTS/VALID-тэй нийцүүлнэ. */
+    var accent = localStorage.getItem('gerege.accent');
+    if (['cobalt', 'teal', 'violet', 'emerald', 'amber'].indexOf(accent) === -1) accent = 'cobalt';
+    document.documentElement.setAttribute('data-accent', accent);
+    var font = localStorage.getItem('gerege.font');
+    if (['inter', 'serif', 'system'].indexOf(font) === -1) font = 'inter';
+    document.documentElement.setAttribute('data-font', font);
+    var style = localStorage.getItem('gerege.style');
+    if (['comfortable', 'compact'].indexOf(style) === -1) style = 'comfortable';
+    document.documentElement.setAttribute('data-style', style);
   } catch (e) {}
 })();

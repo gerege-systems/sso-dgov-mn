@@ -1727,3 +1727,85 @@ html[lang="en"] .i18n-banner { display: block; }
   .lp-btn, .lp-card, .lp-mini { transition: none; }
   .lp-card:hover, .lp-mini:hover, .lp-btn:active { transform: none; }
 }
+
+/* ============================================================================
+   Харагдацын удирдлагууд (AppearanceControls) — өнгө/фонт/нягтрал
+   ============================================================================ */
+.appearance { display: grid; gap: 16px; }
+.appearance__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.appearance__label { font-size: 14px; font-weight: 500; color: var(--fg); }
+
+.accent-swatches { display: flex; gap: 8px; }
+.accent-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-dan-blue);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.accent-swatch:hover { transform: scale(1.08); }
+.accent-swatch.is-active { border-color: var(--fg); }
+.accent-swatch:focus-visible {
+  outline: 2px solid var(--dan-blue);
+  outline-offset: 2px;
+}
+/* Swatch өнгө нь тухайн accent-ийн гэгээн загварын --dan-blue-тэй тэнцүү.
+   Токен биш тогтмол утга (тухайн swatch-ийн танигдах өнгө) — accent-аас
+   хамааралгүй байх ёстой тул зориуд энд хатуу бичив. */
+.accent-swatch[data-swatch="cobalt"]  { background: oklch(53% 0.21 257); }
+.accent-swatch[data-swatch="teal"]    { background: oklch(58% 0.13 195); }
+.accent-swatch[data-swatch="violet"]  { background: oklch(52% 0.20 292); }
+.accent-swatch[data-swatch="emerald"] { background: oklch(56% 0.14 158); }
+.accent-swatch[data-swatch="amber"]   { background: oklch(58% 0.15 62); }
+
+/* Нэвтрэхээс өмнөх topbar — харагдац цэс + загвар солигчийг зэрэгцүүлнэ */
+.signin-shell__actions { display: flex; align-items: center; gap: 8px; }
+
+.anon-appearance { position: relative; }
+.anon-appearance__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.anon-appearance__trigger:hover { color: var(--fg); border-color: var(--border-strong); }
+.anon-appearance.is-open .anon-appearance__trigger { color: var(--dan-blue-text); border-color: var(--dan-blue); }
+.anon-appearance__trigger:focus-visible { outline: 2px solid var(--dan-blue); outline-offset: 2px; }
+
+.anon-appearance__popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 280px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-menu);
+  padding: 16px;
+  z-index: 60;
+  transform-origin: top right;
+  animation: user-menu-in 0.14s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.anon-appearance__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 14px;
+}
