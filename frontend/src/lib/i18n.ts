@@ -495,8 +495,8 @@ export const dict = {
     'theme.dark': 'Харанхуй',
     'theme.system': 'Систем',
     // Админ — сайтын нийтийн харагдац
-    'site.appearance.title': 'Сайтын харагдац',
-    'site.appearance.sub': 'Нүүр болон бүх зочинд хэрэглэх default өнгө, фонт, нягтрал, загвар. Хэрэглэгч өөрийн тохиргоогоор дарж болно.',
+    'site.appearance.title': 'Нийтийн хуудасны харагдац',
+    'site.appearance.sub': 'Нэвтрээгүй зочны нүүр (landing) болон нэвтрэх хуудасны өнгө, фонт, нягтрал, загвар. Нэвтэрсэн хэрэглэгч апп дотроо өөрийн тохиргоог хэрэглэнэ.',
     'site.appearance.accent': 'Өнгөний хослол',
     'site.appearance.custom': 'Дурын өнгө',
     'site.appearance.font': 'Фонт',
@@ -985,8 +985,8 @@ export const dict = {
     'theme.dark': 'Dark',
     'theme.system': 'System',
     // Admin — site-wide appearance
-    'site.appearance.title': 'Site appearance',
-    'site.appearance.sub': 'Default color, font, density and theme for the landing page and all visitors. Users can still override with their own settings.',
+    'site.appearance.title': 'Public pages appearance',
+    'site.appearance.sub': 'Color, font, density and theme for the public landing and login pages. Signed-in users control their own appearance inside the app.',
     'site.appearance.accent': 'Accent color',
     'site.appearance.custom': 'Custom color',
     'site.appearance.font': 'Font',

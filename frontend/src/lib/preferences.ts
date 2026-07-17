@@ -91,18 +91,13 @@ export function usePreferences() {
   const [style, setStyleState] = useState<StylePref>(DEFAULTS.style);
 
   useEffect(() => {
-    // localStorage хоосон үед админы сайт-default-ыг (window.__SITE_APPEARANCE__)
-    // fallback болгоно — ингэснээр хэрэглэгч өөрөө сонгоогүй үед тохиргооны UI
-    // админы default-ыг "идэвхтэй" харуулна. Custom hex accent нь preset биш
-    // тул VALID-д ороогүй → cobalt-руу автоматаар буурна (preset swatch л бий).
-    const sa = (window as unknown as { __SITE_APPEARANCE__?: Partial<Record<'accent' | 'font' | 'style' | 'theme', string>> }).__SITE_APPEARANCE__ ?? {};
-    const fb = <T extends string>(v: string | undefined, valid: Set<T>, def: T): T =>
-      (v && valid.has(v as T) ? (v as T) : def);
-    setThemeState(read(KEYS.theme, fb(sa.theme, VALID.theme, DEFAULTS.theme), VALID.theme));
+    // Хэрэглэгчийн тохиргоо нь ЗӨВХӨН нэвтэрсэн апп-д үйлчилнэ (админы сайт-
+    // default-аас хамааралгүй). localStorage хоосон бол template default.
+    setThemeState(read(KEYS.theme, DEFAULTS.theme, VALID.theme));
     setLangState(read(KEYS.lang, DEFAULTS.lang, VALID.lang));
-    setAccentState(read(KEYS.accent, fb(sa.accent, VALID.accent, DEFAULTS.accent), VALID.accent));
-    setFontState(read(KEYS.font, fb(sa.font, VALID.font, DEFAULTS.font), VALID.font));
-    setStyleState(read(KEYS.style, fb(sa.style, VALID.style, DEFAULTS.style), VALID.style));
+    setAccentState(read(KEYS.accent, DEFAULTS.accent, VALID.accent));
+    setFontState(read(KEYS.font, DEFAULTS.font, VALID.font));
+    setStyleState(read(KEYS.style, DEFAULTS.style, VALID.style));
   }, []);
 
   // OS загвар солигдоход "system" дээр байвал дахин тусгана.

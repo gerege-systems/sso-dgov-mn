@@ -44,22 +44,13 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Сайтын нийтийн харагдацын default-ыг backend-ээс уншина (админ тохируулна).
-  // <html>-д server талд тавьснаар анхны зурагт FOUC-гүй харагдана; bootstrap
-  // дараа нь хэрэглэгчийн өөрийн (localStorage) сонголтоор дарж болно.
+  // Админы сайт-харагдацыг client рүү дамжуулна. Үүнийг ЗӨВХӨН нийтийн хуудсанд
+  // (landing/login) хэрэглэнэ — хэрэглэх/эс хэрэглэхийг theme-bootstrap.js зам
+  // (pathname) харгалзан шийднэ. SSR-д <html>-д bake хийхгүй: нэвтэрсэн апп-д
+  // админ утга анивчихаас сэргийлнэ; блоклогч bootstrap FOUC-ийг хамгаална.
+  // Утгууд backend-д баталгаажсан (preset/hex/enum) тул аюулгүй; '<'-г escape
+  // хийж </script> тасалдлаас сэргийлнэ.
   const site = await fetchSiteAppearance();
-  const accentIsHex = site.accent.startsWith('#');
-  const htmlAttrs: Record<string, string> = {
-    'data-accent': accentIsHex ? 'custom' : site.accent,
-    'data-font': site.font,
-    'data-style': site.style,
-  };
-  // Dark-ийг л server талд тодорхойлж болно (system нь client дээр шийдэгдэнэ).
-  if (site.theme === 'dark') htmlAttrs['data-theme'] = 'dark';
-
-  // window.__SITE_APPEARANCE__ — bootstrap болон preferences.ts fallback-д
-  // ашиглана. Утгууд нь backend-д баталгаажсан (preset/hex/enum) тул аюулгүй;
-  // '<'-г escape хийж </script> тасалдлаас сэргийлнэ.
   const siteJson = JSON.stringify(site).replace(/</g, '\\u003c');
 
   return (
@@ -69,14 +60,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       // theme-bootstrap.js нь hydration-аас өмнө <html>-д data-* тавьдаг тул
       // server/client attribute зөрүүгийн warning-ийг дарна.
       suppressHydrationWarning
-      style={accentIsHex ? ({ '--dan-blue-base': site.accent } as React.CSSProperties) : undefined}
-      {...htmlAttrs}
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="light dark" />
         <link rel="icon" type="image/webp" href="/brand.webp" />
-        {/* Админы тохируулсан сайтын default — bootstrap үүнийг fallback болгоно. */}
+        {/* Админы сайт-харагдац (зөвхөн нийтийн хуудсанд bootstrap хэрэглэнэ). */}
         <script dangerouslySetInnerHTML={{ __html: `window.__SITE_APPEARANCE__=${siteJson};` }} />
         {/* FOUC-аас сэргийлэх — гадаад блоклогч script (public/theme-bootstrap.js).
             Статик, адил-origin, 0.5KB файл тул XSS / гуравдагч талын эрсдэлгүй;

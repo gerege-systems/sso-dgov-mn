@@ -9,7 +9,6 @@ import {
   LogIn, Languages, KeyRound, ScrollText, Globe, Gauge, ShieldAlert,
 } from 'lucide-react';
 import { useLang } from '@/lib/lang';
-import AnonThemeToggle from '@/components/AnonThemeToggle';
 import LoginForm from '@/app/login/LoginForm';
 import { landingCopy } from './copy';
 
@@ -61,7 +60,6 @@ export default function LandingPage({ next, notice, googleLink, googleError }: P
               <Languages size={15} strokeWidth={2} />
               <span>{lang === 'mn' ? 'EN' : 'МН'}</span>
             </button>
-            <AnonThemeToggle />
             <a className="lp-btn lp-btn--gold lp-btn--sm" href="#login">
               <LogIn size={16} strokeWidth={2} />
               <span>{t.nav.login}</span>
