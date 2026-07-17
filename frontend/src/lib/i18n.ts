@@ -6,6 +6,7 @@ export type Lang = 'mn' | 'en';
 export const dict = {
   mn: {
     // Систем / цэс
+    'sys.superadmin': 'Супер админ систем',
     'sys.admin': 'Админ систем',
     'sys.manager': 'Менежер систем',
     'sys.user': 'Миний систем',
@@ -621,6 +622,7 @@ export const dict = {
     'themes.editorTitle': 'Загвар засварлагч',
   },
   en: {
+    'sys.superadmin': 'Super Admin system',
     'sys.admin': 'Admin system',
     'sys.manager': 'Manager system',
     'sys.user': 'My System',
