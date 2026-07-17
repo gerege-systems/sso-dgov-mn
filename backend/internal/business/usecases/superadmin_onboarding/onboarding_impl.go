@@ -53,16 +53,17 @@ type Config struct {
 // Architecture-ийн дүрэмд нийцнэ (usecase → repositories/interface) бөгөөд
 // нэвтрэхээс өмнөх (pre-auth) урсгал тул service RLS дор ажиллана.
 type usecase struct {
-	google     GoogleClient
-	eid        eid.Client
-	verifier   verify.Sender
-	users      repointerface.UserRepository
-	recovery   repointerface.RecoveryCodeRepository
-	invites    repointerface.SuperadminInviteRepository
-	jwtService jwt.JWTService
-	redisCache caches.RedisCache
-	cipher     *crypto.Cipher
-	cfg        Config
+	google          GoogleClient
+	eid             eid.Client
+	verifier        verify.Sender
+	users           repointerface.UserRepository
+	recovery        repointerface.RecoveryCodeRepository
+	superadminAccts repointerface.SuperadminAccountRepository
+	invites         repointerface.SuperadminInviteRepository
+	jwtService      jwt.JWTService
+	redisCache      caches.RedisCache
+	cipher          *crypto.Cipher
+	cfg             Config
 }
 
 // NewUsecase нь onboarding урсгалуудыг холбоно. encKey нь TOTP secret-ийг
@@ -74,6 +75,7 @@ func NewUsecase(
 	verifier verify.Sender,
 	usersRepo repointerface.UserRepository,
 	recoveryRepo repointerface.RecoveryCodeRepository,
+	superadminAcctsRepo repointerface.SuperadminAccountRepository,
 	invitesRepo repointerface.SuperadminInviteRepository,
 	jwtService jwt.JWTService,
 	redisCache caches.RedisCache,
@@ -97,16 +99,17 @@ func NewUsecase(
 		cfg.Issuer = "DAN-Government SSO"
 	}
 	return &usecase{
-		google:     googleClient,
-		eid:        eidClient,
-		verifier:   verifier,
-		users:      usersRepo,
-		recovery:   recoveryRepo,
-		invites:    invitesRepo,
-		jwtService: jwtService,
-		redisCache: redisCache,
-		cipher:     cipher,
-		cfg:        cfg,
+		google:          googleClient,
+		eid:             eidClient,
+		verifier:        verifier,
+		users:           usersRepo,
+		recovery:        recoveryRepo,
+		superadminAccts: superadminAcctsRepo,
+		invites:         invitesRepo,
+		jwtService:      jwtService,
+		redisCache:      redisCache,
+		cipher:          cipher,
+		cfg:             cfg,
 	}, nil
 }
 

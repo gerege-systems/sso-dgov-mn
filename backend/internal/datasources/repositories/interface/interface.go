@@ -103,14 +103,24 @@ type UserRepository interface {
 	// SetLatinName нь хэрэглэгчийн латин нэрийг (first_name_en/last_name_en) гараар засна.
 	SetLatinName(ctx context.Context, userID, firstEn, lastEn string) error
 	// UpsertSuperAdmin нь superadmin onboarding-ийн ТӨГСГӨЛД (Google + eID +
-	// email OTP + TOTP бүгд баталгаажсаны дараа) super admin хэрэглэгчийг
-	// үүсгэх/ахиулах. Түлхүүр нь UpsertFromEID-ийн адил civil_id: тухайн иргэн
-	// аль хэдийн eID-ээр нэвтэрч байсан бол мөрийг нь ахиулж (role_id,
-	// email/email_verified, mfa_enabled, totp_secret, Google профайл), эс бөгөөс
-	// шинэ идэвхтэй super admin мөр оруулна. totp_secret нь usecase давхаргад
-	// AES-GCM-ээр шифрлэгдсэн ирнэ (энд ил текст ХЭЗЭЭ Ч бичигдэхгүй).
-	// Давхардсан email/google_sub нь apperror.Conflict болж гарна.
-	UpsertSuperAdmin(ctx context.Context, in *domain.User) (domain.User, error)
+	// email OTP + TOTP бүгд баталгаажсаны дараа) super admin хэрэглэгчийг НЭГ
+	// ТРАНЗАКЦИД үүсгэх/ахиулна: users мөр (google_sub-аар түлхүүрлэсэн, role_id=1,
+	// civil_id/MFA НЭ) + superadmin_accounts satellite мөр (civil_id/national_id,
+	// email_verified, mfa_enabled, шифрлэгдсэн totp_secret, invited_by, onboarded_at).
+	// civil_id-г users-д ТАВИХГҮЙ тул нэг хүн eID-ээр admin, Google-оор super admin
+	// байж чадна (civil_id partial unique index зөрчихгүй). totp_secret нь usecase
+	// давхаргад AES-GCM-ээр шифрлэгдсэн ирнэ. Давхардсан email/google_sub нь
+	// apperror.Conflict болно. Буцаах user нь account-ийн MFA утгуудаар hydrate хийгдсэн.
+	UpsertSuperAdmin(ctx context.Context, in *domain.User, account *domain.SuperadminAccount) (domain.User, error)
+}
+
+// SuperadminAccountRepository нь super admin-ы satellite бүртгэлийн (superadmin_accounts)
+// READ gateway юм. Хүснэгт нь эмзэг тул RLS-тэй (service/admin). Бичилтийг
+// UserRepository.UpsertSuperAdmin нь users мөртэй нэг транзакцид хийдэг.
+type SuperadminAccountRepository interface {
+	// Get нь user_id-аар super admin бүртгэлийг буцаана (MFA challenge-д TOTP
+	// secret-ыг авах). Байхгүй бол apperror.NotFound.
+	Get(ctx context.Context, userID string) (domain.SuperadminAccount, error)
 }
 
 // RecoveryCodeRepository нь 2FA нөөц кодуудын (user_recovery_codes) gateway юм.

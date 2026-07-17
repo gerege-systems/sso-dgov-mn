@@ -45,16 +45,15 @@ type Users struct {
 	GoogleName          *string    `db:"google_name"`
 	GooglePicture       *string    `db:"google_picture"`
 	GoogleLinkedAt      *time.Time `db:"google_linked_at"`
-	EmailVerified       bool       `db:"email_verified"`
-	MFAEnabled          bool       `db:"mfa_enabled"`
-	TOTPSecret          *string    `db:"totp_secret"`
-	CreatedAt           time.Time  `db:"created_at"`
-	UpdatedAt           *time.Time `db:"updated_at"`
-	DeletedAt           *time.Time `db:"deleted_at"`
-	PasswordChangedAt   *time.Time `db:"password_changed_at"`
+	// email_verified / mfa_enabled / totp_secret нь super admin-ы бүртгэлийн дата
+	// тул superadmin_accounts хүснэгтэд шилжсэн (migration 37) — энд байхгүй.
+	CreatedAt         time.Time  `db:"created_at"`
+	UpdatedAt         *time.Time `db:"updated_at"`
+	DeletedAt         *time.Time `db:"deleted_at"`
+	PasswordChangedAt *time.Time `db:"password_changed_at"`
 }
 
 // UserColumns нь SELECT/RETURNING-д ашиглах баганануудын жагсаалт —
 // pgx.RowToStructByName нь нэрээр тааруулдаг тул query-уудыг тогтвортой
 // байлгахаар нэг эх сурвалжид төвлөрүүлэв.
-const UserColumns = "id, username, first_name, last_name, first_name_en, last_name_en, email, password, active, role_id, national_id, civil_id, kyc_level, document_number, cert_serial, cert_not_before, cert_not_after, cert_issuer, cert_key_type, google_sub, google_email, google_email_verified, google_name, google_picture, google_linked_at, email_verified, mfa_enabled, totp_secret, created_at, updated_at, deleted_at, password_changed_at"
+const UserColumns = "id, username, first_name, last_name, first_name_en, last_name_en, email, password, active, role_id, national_id, civil_id, kyc_level, document_number, cert_serial, cert_not_before, cert_not_after, cert_issuer, cert_key_type, google_sub, google_email, google_email_verified, google_name, google_picture, google_linked_at, created_at, updated_at, deleted_at, password_changed_at"
