@@ -20,6 +20,11 @@ import (
 	"template/pkg/validators"
 )
 
+// gspaceUploadBodyMax нь /v1/gspace/upload-ийн JSON body-ийн дээд хэмжээ.
+// Файл base64-ээр дамждаг тул 2 MB quota-д base64(≈4/3)+JSON overhead нэмээд
+// 4 MiB тавина — эс бөгөөс default 1 MiB body cap файлыг ~750 KB дээр таслана.
+const gspaceUploadBodyMax int64 = 4 << 20
+
 type Handler struct {
 	usecase gspaceuc.Usecase
 }
@@ -71,7 +76,10 @@ func (h Handler) Upload(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 	var req requests.GSpaceUploadRequest
-	if err := v1.DecodeBody(r, &req); err != nil {
+	// Файл base64-ээр JSON body дотор ирдэг тул default 1 MiB нь ~750 KB-аас том
+	// файлыг таслаж, 2 MB quota-г хүрэхгүй болгодог. base64(2 MB)+JSON overhead-д
+	// хүрэлцэхүйц 4 MiB cap тавина (бодит хэмжээ/quota-г usecase шалгана).
+	if err := v1.DecodeBodyLimit(r, &req, gspaceUploadBodyMax); err != nil {
 		return v1.NewErrorResponse(w, r, http.StatusBadRequest, "invalid request body")
 	}
 	if err := validators.ValidatePayloads(req); err != nil {

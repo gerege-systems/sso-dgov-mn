@@ -49,8 +49,26 @@ func TestRefresh(t *testing.T) {
 				// Хуучин jti-г эхэнд нь GetDel-ээр атомаар уншиж-устгана
 				// (single-use); хоосон бус утга → токен амьд байсан.
 				f.redis.On("GetDel", mock.Anything, "refresh:"+oldJTI).Return(oldJTI, nil).Once()
-				f.users.On("GetByEmail", mock.Anything, users.GetByEmailRequest{Email: user.Email}).Return(users.GetByEmailResponse{User: user}, nil).Once()
+				f.users.On("GetByID", mock.Anything, users.GetByIDRequest{ID: user.ID}).Return(users.GetByIDResponse{User: user}, nil).Once()
 				f.jwt.On("GenerateTokenPair", user.ID, false, user.RoleID, user.Email).Return(samplePair(), nil).Once()
+				f.redis.On("Set", mock.Anything, "refresh:refresh-jti", "refresh-jti").Return(nil).Once()
+				f.redis.On("Expire", mock.Anything, "refresh:refresh-jti", mock.AnythingOfType("time.Duration")).Return(nil).Once()
+			},
+		},
+		{
+			// eID хэрэглэгч email-гүй (NULL) — identity-г UserID-аар шинэчлэх
+			// ёстой. Хуучин зан төлөв (GetByEmail) энд хоосон email-ээр хайж
+			// NotFound авч бүх eID session-ийг эвдэж байсан.
+			name:  "eID user with empty email refreshes via UserID lookup",
+			token: "eid-refresh-tok",
+			setup: func(f *fixture) {
+				user := activeUser(t)
+				user.Email = ""
+				oldJTI := "eid-jti"
+				f.jwt.On("ParseRefreshToken", "eid-refresh-tok").Return(refreshClaims(oldJTI, ""), nil).Once()
+				f.redis.On("GetDel", mock.Anything, "refresh:"+oldJTI).Return(oldJTI, nil).Once()
+				f.users.On("GetByID", mock.Anything, users.GetByIDRequest{ID: user.ID}).Return(users.GetByIDResponse{User: user}, nil).Once()
+				f.jwt.On("GenerateTokenPair", user.ID, false, user.RoleID, "").Return(samplePair(), nil).Once()
 				f.redis.On("Set", mock.Anything, "refresh:refresh-jti", "refresh-jti").Return(nil).Once()
 				f.redis.On("Expire", mock.Anything, "refresh:refresh-jti", mock.AnythingOfType("time.Duration")).Return(nil).Once()
 			},

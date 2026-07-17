@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Content-Security-Policy: бодит, ажиллах боломжтой бодлого.
 // - script-src: 'self' нь /theme-bootstrap.js (same-origin) болон Next.js-ийн
@@ -33,6 +37,7 @@ const nextConfig = {
   // Standalone output → slim production Docker image (server.js + minimal
   // node_modules) instead of shipping the whole tree. See frontend/Dockerfile.
   output: 'standalone',
+  outputFileTracingRoot: __dirname,
   // iOS Universal Links — Apple нь /.well-known/apple-app-site-association-ыг
   // татдаг. Next.js dot-folder route-ыг найдваргүй тул /api/aasa руу rewrite хийнэ.
   async rewrites() {
