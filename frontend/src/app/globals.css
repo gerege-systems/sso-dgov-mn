@@ -87,6 +87,101 @@ html[data-theme="dark"] {
   --shadow-menu: 0 12px 32px oklch(6% 0.005 260 / 0.55), 0 2px 6px oklch(2% 0 0 / 0.4);
 }
 
+/* ============================================================================
+   Өнгөний хослол (accent) — ЗӨВХӨН brand (--dan-blue*) токенуудыг сольдог.
+   Семантик өнгө (--gold итгэл, --success, --danger) хамаарахгүй — утга тогтмол.
+   Анхдагч "cobalt" нь :root/dark дахь утга тул тусдаа блок хэрэггүй.
+   Гэгээн загварын override-ууд эхэлж, дараа нь тод байдлаар тохируулсан
+   харанхуй загварын өндөр-тодорхойлолттой override-ууд ирнэ (эс тэгвээс
+   dark+accent дээр гэгээн утга давхцана).
+   ============================================================================ */
+html[data-accent="teal"] {
+  --dan-blue:        oklch(58% 0.13 195);
+  --dan-blue-hover:  oklch(53% 0.14 195);
+  --dan-blue-active: oklch(48% 0.15 195);
+  --dan-blue-soft:   oklch(95% 0.03 195);
+  --dan-blue-text:   oklch(52% 0.13 195);
+}
+html[data-accent="violet"] {
+  --dan-blue:        oklch(52% 0.20 292);
+  --dan-blue-hover:  oklch(47% 0.21 292);
+  --dan-blue-active: oklch(42% 0.22 292);
+  --dan-blue-soft:   oklch(95% 0.035 292);
+  --dan-blue-text:   oklch(50% 0.21 292);
+}
+html[data-accent="emerald"] {
+  --dan-blue:        oklch(56% 0.14 158);
+  --dan-blue-hover:  oklch(51% 0.15 158);
+  --dan-blue-active: oklch(46% 0.16 158);
+  --dan-blue-soft:   oklch(95% 0.035 158);
+  --dan-blue-text:   oklch(52% 0.14 158);
+}
+html[data-accent="amber"] {
+  --dan-blue:        oklch(58% 0.15 62);
+  --dan-blue-hover:  oklch(53% 0.16 62);
+  --dan-blue-active: oklch(48% 0.16 62);
+  --dan-blue-soft:   oklch(94% 0.04 68);
+  --dan-blue-text:   oklch(50% 0.13 62);
+}
+html[data-theme="dark"][data-accent="teal"] {
+  --dan-blue:        oklch(70% 0.13 195);
+  --dan-blue-hover:  oklch(76% 0.13 195);
+  --dan-blue-active: oklch(82% 0.12 195);
+  --dan-blue-soft:   oklch(28% 0.07 195);
+  --dan-blue-text:   oklch(78% 0.12 195);
+}
+html[data-theme="dark"][data-accent="violet"] {
+  --dan-blue:        oklch(68% 0.18 292);
+  --dan-blue-hover:  oklch(74% 0.18 292);
+  --dan-blue-active: oklch(80% 0.17 292);
+  --dan-blue-soft:   oklch(30% 0.12 292);
+  --dan-blue-text:   oklch(78% 0.17 292);
+}
+html[data-theme="dark"][data-accent="emerald"] {
+  --dan-blue:        oklch(70% 0.15 158);
+  --dan-blue-hover:  oklch(76% 0.15 158);
+  --dan-blue-active: oklch(82% 0.14 158);
+  --dan-blue-soft:   oklch(28% 0.09 158);
+  --dan-blue-text:   oklch(78% 0.14 158);
+}
+html[data-theme="dark"][data-accent="amber"] {
+  --dan-blue:        oklch(76% 0.14 70);
+  --dan-blue-hover:  oklch(82% 0.14 70);
+  --dan-blue-active: oklch(86% 0.13 70);
+  --dan-blue-soft:   oklch(30% 0.08 68);
+  --dan-blue-text:   oklch(80% 0.13 72);
+}
+
+/* ============================================================================
+   Фонт — data-font нь эцсийн --font-display / --font-body-г бүхэлд нь дарж
+   бичнэ. Гэр бүлүүд next/font-оор self-host (layout.tsx). Mono тогтмол.
+   Анхдагч "inter" нь :root-ийн утга тул тусдаа блок хэрэггүй.
+   ============================================================================ */
+html[data-font="serif"] {
+  --font-display: var(--font-serif-stack), Georgia, 'Times New Roman', serif;
+  --font-body:    var(--font-serif-stack), Georgia, 'Times New Roman', serif;
+}
+html[data-font="system"] {
+  --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ============================================================================
+   Стиль / нягтрал — геометр ба суурь хэмжээс. Анхдагч "comfortable" нь :root.
+   "compact" нь topbar/зай/радиусыг нягтруулж, суурь фонтыг бага зэрэг жижигрүүлнэ.
+   ============================================================================ */
+html[data-style="compact"] {
+  --topbar-h: 56px;
+  --content-pad-x: 24px;
+  --radius-card:  8px;
+  --radius-input: 6px;
+  --radius-chip:  5px;
+}
+html[data-style="compact"] body {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 html { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
 
