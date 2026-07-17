@@ -81,8 +81,11 @@ jobs:
       - name: gitleaks (scan working tree)
         run: |
           set -euo pipefail
-          ver="$(curl -sSfL https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
-                 | grep -oE '"tag_name": *"v[^"]+"' | head -1 | grep -oE 'v[0-9.]+' | sed 's/^v//')"
+          # Pin the version instead of querying the GitHub API for "latest":
+          # the unauthenticated api.github.com call is rate-limited per runner IP
+          # and returned 403 intermittently, failing CI for infra reasons. Bump
+          # this pin deliberately.
+          ver="8.21.2"
           echo "gitleaks v$ver"
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${ver}/gitleaks_${ver}_linux_x64.tar.gz" \
             | tar -xz gitleaks
