@@ -38,6 +38,12 @@ type Config struct {
 	User     string
 	Password string
 	BasePath string // home-оос харьцангуй үндсэн хавтас (ж: "gerege-space")
+	// HostKey — host-ийн хүлээгдэж буй нийтийн түлхүүр (authorized_keys/known_hosts
+	// мөрийн формат). Тохируулбал host key-г ЗААВАЛ баталгаажуулна.
+	HostKey string
+	// AllowInsecureHostKey — HostKey хоосон үед host key-г шалгахгүй байхыг зөвшөөрнө.
+	// Зөвхөн development-д true; production-д false тул HostKey заавал шаардлагатай.
+	AllowInsecureHostKey bool
 }
 
 // Client нь SFTP хадгалалтын client. Дуудлага бүрд шинэ холболт үүсгэнэ (файлын
@@ -65,15 +71,36 @@ func (c *Client) userDir(userID string) string {
 	return path.Join(c.cfg.BasePath, "users", safeSegment(userID))
 }
 
+// hostKeyCallback нь тохиргооноос host key баталгаажуулалтыг бүрдүүлнэ.
+// HostKey өгсөн бол FixedHostKey (MITM-аас хамгаална); хоосон бөгөөд
+// AllowInsecureHostKey=true (зөвхөн dev) бол шалгахгүй; аль нь ч биш бол алдаа.
+func (c *Client) hostKeyCallback() (ssh.HostKeyCallback, error) {
+	if hk := strings.TrimSpace(c.cfg.HostKey); hk != "" {
+		pub, _, _, _, err := ssh.ParseAuthorizedKey([]byte(hk))
+		if err != nil {
+			return nil, errors.New("gspace: GSPACE_HOST_KEY-г задлаж чадсангүй (authorized_keys формат байх ёстой)")
+		}
+		return ssh.FixedHostKey(pub), nil
+	}
+	if c.cfg.AllowInsecureHostKey {
+		return ssh.InsecureIgnoreHostKey(), nil //nolint:gosec // зөвхөн development; production-д HostKey заавал
+	}
+	return nil, errors.New("gspace: GSPACE_HOST_KEY тохируулаагүй — production-д SFTP host key заавал шаардлагатай (MITM-аас хамгаалах)")
+}
+
 // withSFTP нь SSH+SFTP холболт үүсгэж, fn-д client дамжуулаад хаана.
 func (c *Client) withSFTP(fn func(*sftp.Client) error) error {
 	if !c.Configured() {
 		return ErrNotConfigured
 	}
+	hostKeyCB, err := c.hostKeyCallback()
+	if err != nil {
+		return err
+	}
 	sshCfg := &ssh.ClientConfig{
 		User:            c.cfg.User,
 		Auth:            []ssh.AuthMethod{ssh.Password(c.cfg.Password)},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //nolint:gosec // өөрийн storage host; ирээдүйд host key pin хийх
+		HostKeyCallback: hostKeyCB,
 		Timeout:         12 * time.Second,
 	}
 	addr := net.JoinHostPort(c.cfg.Host, strconv.Itoa(c.cfg.Port))

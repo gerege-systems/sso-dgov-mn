@@ -46,6 +46,12 @@ func (uc *usecase) DeleteSignature(ctx context.Context, userID string) error {
 // ── Байгууллагын тамга ──
 
 func (uc *usecase) GetStamp(ctx context.Context, userID, orgRegister string) (string, error) {
+	// Байгууллагын тамга бол баримтад тавигдах албан ёсны тэмдэг тул зөвхөн
+	// тухайн байгууллагыг төлөөлдөг хүн үзэж чадна (IDOR-аас хамгаална). Бичих
+	// (Set/Delete) нь ADMIN шаарддаг; унших нь дурын төлөөлөгчид хангалттай.
+	if err := uc.requireOrgRepresentative(ctx, userID, orgRegister); err != nil {
+		return "", err
+	}
 	return uc.stamps.Get(ctx, strings.TrimSpace(orgRegister))
 }
 
@@ -120,4 +126,27 @@ func (uc *usecase) requireOrgAdmin(ctx context.Context, userID, orgRegister stri
 		}
 	}
 	return apperror.Forbidden("Зөвхөн ADMIN эрхтэй хүн тамга тавьж чадна")
+}
+
+// requireOrgRepresentative нь нэвтэрсэн хэрэглэгч тухайн байгууллагын аль нэг
+// эрхийн (ADMIN шаардлагагүй) төлөөлөгч мөн эсэхийг eID-ээр шалгана — тамга
+// унших зэрэг эрхэд.
+func (uc *usecase) requireOrgRepresentative(ctx context.Context, userID, orgRegister string) error {
+	etsi, err := uc.actingEtsi(ctx, userID)
+	if err != nil {
+		return err
+	}
+	signers, err := uc.eid.OrgSigners(ctx, strings.TrimSpace(orgRegister), etsi)
+	if err != nil {
+		if errors.Is(err, eid.ErrNotRepresentative) {
+			return apperror.Forbidden("Та энэ байгууллагыг төлөөлдөггүй байна")
+		}
+		return apperror.InternalCause(err)
+	}
+	for _, s := range signers {
+		if s.Self {
+			return nil
+		}
+	}
+	return apperror.Forbidden("Та энэ байгууллагыг төлөөлдөггүй байна")
 }
