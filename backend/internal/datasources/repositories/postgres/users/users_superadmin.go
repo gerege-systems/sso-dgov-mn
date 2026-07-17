@@ -55,7 +55,7 @@ func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *dom
 				$6, NULL, true, $7, $8,
 				$9, $10, $11, $12, $13, now(),
 				$14)
-			ON CONFLICT (google_sub) WHERE deleted_at IS NULL
+			ON CONFLICT (google_sub) WHERE google_sub IS NOT NULL AND deleted_at IS NULL
 			DO UPDATE SET
 				first_name            = EXCLUDED.first_name,
 				last_name             = EXCLUDED.last_name,
