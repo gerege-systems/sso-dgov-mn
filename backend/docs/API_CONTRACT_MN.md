@@ -235,27 +235,21 @@ Dropbox). Токенийг per-user шифрлэн хадгална (RLS).
 
 ## API Gateway (`/api/v1/gateway`) 🛡️ `gateway.manage`
 
-Kong маягийн gateway админ: services, routes, policies, дээр нь телеметр. Бүх
-endpoint 🔒 + 🛡️ `gateway.manage` шаардана. Gateway **client**-ууд (хуучин
-"consumers + API keys") одоо доорх **Applications** бүлэгт шилжсэн; service бүр
-мөн `scope`-той (апп тухайн service-т хүрэхийн тулд хүсэх OAuth scope).
+Upstream **service** бүртгэл + телеметр. Бүх endpoint 🔒 + 🛡️ `gateway.manage`
+шаардана. Gateway **client**-ууд (хуучин "consumers + API keys") одоо доорх
+**Applications** бүлэгт шилжсэн; service бүр `scope`-той. Хуучин Kong маягийн
+**routes** ба **policies**-ийг хассан (runtime proxy тэдгээрийг ашигладаггүй
+байсан). **Хүсэлтийн лог** одоо бодит: middleware бодит `/api` хүсэлт бүрийг
+(method/path/status/latency/client_ip) бичдэг — тойм үүнээс нэгтгэнэ.
 
 | Method | Path | Тайлбар |
 |--------|------|-------------|
-| GET | `/gateway/overview` | Телеметрийн тойм. |
-| GET | `/gateway/logs` | Хүсэлтийн лог. |
+| GET | `/gateway/overview` | Телеметрийн тойм (service/апп тоо + 24ц бодит хүсэлтийн статистик). |
+| GET | `/gateway/logs` | Бодит хүсэлтийн лог (method/path/status/latency/client_ip). |
 | GET | `/gateway/services` | Service жагсаах. |
-| POST | `/gateway/services` | Service үүсгэх. |
+| POST | `/gateway/services` | Service үүсгэх (OAuth `scope` = `svc:`+нэр). |
 | PUT | `/gateway/services/{id}` | Service шинэчлэх. |
 | DELETE | `/gateway/services/{id}` | Service устгах. |
-| GET | `/gateway/routes` | Route жагсаах. |
-| POST | `/gateway/routes` | Route үүсгэх. |
-| PUT | `/gateway/routes/{id}` | Route шинэчлэх. |
-| DELETE | `/gateway/routes/{id}` | Route устгах. |
-| GET | `/gateway/policies` | Policy жагсаах. |
-| POST | `/gateway/policies` | Policy үүсгэх. |
-| PUT | `/gateway/policies/{id}` | Policy шинэчлэх. |
-| DELETE | `/gateway/policies/{id}` | Policy устгах. |
 
 ## Applications (`/api/v1/applications`) 🛡️ `gateway.manage`
 

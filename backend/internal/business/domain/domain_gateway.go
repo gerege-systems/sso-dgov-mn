@@ -35,54 +35,23 @@ type GatewayService struct {
 	UpdatedAt      *time.Time
 }
 
-// GatewayRoute нь (methods, paths)-г нэг service рүү буулгана.
-type GatewayRoute struct {
-	ID           string
-	ServiceID    string
-	ServiceName  string // join-оор уншина (зөвхөн унших; INSERT/UPDATE-д хэрэглэхгүй)
-	Name         string
-	Methods      []string
-	Paths        []string
-	StripPath    bool
-	PreserveHost bool
-	Enabled      bool
-	CreatedAt    time.Time
-	UpdatedAt    *time.Time
-}
-
-// GatewayPolicy нь route-д (route_id NULL бол global) хавсаргасан plugin.
-type GatewayPolicy struct {
-	ID        string
-	RouteID   *string // nil = global
-	RouteName string  // join-оор уншина
-	Type      string
-	Config    []byte // jsonb (raw JSON)
-	Enabled   bool
-	CreatedAt time.Time
-	UpdatedAt *time.Time
-}
-
-// GatewayRequestLog нь нэг proxy хүсэлтийн телеметр бичлэг.
+// GatewayRequestLog нь DAN backend руу ирсэн нэг бодит /api хүсэлтийн телеметр
+// бичлэг (middleware бичнэ). Runtime proxy байхгүй тул route/consumer холбоосгүй.
 type GatewayRequestLog struct {
-	ID         string
-	RouteID    *string
-	RouteName  string
-	ConsumerID *string
-	Consumer   string
-	Method     string
-	Path       string
-	Status     int
-	LatencyMS  int
-	ClientIP   string
-	CreatedAt  time.Time
+	ID        string
+	Method    string
+	Path      string
+	Status    int
+	LatencyMS int
+	ClientIP  string
+	CreatedAt time.Time
 }
 
 // GatewayOverview нь dashboard-ийн нэгтгэсэн статистик (сүүлийн 24 цаг).
 type GatewayOverview struct {
 	Services       int
-	Routes         int
-	Consumers      int
-	ActiveKeys     int
+	Consumers      int // applications тоо
+	ActiveKeys     int // application_services (service эрх) тоо
 	Requests24h    int
 	Errors24h      int     // status >= 500
 	RateLimited24h int     // status == 429
@@ -90,7 +59,7 @@ type GatewayOverview struct {
 	AvgLatencyMS   int
 	P95LatencyMS   int
 	StatusBuckets  []GatewayStatusBucket // 2xx/3xx/4xx/5xx тоо
-	TopRoutes      []GatewayRouteStat
+	TopPaths       []GatewayPathStat     // хамгийн их хүсэлттэй зам
 }
 
 type GatewayStatusBucket struct {
@@ -98,7 +67,8 @@ type GatewayStatusBucket struct {
 	Count int
 }
 
-type GatewayRouteStat struct {
-	RouteName string
-	Count     int
+// GatewayPathStat нь хамгийн их хүсэлттэй зам (хуучин TopRoutes-ыг орлоно).
+type GatewayPathStat struct {
+	Path  string
+	Count int
 }

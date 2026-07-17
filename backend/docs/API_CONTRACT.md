@@ -235,27 +235,22 @@ Mutations take the write limiter.
 
 ## API Gateway (`/api/v1/gateway`) 🛡️ `gateway.manage`
 
-Kong-style gateway admin: services, routes, policies, plus telemetry. Every
-endpoint requires 🔒 + 🛡️ `gateway.manage`. Gateway **clients** (the former
-"consumers + API keys") now live in the **Applications** group below; each
-service also carries a `scope` (the OAuth scope apps request to reach it).
+Upstream **service** registry plus telemetry. Every endpoint requires 🔒 + 🛡️
+`gateway.manage`. Gateway **clients** (the former "consumers + API keys") now
+live in the **Applications** group below; each service carries a `scope` (the
+OAuth scope apps request to reach it). The old Kong-style **routes** and
+**policies** were removed (no runtime proxy consumed them). The **request log**
+is now real: a middleware records every actual `/api` request
+(method/path/status/latency/client_ip) — the overview aggregates from it.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/gateway/overview` | Telemetry overview. |
-| GET | `/gateway/logs` | Request logs. |
+| GET | `/gateway/overview` | Telemetry overview (services/apps counts + 24h request stats from real traffic). |
+| GET | `/gateway/logs` | Real request log (method/path/status/latency/client_ip). |
 | GET | `/gateway/services` | List services. |
-| POST | `/gateway/services` | Create a service. |
+| POST | `/gateway/services` | Create a service (its OAuth `scope` = `svc:`+name). |
 | PUT | `/gateway/services/{id}` | Update a service. |
 | DELETE | `/gateway/services/{id}` | Delete a service. |
-| GET | `/gateway/routes` | List routes. |
-| POST | `/gateway/routes` | Create a route. |
-| PUT | `/gateway/routes/{id}` | Update a route. |
-| DELETE | `/gateway/routes/{id}` | Delete a route. |
-| GET | `/gateway/policies` | List policies. |
-| POST | `/gateway/policies` | Create a policy. |
-| PUT | `/gateway/policies/{id}` | Update a policy. |
-| DELETE | `/gateway/policies/{id}` | Delete a policy. |
 
 ## Applications (`/api/v1/applications`) 🛡️ `gateway.manage`
 

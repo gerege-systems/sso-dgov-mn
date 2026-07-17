@@ -1296,7 +1296,9 @@ html[lang="en"] .i18n-banner { display: block; }
 .stat-card__value { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--fg); }
 .stat-card__label { color: var(--muted); font-size: 13px; margin-top: 4px; }
 
-.btn--sm { padding: 5px 9px; font-size: 13px; gap: 5px; }
+/* min-height нь зөвхөн icon-той (текстгүй) товчнуудыг текст товчтойгоо ижил
+   өндөртэй болгоно — API Gateway-ийн үйлдлийн товчнууд намхан харагдахаас сэргийлнэ. */
+.btn--sm { padding: 5px 9px; font-size: 13px; gap: 5px; min-height: 32px; }
 
 /* Dashboard картын тор — мөр доторх картууд жигд (тэнцүү) өндөртэй. */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: stretch; }

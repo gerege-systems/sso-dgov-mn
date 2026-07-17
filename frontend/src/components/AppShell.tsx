@@ -10,7 +10,7 @@ import {
   Users, ShieldHalf, UserCircle, Briefcase, Bot, Languages, Building2,
   ScrollText, ShieldAlert, CreditCard, KeyRound, Smartphone,
   Plug,
-  FileSignature, Gauge, Server, Route, Crown, Palette,
+  FileSignature, Gauge, Server, Crown, Palette,
 } from 'lucide-react';
 import UserMenu from './UserMenu';
 import NavSearch, { type SearchItem } from './NavSearch';
@@ -87,9 +87,7 @@ const SYSTEMS: NavSystem[] = [
         items: [
           { href: '/admin/gateway/overview', labelKey: 'nav.gwOverview', icon: Gauge, perm: 'gateway.manage' },
           { href: '/admin/gateway/services', labelKey: 'nav.gwServices', icon: Server, perm: 'gateway.manage' },
-          { href: '/admin/gateway/routes', labelKey: 'nav.gwRoutes', icon: Route, perm: 'gateway.manage' },
           { href: '/admin/applications', labelKey: 'nav.applications', icon: KeyRound, perm: 'gateway.manage' },
-          { href: '/admin/gateway/policies', labelKey: 'nav.gwPolicies', icon: ShieldAlert, perm: 'gateway.manage' },
           { href: '/admin/gateway/logs', labelKey: 'nav.gwLogs', icon: ScrollText, perm: 'gateway.manage' },
         ],
       },

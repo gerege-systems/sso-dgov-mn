@@ -361,6 +361,14 @@ func NewApp() (*App, error) {
 
 	// API Route-ууд
 	r.Route("/api", func(api chi.Router) {
+		// Бодит /api хүсэлт бүрийг API Gateway-ийн хүсэлтийн лог руу async бичнэ
+		// (detached context тул хариуны хоцролт нэмэгдэхгүй; best-effort).
+		api.Use(middlewares.GatewayRequestLogMiddleware(func(method, path, ip string, status, latencyMS int) {
+			go gatewayUC.RecordRequest(context.Background(), gateway.RequestLogInput{
+				Method: method, Path: path, ClientIP: ip, Status: status, LatencyMS: latencyMS,
+			})
+		}))
+
 		api.Get("/", routes.RootHandler)
 		routes.NewAuthRoute(api, authUC, auditUC, authMiddleware, authRateLimiter, pollRateLimiter).Routes()
 		routes.NewUsersRoute(api, usersUC, authMiddleware).Routes()

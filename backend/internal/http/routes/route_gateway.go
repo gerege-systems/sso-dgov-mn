@@ -49,17 +49,5 @@ func (rt *gatewayRoute) Routes() {
 		r.Post("/services", v1.Wrap(rt.handler.CreateService))
 		r.Put("/services/{id}", v1.Wrap(rt.handler.UpdateService))
 		r.Delete("/services/{id}", v1.Wrap(rt.handler.DeleteService))
-
-		// Routes
-		r.Get("/routes", v1.Wrap(rt.handler.ListRoutes))
-		r.Post("/routes", v1.Wrap(rt.handler.CreateRoute))
-		r.Put("/routes/{id}", v1.Wrap(rt.handler.UpdateRoute))
-		r.Delete("/routes/{id}", v1.Wrap(rt.handler.DeleteRoute))
-
-		// Policies
-		r.Get("/policies", v1.Wrap(rt.handler.ListPolicies))
-		r.Post("/policies", v1.Wrap(rt.handler.CreatePolicy))
-		r.Put("/policies/{id}", v1.Wrap(rt.handler.UpdatePolicy))
-		r.Delete("/policies/{id}", v1.Wrap(rt.handler.DeletePolicy))
 	})
 }

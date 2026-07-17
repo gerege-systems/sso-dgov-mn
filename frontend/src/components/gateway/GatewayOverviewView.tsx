@@ -27,7 +27,7 @@ export default function GatewayOverviewView() {
   const o = q.data!;
   const errPct = (o.error_rate * 100).toFixed(1);
   const maxBucket = Math.max(1, ...o.status_buckets.map((b) => b.count));
-  const maxRoute = Math.max(1, ...o.top_routes.map((t) => t.count));
+  const maxPath = Math.max(1, ...o.top_paths.map((t) => t.count));
 
   return (
     <>
@@ -38,7 +38,6 @@ export default function GatewayOverviewView() {
         <StatCard icon={<AppWindow size={18} />} value={o.consumers} label={T('apps.overview.applications')} />
         <StatCard icon={<KeyRound size={18} />} value={o.active_keys} label={T('apps.overview.serviceGrants')} />
         <StatCard icon={<Server size={18} />} value={o.services} label="Сервис" />
-        <StatCard icon={<RouteIcon size={18} />} value={o.routes} label="Маршрут" />
       </div>
 
       <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
@@ -63,17 +62,17 @@ export default function GatewayOverviewView() {
         </section>
 
         <section className="card">
-          <div className="card__head"><div className="card__title"><RouteIcon size={18} style={{ color: 'var(--dan-blue-text)' }} /><h2>Топ маршрут (24ц)</h2></div></div>
+          <div className="card__head"><div className="card__title"><RouteIcon size={18} style={{ color: 'var(--dan-blue-text)' }} /><h2>Топ зам (24ц)</h2></div></div>
           <div>
-            {o.top_routes.length === 0 && (
+            {o.top_paths.length === 0 && (
               <div className="defrow"><span className="defrow__value muted"><Inbox size={15} /> Өгөгдөл алга.</span></div>
             )}
-            {o.top_routes.map((t) => (
-              <div className="defrow" key={t.route_name}>
-                <span className="defrow__label">{t.route_name}</span>
+            {o.top_paths.map((t) => (
+              <div className="defrow" key={t.path}>
+                <span className="defrow__label mono">{t.path}</span>
                 <span className="defrow__value" style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
                   <span style={{ flex: 1, height: 6, background: 'var(--surface-2, #eee)', borderRadius: 4, overflow: 'hidden', maxWidth: 160 }}>
-                    <span style={{ display: 'block', height: '100%', width: `${(t.count / maxRoute) * 100}%`, background: 'var(--dan-blue-text, #2563eb)' }} />
+                    <span style={{ display: 'block', height: '100%', width: `${(t.count / maxPath) * 100}%`, background: 'var(--dan-blue-text, #2563eb)' }} />
                   </span>
                   <span className="mono" style={{ minWidth: 36, textAlign: 'right' }}>{t.count}</span>
                 </span>

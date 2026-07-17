@@ -16,37 +16,8 @@ export interface GwService {
   updated_at: string | null;
 }
 
-export interface GwRoute {
-  id: string;
-  service_id: string;
-  service_name: string;
-  name: string;
-  methods: string[];
-  paths: string[];
-  strip_path: boolean;
-  preserve_host: boolean;
-  enabled: boolean;
-  created_at: string;
-  updated_at: string | null;
-}
-
-export type GwPolicyType = 'rate-limit' | 'key-auth' | 'cors' | 'ip-restriction' | 'request-transform';
-
-export interface GwPolicy {
-  id: string;
-  route_id: string | null;
-  route_name: string;
-  type: GwPolicyType;
-  config: unknown;
-  enabled: boolean;
-  created_at: string;
-  updated_at: string | null;
-}
-
 export interface GwLog {
   id: string;
-  route_name: string;
-  consumer: string;
   method: string;
   path: string;
   status: number;
@@ -57,7 +28,6 @@ export interface GwLog {
 
 export interface GwOverview {
   services: number;
-  routes: number;
   consumers: number;
   active_keys: number;
   requests_24h: number;
@@ -67,5 +37,5 @@ export interface GwOverview {
   avg_latency_ms: number;
   p95_latency_ms: number;
   status_buckets: { class: string; count: number }[];
-  top_routes: { route_name: string; count: number }[];
+  top_paths: { path: string; count: number }[];
 }

@@ -132,22 +132,9 @@ type GatewayRepository interface {
 	UpdateService(ctx context.Context, in *domain.GatewayService) (domain.GatewayService, error)
 	DeleteService(ctx context.Context, id string) error
 
-	// Routes — (methods, paths) → service.
-	ListRoutes(ctx context.Context) ([]domain.GatewayRoute, error)
-	GetRoute(ctx context.Context, id string) (domain.GatewayRoute, error)
-	CreateRoute(ctx context.Context, in *domain.GatewayRoute) (domain.GatewayRoute, error)
-	UpdateRoute(ctx context.Context, in *domain.GatewayRoute) (domain.GatewayRoute, error)
-	DeleteRoute(ctx context.Context, id string) error
-
-	// Policies — route-д (эсвэл global) хавсаргасан plugin.
-	ListPolicies(ctx context.Context) ([]domain.GatewayPolicy, error)
-	GetPolicy(ctx context.Context, id string) (domain.GatewayPolicy, error)
-	CreatePolicy(ctx context.Context, in *domain.GatewayPolicy) (domain.GatewayPolicy, error)
-	UpdatePolicy(ctx context.Context, in *domain.GatewayPolicy) (domain.GatewayPolicy, error)
-	DeletePolicy(ctx context.Context, id string) error
-
-	// Telemetry — сүүлийн log-ууд + dashboard-ийн нэгтгэл.
+	// Telemetry — сүүлийн log-ууд + dashboard-ийн нэгтгэл + бодит хүсэлт бичих.
 	ListRequestLogs(ctx context.Context, limit int) ([]domain.GatewayRequestLog, error)
+	CreateRequestLog(ctx context.Context, l *domain.GatewayRequestLog) error
 	Overview(ctx context.Context) (domain.GatewayOverview, error)
 }
 

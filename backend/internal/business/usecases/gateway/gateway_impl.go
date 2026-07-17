@@ -5,7 +5,6 @@ package gateway
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 
 	"template/internal/apperror"
@@ -87,132 +86,6 @@ func (in ServiceInput) toDomain() (domain.GatewayService, error) {
 	}, nil
 }
 
-// ── Routes ──────────────────────────────────────────────────────────────────
-
-func (u *usecase) ListRoutes(ctx context.Context) ([]domain.GatewayRoute, error) {
-	return u.repo.ListRoutes(ctx)
-}
-
-func (u *usecase) CreateRoute(ctx context.Context, in RouteInput) (domain.GatewayRoute, error) {
-	rt, err := in.toDomain()
-	if err != nil {
-		return domain.GatewayRoute{}, err
-	}
-	return u.repo.CreateRoute(ctx, &rt)
-}
-
-func (u *usecase) UpdateRoute(ctx context.Context, id string, in RouteInput) (domain.GatewayRoute, error) {
-	rt, err := in.toDomain()
-	if err != nil {
-		return domain.GatewayRoute{}, err
-	}
-	rt.ID = id
-	return u.repo.UpdateRoute(ctx, &rt)
-}
-
-func (u *usecase) DeleteRoute(ctx context.Context, id string) error {
-	return u.repo.DeleteRoute(ctx, id)
-}
-
-var allowedMethods = map[string]bool{
-	"GET": true, "POST": true, "PUT": true, "PATCH": true, "DELETE": true, "HEAD": true, "OPTIONS": true,
-}
-
-func (in RouteInput) toDomain() (domain.GatewayRoute, error) {
-	name := strings.TrimSpace(in.Name)
-	if name == "" {
-		return domain.GatewayRoute{}, apperror.BadRequest("route name is required")
-	}
-	if strings.TrimSpace(in.ServiceID) == "" {
-		return domain.GatewayRoute{}, apperror.BadRequest("route service is required")
-	}
-	methods := make([]string, 0, len(in.Methods))
-	for _, m := range in.Methods {
-		m = strings.ToUpper(strings.TrimSpace(m))
-		if m == "" {
-			continue
-		}
-		if !allowedMethods[m] {
-			return domain.GatewayRoute{}, apperror.BadRequest("invalid HTTP method: " + m)
-		}
-		methods = append(methods, m)
-	}
-	if len(methods) == 0 {
-		methods = []string{"GET"}
-	}
-	paths := make([]string, 0, len(in.Paths))
-	for _, p := range in.Paths {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		if !strings.HasPrefix(p, "/") {
-			return domain.GatewayRoute{}, apperror.BadRequest("path must start with '/': " + p)
-		}
-		paths = append(paths, p)
-	}
-	if len(paths) == 0 {
-		return domain.GatewayRoute{}, apperror.BadRequest("at least one path is required")
-	}
-	return domain.GatewayRoute{
-		ServiceID: in.ServiceID, Name: name, Methods: methods, Paths: paths,
-		StripPath: in.StripPath, PreserveHost: in.PreserveHost, Enabled: in.Enabled,
-	}, nil
-}
-
-// ── Policies ─────────────────────────────────────────────────────────────—
-
-func (u *usecase) ListPolicies(ctx context.Context) ([]domain.GatewayPolicy, error) {
-	return u.repo.ListPolicies(ctx)
-}
-
-func (u *usecase) CreatePolicy(ctx context.Context, in PolicyInput) (domain.GatewayPolicy, error) {
-	p, err := in.toDomain()
-	if err != nil {
-		return domain.GatewayPolicy{}, err
-	}
-	return u.repo.CreatePolicy(ctx, &p)
-}
-
-func (u *usecase) UpdatePolicy(ctx context.Context, id string, in PolicyInput) (domain.GatewayPolicy, error) {
-	p, err := in.toDomain()
-	if err != nil {
-		return domain.GatewayPolicy{}, err
-	}
-	p.ID = id
-	return u.repo.UpdatePolicy(ctx, &p)
-}
-
-func (u *usecase) DeletePolicy(ctx context.Context, id string) error {
-	return u.repo.DeletePolicy(ctx, id)
-}
-
-var allowedPolicyTypes = map[string]bool{
-	domain.PolicyRateLimit: true, domain.PolicyKeyAuth: true, domain.PolicyCORS: true,
-	domain.PolicyIPRestrict: true, domain.PolicyTransform: true,
-}
-
-func (in PolicyInput) toDomain() (domain.GatewayPolicy, error) {
-	t := strings.ToLower(strings.TrimSpace(in.Type))
-	if !allowedPolicyTypes[t] {
-		return domain.GatewayPolicy{}, apperror.BadRequest("unknown policy type: " + in.Type)
-	}
-	cfg := []byte(in.Config)
-	if len(cfg) == 0 {
-		cfg = []byte("{}")
-	}
-	if !json.Valid(cfg) {
-		return domain.GatewayPolicy{}, apperror.BadRequest("policy config must be valid JSON")
-	}
-	var routeID *string
-	if in.RouteID != nil {
-		if id := strings.TrimSpace(*in.RouteID); id != "" {
-			routeID = &id
-		}
-	}
-	return domain.GatewayPolicy{RouteID: routeID, Type: t, Config: cfg, Enabled: in.Enabled}, nil
-}
-
 // ── Telemetry ────────────────────────────────────────────────────────────—
 
 func (u *usecase) ListRequestLogs(ctx context.Context, limit int) ([]domain.GatewayRequestLog, error) {
@@ -242,4 +115,18 @@ func cleanTags(tags []string) []string {
 		out = append(out, t)
 	}
 	return out
+}
+
+// ── Request log (бодит хүсэлт) ─────────────────────────────────────────────—
+
+// RecordRequest нь middleware-ээс ирсэн бодит /api хүсэлтийг лог-д бичнэ.
+// Best-effort: DB алдааг залгина (лог бичилт хэрэглэгчийн хүсэлтийг блоклохгүй).
+func (u *usecase) RecordRequest(ctx context.Context, in RequestLogInput) {
+	_ = u.repo.CreateRequestLog(ctx, &domain.GatewayRequestLog{
+		Method:    in.Method,
+		Path:      in.Path,
+		Status:    in.Status,
+		LatencyMS: in.LatencyMS,
+		ClientIP:  in.ClientIP,
+	})
 }
