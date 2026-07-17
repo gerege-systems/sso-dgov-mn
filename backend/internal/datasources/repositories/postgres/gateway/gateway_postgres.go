@@ -84,9 +84,11 @@ func (r *gatewayRepository) GetService(ctx context.Context, id string) (domain.G
 }
 
 func (r *gatewayRepository) CreateService(ctx context.Context, in *domain.GatewayService) (domain.GatewayService, error) {
+	// scope-ыг нэрээс автоматаар гаргана ('svc:'||name) — ингэснээр UI-аар үүсгэсэн
+	// service-ийг ч application-д оноож (Hydra scope болгож) болно.
 	s, err := scanService(r.pool.QueryRow(ctx,
-		`INSERT INTO gateway_services(name, protocol, host, port, path, retries, connect_timeout_ms, tags, enabled)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING `+serviceColumns,
+		`INSERT INTO gateway_services(name, protocol, host, port, path, retries, connect_timeout_ms, tags, enabled, scope)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'svc:'||$1) RETURNING `+serviceColumns,
 		in.Name, in.Protocol, in.Host, in.Port, in.Path, in.Retries, in.ConnectTimeout, in.Tags, in.Enabled))
 	if err != nil {
 		return domain.GatewayService{}, mapWrite(err, "service name already exists")
