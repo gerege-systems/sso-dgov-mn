@@ -5,7 +5,7 @@ import GovNotificationsView from '@/components/gov/GovNotificationsView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Мэдэгдэл — Government Template v3.0' };
+export const metadata = { title: 'Мэдэгдэл — DAN-Government SSO' };
 
 export default async function MeNotificationsPage() {
   const me = await fetchMe();

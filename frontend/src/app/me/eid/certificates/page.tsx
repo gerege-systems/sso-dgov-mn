@@ -5,7 +5,7 @@ import EidCertificatesView from '@/components/me/eid/EidCertificatesView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Гэрчилгээ — Government Template v3.0' };
+export const metadata = { title: 'Гэрчилгээ — DAN-Government SSO' };
 
 export default async function EidCertificatesPage() {
   const me = await fetchMe();

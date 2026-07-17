@@ -1,13 +1,17 @@
-# Government Template Platform V3.0
+# DAN-Government SSO
 
-> **eID-д суурилсан · AI-аар хүчирхэгжсэн** засгийн газрын үйлчилгээний платформ
+> **eID-д суурилсан · AI-аар хүчирхэгжсэн** — Засгийн газрын үйлчилгээний нэгдсэн нэвтрэлт (Single Sign-On)
+
+**Government Template Platform V3.0** стек (Clean-Architecture Go backend + Next.js
+BFF frontend + Gemini AI pipeline) дээр бүтээгдэж, **DAN-Government SSO** нэрээр
+[dan.dgov.mn](https://dan.dgov.mn)-д байршуулагдсан.
 
 > 🌐 [English](../README.md) · **Монгол**
 
 [![Go](https://img.shields.io/badge/Go-1.26-blue.svg)](https://golang.org/)
 [![chi](https://img.shields.io/badge/chi-v5-00ADD8.svg)](https://github.com/go-chi/chi)
 [![pgx](https://img.shields.io/badge/pgx-v5-336791.svg)](https://github.com/jackc/pgx)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 Clean Architecture зарчмаар бүтээгдсэн, аюулгүй байдлыг хатууруулсан,
@@ -30,8 +34,8 @@ SQL-тэй [jackc/pgx](https://github.com/jackc/pgx) драйвертэй хос
 ## Monorepo бүтэц
 
 ```
-gerege-template/
-├── backend/           # Go · chi (net/http) · pgx (pgxpool) · PostgreSQL · Redis · JWT/OTP танилт
+dan-dgov-mn/
+├── backend/           # Go · chi (net/http) · pgx (pgxpool) · PostgreSQL · Redis · eID/Google/SSO танилт
 │   └── docs/          # ARCHITECTURE · DEVELOPMENT · API_CONTRACT · SECURITY (EN/MN)
 └── frontend/          # Next.js BFF (backend руу server талаас прокси; cookie session)
 ```
@@ -42,21 +46,31 @@ gerege-template/
 ## Онцлог
 
 - **Clean Architecture** — `handler → usecase → repository → domain`, back-import байхгүй; business core нь web framework-ийг import хийдэггүй.
-- **Танилт** — JWT access + refresh (rotation), OTP-баталгаажуулсан бүртгэл, bcrypt, login lockout; logout хоёр токеныг хоёуланг хүчингүй болгоно (refresh + access deny-list).
-- **AI pipeline (Gemini)** — SDK-гүй REST client + function calling: текст/дуут чат, яриа→текст (STT), текст→яриа (TTS), шууд орчуулга. Давхаргат system prompt (кодод хатуу suurь дүрэм + админ DB-ээс тохируулдаг хамрах хүрээ/заавар) туслахыг зөвхөн заасан хүрээнд барина; `search_knowledge` tool нь хариултыг `ai_knowledge` хүснэгтийн өгөгдөлд тулгуурлуулна.
+- **Танилт — eID + Google + dgov SSO** — цорын ганц нэвтрэх арга бол **eID-ээр нэвтрэх** (eID Mongolia Relying Party: QR код / мобайл deep-link / иргэний РД push + long-poll session). Түүний зэрэгцээ **Google OAuth** account холболт болон **dgov SSO (OIDC) consumer** (`sso.dgov.mn`). Session нь JWT access + refresh (rotation); logout хоёуланг хүчингүй болгоно (refresh + access deny-list). Нууц үг / и-мэйл-OTP нэвтрэлт байхгүй.
+- **eID PKI профайл** — нэвтэрсэн иргэний eID identity-г IdP-ээс уншина: холбоотой байгууллага ба эрх бүхий гарын үсэг зурагчид, гэрчилгээ, бүртгэлтэй төхөөрөмж, идэвх.
+- **Байгууллага ба гишүүнчлэл** — байгууллага үүсгэх/хайх (улсын бүртгэлээс Gerege Verify/XYP-ээр лавлах) + гишүүд/эрх удирдах, хэрэглэгч тус бүрт RLS-ээр хамгаалагдсан.
+- **Төрийн үйлчилгээний портал** — иргэн рүү харсан `Төрийн үйлчилгээ` гадаргуу: үйлчилгээний каталог, хүсэлт, лавлагаа, мэдэгдэл, төлбөр, цаг захиалга.
+- **API gateway** — админ удирддаг services / routes / consumers / API key / policy + хүсэлтийн телеметр (overview + logs).
+- **OIDC provider (SSO)** — DAN өөрөө identity provider болно: [Ory Hydra](https://www.ory.sh/hydra/) урдаа тавьж login/consent/logout урсгалыг жолоодох тул relying party-ууд `Sign in with DAN` хийж чадна. Зөвхөн Hydra тохируулагдсан үед идэвхжинэ.
+- **Баримт бичгийн гарын үсэг (PAdES)** — eID Mongolia `/v3`-ээр PDF-д server талаас гарын үсэг зурна, байнгын Document-Signer гэрчилгээтэй; sign-relay нь 3 дагч RP-уудыг DAN-ий eID креденшлээр дамжуулан гарын үсэг зурах боломж олгоно.
+- **Гуравдагч этгээдийн интеграци** — хэрэглэгч тус бүрийн OAuth холболт (Google Drive/Meet, Dropbox), токеныг шифрлэн (AES-256-GCM) хадгална; мөн **Gerege Space** апп-ын өөрийн SFTP хадгалалт.
+- **AI pipeline (Gemini)** — SDK-гүй REST client + function calling: текст/дуут чат, яриа→текст (STT), текст→яриа (TTS), шууд орчуулга. Давхаргат system prompt (кодод хатуу суурь дүрэм + админ DB-ээс тохируулдаг хамрах хүрээ/заавар) туслахыг зөвхөн заасан хүрээнд барина; `search_knowledge` tool нь хариултыг `ai_knowledge` хүснэгтийн өгөгдөлд тулгуурлуулна.
+- **Audit log** — hash-chain холбоост, зөвхөн-нэмэх audit бүртгэл (админ-л унших + бүрэн бүтэн байдлыг шалгах).
+- **RBAC ба super admin** — динамик role + permission каталог; 4-үүрэгт загвар (**superadmin → admin → manager → user**), super admin нь админ хэрэглэгчдийг удирдах цорын ганц үүрэг.
+- **Сайтын харагдац** — админ тохируулдаг сайт-даяар харагдац (accent / font / density / theme) нийтийн хуудсанд, мөн хэрэглэгч тус бүрийн override.
 - **Аюулгүй хатууруулсан** — security headers (CSP, HSTS, COOP/COEP/CORP), CORS allow-list, rate limiting, серверийн бүрэн timeout-ууд, parameterized query, Postgres Row-Level Security + boot-үеийн мөрдөлтийн guard. [SECURITY.md](../SECURITY.md)-г үз.
-- **Observability** — OpenTelemetry trace + Prometheus metrics + Zap structured log.
+- **Observability** — OpenTelemetry trace + Prometheus metrics + Zap structured log; production-д `/metrics` ба `/swagger` bearer token-оор хаагдана.
 - **Frontend BFF** — браузер зөвхөн ижил-origin Next.js route рүү залгаж, тэр нь server талаас backend руу проксиолдог (токен client JS-д хүрэхгүй); давхар CSRF хамгаалалт (custom header + origin), TanStack Query өгөгдлийн давхарга.
 - **Тесттэй** — unit + testcontainers integration тест.
 
 ## Түргэн эхлүүлэх
 
-**Шаардлага:** Go 1.26+, Node 20+, PostgreSQL 15+, Redis 7+.
+**Шаардлага:** Go 1.26+, Node 20+, PostgreSQL 15+, Redis 7+ (бүтэн стекийг Docker-оор ажиллуулахыг зөвлөнө).
 
 ```bash
 # 1) Backend  →  http://localhost:8080
 cd backend
-cp internal/config/.env.example internal/config/.env   # JWT_SECRET (≥32), DB, Redis тохируул
+cp internal/config/.env.example internal/config/.env   # JWT_SECRET (≥32), DB, Redis, EID_* RP креденшл тохируул
 
 # 2) Frontend →  http://localhost:3000
 cd ../frontend
@@ -65,7 +79,13 @@ npm install
 npm run dev
 ```
 
-**http://localhost:3000** нээж бүртгүүлэх / нэвтрэх.
+Эсвэл бүтэн стекийг өргө (db + redis + migrate + api + web, OIDC-provider горимд Hydra):
+
+```bash
+docker compose up -d --build
+```
+
+**http://localhost:3000** нээж **eID-ээр нэвтрэх**-ийг сонго (QR уншуулах / eID мобайл апп нээх, эсвэл иргэний РД оруулж push хүлээж авах). Google холболт ба dgov SSO нь тэдгээрийн креденшл тохируулагдсан үед харагдана.
 
 ## Баримтжуулалт
 
@@ -76,7 +96,8 @@ npm run dev
 | [backend/docs/API_CONTRACT_MN.md](../backend/docs/API_CONTRACT_MN.md) | REST endpoint, request/response |
 | [backend/docs/AI_PIPELINE_MN.md](../backend/docs/AI_PIPELINE_MN.md) | AI туслахын дотоод бүтэц: урсгал, prompt давхарга, tools, voice, өргөтгөх заавар |
 | [backend/docs/SECURITY.md](../backend/docs/SECURITY.md) | Хэрэгжсэн хяналт + ASVS roadmap |
-| [docs/DEPLOYMENT_MN.md](DEPLOYMENT_MN.md) | VPS deploy runbook (compose, env файлууд, nginx, шинэчлэх, rollback) |
+| [docs/DEPLOYMENT_MN.md](DEPLOYMENT_MN.md) | VPS deploy runbook (compose, env файлууд, nginx, Hydra, шинэчлэх, rollback) |
+| [ROADMAP.md](../ROADMAP.md) | Юу хийгдсэн, юу дараагийнх |
 | [SECURITY.md](../SECURITY.md) | Эмзэг байдлыг хэрхэн мэдээлэх |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Хэрхэн хувь нэмэр оруулах |
 

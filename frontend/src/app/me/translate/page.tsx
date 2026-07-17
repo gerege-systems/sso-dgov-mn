@@ -4,7 +4,7 @@ import LiveTranslateView from '@/components/me/LiveTranslateView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Шууд орчуулга — Government Template v3.0' };
+export const metadata = { title: 'Шууд орчуулга — DAN-Government SSO' };
 
 export default async function MeTranslatePage() {
   const me = await fetchMe();

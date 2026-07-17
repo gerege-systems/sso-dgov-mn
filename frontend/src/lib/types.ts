@@ -1,4 +1,4 @@
-// gerege-backend-template-v27-ийн REST API-тай нийцсэн хуваалцсан типүүд.
+// Backend-ийн REST API-тай нийцсэн хуваалцсан типүүд.
 // Эх сурвалж: docs/API_CONTRACT_MN.md болон responses.users.go.
 
 /** Бүх backend хариу ороодог дугтуй (envelope). */

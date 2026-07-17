@@ -1,4 +1,4 @@
-# Contributing to Government Template Platform V3.0
+# Contributing to DAN-Government SSO
 
 The full contribution guide lives in [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) —
 local setup, branch/commit conventions, the `make pre-push` quality gate (lint +

@@ -1,6 +1,6 @@
 # Contributing · Хувь нэмэр оруулах
 
-Thanks for your interest in improving **Government Template Platform V3.0**! / **Government Template Platform V3.0**-ийг сайжруулах сонирхолд тань баярлалаа!
+Thanks for your interest in improving **DAN-Government SSO**! / **DAN-Government SSO**-ийг сайжруулах сонирхолд тань баярлалаа!
 
 ## Getting started · Эхлэх
 

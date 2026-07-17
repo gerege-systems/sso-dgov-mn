@@ -1,119 +1,501 @@
-# API Гэрээ (Contract)
+# API Contract
 
 > 🌐 [English](API_CONTRACT.md) · **Монгол**
 
-**Government Template Platform V3.0**-ийн REST API лавлагаа. Шууд, автоматаар үүсэх
-бүрэн тодорхойлолтыг `GET /swagger/` дээр үзнэ (эх: `docs/swagger.json`).
-Англи хувилбар: [API_CONTRACT.md](./API_CONTRACT.md).
+**DAN-Government SSO** (dan.dgov.mn)-ийн REST API лавлагаа — **Government Template
+Platform V3.0** стек (Clean-Architecture Go backend + Next.js BFF + Gemini AI)
+дээр бүтээгдсэн eID-д суурилсан үндэсний нэгдсэн нэвтрэлт (Single Sign-On). Амьд,
+автоматаар үүсгэгддэг spec-ийг `GET /swagger/`-ээр үзүүлнэ (эх сурвалж:
+`docs/swagger.json`).
 
-> **Эх сурвалж.** Нээлттэй эх
-> [snykk/go-rest-boilerplate](https://github.com/snykk/go-rest-boilerplate)
-> (MIT, Najib Fikri)-аас гаралтай; HTTP давхаргыг **Gin → chi (net/http)**,
-> өгөгдлийн давхаргыг **sqlx → pgx (pgxpool)** болгосон.
+> **Зам (path)-ын тухай тэмдэглэл.** Доорх модуль бүр `/api` бүлгийн дор
+> суурьшдаг ба route бүлэг бүр `/v1` угтвар нэмдэг тул бодит хүсэлтийн зам нь
+> `/api/v1/<бүлэг>/…` болно — swagger-ийн `@Router` annotation харьцангуйгаар
+> бичигдсэн ч (ж: annotation `/auth/eid/start` → бодит зам
+> `/api/v1/auth/eid/start`). Энэ баримтын хүснэгтүүд **бүтэн** замыг харуулна.
 
-## Дүрэм
+## Дүрэм (Conventions)
 
-- **Үндсэн URL:** `http://localhost:8080/api/v1`
+- **Base URL:** `http://localhost:8080/api/v1`
 - **Content-Type:** `application/json`
-- **Танилт:** хамгаалагдсан endpoint-д `Authorization: Bearer <access_token>` шаардана
-- **Rate limit:** `/auth/*` нь IP тус бүр ~5 хүсэлт/минут, `/ai/*` нь ~20/минут (хэтэрвэл `429`)
+- **Auth:** хамгаалагдсан endpoint-ууд `Authorization: Bearer <access_token>`
+  шаардана (токеныг доорх eID / Google / SSO нэвтрэлтийн урсгалууд гаргана)
+- **Rate limit (IP тус бүр):** `/auth/*` ~5 хүсэлт/мин, `/auth/eid/poll` нь
+  тусдаа сул ~60 хүсэлт/мин (long-poll өөрөө 429 болохгүйн тулд), `/ai/*` ~20
+  хүсэлт/мин, `/gov`, `/gspace`, `/me`, `/users/me/eid`-ийн **мутаци**
+  endpoint-ууд ~30 хүсэлт/мин (хэтэрвэл 429)
+- **Body хязгаар:** `/auth/*`, `/sso/*`, `/provider/*` bodies нь 4 KiB; бусад нь
+  1 MiB
 
-### Хариуны бүтэц (envelope)
+### Хариултын дугтуй (envelope)
+
+Бүх хариулт нэг дугтуй ашиглана:
 
 ```json
-{ "status": true, "message": "...", "data": { }, "request_id": "..." }
+{
+  "status": true,
+  "message": "human-readable summary",
+  "data": { },
+  "request_id": "b1d2…"
+}
 ```
+
 - `status` — амжилтад `true`, алдаанд `false`
-- `data` — амжилтад л байна
-- `request_id` — корреляцийн ID (`X-Request-ID` header-т мөн)
+- `data` — амжилтад байна (алдаанд орхигдоно/null)
+- `request_id` — корреляцийн id (`X-Request-ID` header-т мөн давхардуулна)
 
 ### Статус кодууд
 
-| Код | Утга |
-|-----|------|
-| 200 / 201 | Амжилттай / Үүсгэсэн |
-| 400 | Буруу body |
-| 401 | Токен/нэвтрэлт буруу |
-| 403 | Хориглосон (lockout) |
-| 404 | Олдсонгүй |
-| 409 | Давхцал (username/email) |
-| 422 | Validation алдаа (`data.errors` нь `{field, tag, message}` объектуудын массив) |
-| 429 | Хэт олон хүсэлт |
-| 500 | Дотоод алдаа |
+| Код | Утга | Хэзээ |
+|------|---------|------|
+| 200 | OK | Амжилттай унших / үйлдэл |
+| 201 | Created | Ресурс үүсгэгдсэн |
+| 400 | Bad Request | Гажуудсан body |
+| 401 | Unauthorized | Токен байхгүй/буруу/хугацаа дууссан |
+| 403 | Forbidden | Нэвтэрсэн ч шаардлагатай role/permission байхгүй |
+| 404 | Not Found | Ресурс байхгүй |
+| 409 | Conflict | Давхардал / төлөвийн зөрчил |
+| 422 | Unprocessable Entity | Валидаци амжилтгүй (доор үз) |
+| 429 | Too Many Requests | Rate limit хэтэрсэн |
+| 500 | Internal Server Error | Санамсаргүй алдаа (шалтгааныг лог-д, ерөнхий мессеж буцаана) |
 
-`strongpassword` дүрэм: том/жижиг үсэг, тоо, тусгай тэмдэгт + доод тал нь 12 тэмдэгт.
+### Валидацийн алдаа (422)
+
+Талбарын дэлгэрэнгүйг `data.errors`-т буцаана — энэ нь `{ field, tag, message }`
+объектуудын **массив**. `field` нь JSON tag нэр:
+
+```json
+{
+  "status": false,
+  "message": "validation failed",
+  "data": { "errors": [ { "field": "target_lang", "tag": "required", "message": "target_lang is required" } ] },
+  "request_id": "b1d2…"
+}
+```
+
+### Тэмдэглэгээ (Legend)
+
+- 🔒 — `Authorization: Bearer <access_token>` шаардана
+- 🛡️ `perm` — нэрлэсэн RBAC permission-ыг нэмж шаардана (**admin** role нь бүх
+  permission каталогийг автоматаар давна; тэмдэглэсэн газар **super admin**
+  шаардана). Path параметрийг `{хаалт}`-аар харуулна.
 
 ---
 
-## Танилт (Authentication)
+## Нэвтрэлт (`/api/v1/auth`)
 
-| Method | Path | Body | Амжилт (200/201) |
-|--------|------|------|------------------|
-| POST | `/auth/register` | `last_name`, `first_name` (1–50), `last_name_en`/`first_name_en` (сонголттой), `username`(3–25), `email`(≤50), `password`(12–72, strong) | `201` "registration user success" + user |
-| POST | `/auth/login` | `email`, `password` | `200` "login success" + user + `token` + `refresh_token` |
-| POST | `/auth/send-otp` | `email` | `200` "otp code has been send to …" |
-| POST | `/auth/verify-otp` | `email`, `code`(numeric) | `200` "otp verification success" |
-| POST | `/auth/refresh` | `refresh_token` | `200` "token refreshed" + шинэ token pair |
-| POST | `/auth/logout` | `refresh_token`, `access_token` (сонголттой — өгвөл access токен deny-list-ээр шууд хүчингүй болно) | `200` "logout success" |
-| POST | `/auth/password/forgot` | `email` | `200` "if the email is registered, a reset code has been sent" (6 оронтой OTP илгээнэ) |
-| POST | `/auth/password/reset` | `email`, `code`, `new_password`(strong) | `200` "password reset"; `401` код буруу/хүчингүй |
-| PUT 🔒 | `/auth/password/change` | `current_password`, `new_password`(strong) | `200` "password changed" |
+**Цорын ганц** нэвтрэх арга бол **Login with eID** (eID Mongolia Relying Party),
+дээр нь **Google OAuth** аккаунт холболт болон **dgov SSO** (SSO хэсгийг үз).
+Нууц үг, имэйл/OTP, бүртгэлийн гадаргуу байхгүй. Энэ бүлэг rate-limit болон body
+хязгаартай (4 KiB); нэвтрэхээс өмнөх урсгалууд service RLS identity-ээр ажиллана.
 
-### Жишээ: нэвтрэх
+| Method | Path | Auth | Тайлбар |
+|--------|------|------|-------------|
+| POST | `/auth/eid/start` | — | eID нэвтрэлт эхлүүлнэ; QR код / мобайл deep-link болон poll хийх session токен буцаана. |
+| POST | `/auth/eid/start-id` | — | Иргэний РД-аар eID нэвтрэлт эхлүүлж, бүртгэлтэй төхөөрөмж рүү зөвшөөрлийн push илгээнэ. |
+| POST | `/auth/eid/poll` | — | Хүлээгдэж буй eID session-ийг long-poll хийнэ (~25 с барина); `PENDING` эсвэл зөвшөөрсний дараа access + refresh токен хос буцаана. Тусдаа сул limiter. |
+| POST | `/auth/google` | — | Google OAuth callback — `code`-ыг солиод, Google аккаунтыг eID хэрэглэгчид холбоно (эсвэл нэвтрүүлнэ). |
+| DELETE | `/auth/google/link` | 🔒 | Нэвтэрсэн хэрэглэгчийн Google аккаунтыг САЛГАХ (холбох нь зөвхөн login урсгалаар). |
+| POST | `/auth/refresh` | — | Хүчинтэй refresh токеноор токен хосыг эргүүлнэ. Refresh нь токеныг **эргүүлдэг** тул хуучин refresh токен хүчингүй болно. |
+| POST | `/auth/logout` | — | Өгсөн refresh токеныг цуцлана; `access_token`-ыг мөн өгвөл түүний jti-г Redis deny-list-д нэмж шууд ажиллагаагүй болгоно. |
 
-**Хүсэлт** `POST /api/v1/auth/login`
-```json
-{ "email": "john@example.com", "password": "Str0ng!Passw0rd" }
-```
-**Хариу `200`**
-```json
-{ "status": true, "message": "login success", "data": {
-  "id": "…", "username": "johndoe", "email": "john@example.com", "role_id": 2,
-  "token": "<access_jwt>", "refresh_token": "<refresh_jwt>",
-  "created_at": "…", "updated_at": null }, "request_id": "…" }
-```
-Алдаа: `401` нэвтрэлт буруу, `403` дараалсан амжилтгүйн дараа lockout.
+Амжилтад login/refresh урсгалууд токен хосыг `data`-д буцаана (`token` = access
+JWT, `refresh_token` = refresh JWT) хэрэглэгчийн identity-ийн хамт (`id`,
+`role_id`, нэрийн талбарууд).
 
 ---
 
-## Хэрэглэгч (Users)
+## Хэрэглэгч (`/api/v1/users`)
+
+| Method | Path | Auth | Тайлбар |
+|--------|------|------|-------------|
+| GET | `/users/me` | 🔒 | Нэвтэрсэн хэрэглэгчийн профайл (`id`, `username`, `email`, `role_id`, timestamps). |
+
+## eID профайл (`/api/v1/users/me/eid`) 🔒
+
+Нэвтэрсэн иргэний eID нэмэлт мэдээлэл. Мутаци (`POST`/`DELETE`) endpoint-ууд ~30
+хүсэлт/мин write limiter авна; уншилт хязгааргүй.
 
 | Method | Path | Тайлбар |
-|--------|------|---------|
-| GET 🔒 | `/users/me` | Нэвтэрсэн хэрэглэгчийн профайл — `200` "user data fetched successfully" |
+|--------|------|-------------|
+| GET | `/users/me/eid/organizations` | Иргэний төлөөлдөг байгууллагууд. |
+| POST | `/users/me/eid/organizations` | Байгууллага холбох (РД-аар, XYP-ээр баталгаажуулна). |
+| DELETE | `/users/me/eid/organizations/{regNo}` | Байгууллага салгах. |
+| GET | `/users/me/eid/organizations/{regNo}/signers` | Байгууллагын эрх бүхий гарын үсэг зурагчид. |
+| POST | `/users/me/eid/organizations/{regNo}/signers` | Гарын үсэг зурагч нэмэх. |
+| POST | `/users/me/eid/organizations/{regNo}/signers/resend` | Гарын үсэг зурагчийн урилга дахин илгээх. |
+| DELETE | `/users/me/eid/organizations/{regNo}/signers` | Гарын үсэг зурагч хасах. |
+| GET | `/users/me/eid/summary` | eID профайлын хураангуй. |
+| GET | `/users/me/eid/certificates` | Иргэний eID гэрчилгээнүүд. |
+| GET | `/users/me/eid/devices` | Бүртгэлтэй eID төхөөрөмжүүд. |
+| GET | `/users/me/eid/activity` | Сүүлийн eID үйл ажиллагаа. |
 
 ---
 
-## AI (Gemini pipeline) 🔒
+## RBAC (`/api/v1/rbac`) 🔒
 
-Бүх `/ai/*` endpoint bearer токен шаардаж, тусдаа rate limit-тэй (~20/мин).
-`GEMINI_API_KEY` тохируулаагүй бол 500 буцаана. Туслах давхаргат system
-prompt-оор ажиллана — кодод хатуу suurь дүрэм + админ тохируулдаг **хамрах
-хүрээ** (гадуурх асуултад татгалзана) + сонголттой **нэмэлт заавар** — мөн
-платформын асуултад `search_knowledge` tool-оор `ai_knowledge` хүснэгтээс
-хайж тулгуурлан хариулна.
+Динамик role + permission. `/rbac/me` нь нэвтэрсэн хэрэглэгч бүрт нээлттэй; бусад
+нь 🛡️ `roles.manage` шаардана.
 
-| Method | Path | Body | Хариу (200) |
+| Method | Path | Guard | Тайлбар |
+|--------|------|-------|-------------|
+| GET | `/rbac/me` | 🔒 | Дуудагчийн үр дүнтэй permission-ууд (UI цэс шүүхэд). |
+| GET | `/rbac/roles` | 🛡️ `roles.manage` | Role-уудыг жагсаах. |
+| GET | `/rbac/permissions` | 🛡️ `roles.manage` | Permission каталог жагсаах. |
+| POST | `/rbac/roles` | 🛡️ `roles.manage` | Role үүсгэх. |
+| PUT | `/rbac/roles/{id}` | 🛡️ `roles.manage` | Role нэр солих/шинэчлэх. |
+| PUT | `/rbac/roles/{id}/permissions` | 🛡️ `roles.manage` | Role-ийн permission багцыг солих. |
+| DELETE | `/rbac/roles/{id}` | 🛡️ `roles.manage` | Role устгах. |
+
+## Байгууллага (`/api/v1/org`) 🔒
+
+Байгууллага + гишүүнчлэлийн удирдлага. Эзэмшигч/админ шалгалт usecase давхаргад
+хэрэгжинэ.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| POST | `/org/` | Байгууллага үүсгэх. |
+| GET | `/org/` | Дуудагчийн байгууллагуудыг жагсаах. |
+| GET | `/org/lookup/{regNo}` | РД-аар байгууллага хайх. |
+| GET | `/org/{id}` | Нэг байгууллага авах. |
+| GET | `/org/{id}/members` | Гишүүд жагсаах. |
+| POST | `/org/{id}/members` | Гишүүн нэмэх. |
+| PUT | `/org/{id}/members/{userID}` | Гишүүний role солих. |
+| DELETE | `/org/{id}/members/{userID}` | Гишүүн хасах. |
+
+---
+
+## Төрийн үйлчилгээний портал (`/api/v1/gov`) 🔒
+
+Иргэний "Төрийн үйлчилгээ" портал. Бүх өгөгдөл per-user (userID токеноос).
+Мутаци endpoint-ууд ~30 хүсэлт/мин write limiter авна.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/gov/services` | Үйлчилгээний каталог. |
+| GET | `/gov/overview` | Dashboard тойм. |
+| GET | `/gov/applications` | Иргэний хүсэлтүүд жагсаах. |
+| POST | `/gov/applications` | Шинэ хүсэлт илгээх. |
+| POST | `/gov/applications/{id}/cancel` | Хүсэлт цуцлах. |
+| GET | `/gov/references` | Лавлагааны хүсэлтүүд жагсаах. |
+| POST | `/gov/references` | Лавлагаа хүсэх. |
+| GET | `/gov/notifications` | Мэдэгдэл жагсаах. |
+| POST | `/gov/notifications/read-all` | Бүх мэдэгдлийг уншсан гэж тэмдэглэх. |
+| POST | `/gov/notifications/{id}/read` | Нэг мэдэгдлийг уншсан гэж тэмдэглэх. |
+| GET | `/gov/payments` | Төлбөрүүд жагсаах. |
+| POST | `/gov/payments/{id}/pay` | Хүлээгдэж буй төлбөр төлөх. |
+| GET | `/gov/appointments` | Цаг захиалгууд жагсаах. |
+| POST | `/gov/appointments` | Цаг захиалах. |
+| POST | `/gov/appointments/{id}/cancel` | Цаг захиалга цуцлах. |
+
+---
+
+## Интеграциуд (`/api/v1/integrations`) 🔒
+
+Хэрэглэгчийн гуравдагч этгээдийн OAuth холболтуудыг удирдах (Google Drive/Meet,
+Dropbox). Токенийг per-user шифрлэн хадгална (RLS).
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/integrations/` | Холбогдсон провайдерууд жагсаах. |
+| POST | `/integrations/` | Провайдер холбох (OAuth). |
+| GET | `/integrations/{provider}/token` | Холбогдсон провайдерийн ашиглах боломжтой токен авах. |
+| DELETE | `/integrations/{provider}` | Провайдер салгах. |
+
+## Assets — гарын үсэг / латин нэр / тамга (`/api/v1/me`) 🔒
+
+`/users/me` route-ийг шадовлахгүйн тулд `/api/v1/me`-д (биш `/users/me`)
+суурьшсан. Мутациуд ~30 хүсэлт/мин write limiter авна. Байгууллагын тамгыг зөвхөн
+байгууллагын **admin** бичнэ.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/me/signature` | Хувь хүний гарын үсгийн зургийн URL авах. |
+| PUT | `/me/signature` | Хувь хүний гарын үсгийн зураг тавих. |
+| DELETE | `/me/signature` | Хувь хүний гарын үсэг устгах. |
+| PUT | `/me/latin-name` | Иргэний латин (галиглалт) нэр засах. |
+| PUT | `/me/org-name-latin/{regNo}` | Байгууллагын латин нэр засах. |
+| GET | `/me/orgstamp/{regNo}` | Байгууллагын тамганы дардасын зураг авах. |
+| PUT | `/me/orgstamp/{regNo}` | Байгууллагын тамганы дардас тавих (зөвхөн org admin). |
+| DELETE | `/me/orgstamp/{regNo}` | Байгууллагын тамганы дардас устгах (зөвхөн org admin). |
+
+## Gerege Space (`/api/v1/gspace`) 🔒
+
+Апп-ын өөрийн per-user SFTP хадгалалт. `GSPACE_*` тохируулаагүй бол 500 буцаана.
+Мутациуд write limiter авна.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/gspace/` | Хадгалалтын тойм (ашиглалт/квот, файлын жагсаалт). |
+| GET | `/gspace/download` | Файл татах. |
+| POST | `/gspace/upload` | Файл байршуулах. |
+| DELETE | `/gspace/` | Файл устгах. |
+
+---
+
+## API Gateway (`/api/v1/gateway`) 🛡️ `gateway.manage`
+
+Kong маягийн gateway админ: services, routes, consumers, API keys, policies,
+дээр нь телеметр. Бүх endpoint 🔒 + 🛡️ `gateway.manage` шаардана.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/gateway/overview` | Телеметрийн тойм. |
+| GET | `/gateway/logs` | Хүсэлтийн лог. |
+| GET | `/gateway/services` | Service жагсаах. |
+| POST | `/gateway/services` | Service үүсгэх. |
+| PUT | `/gateway/services/{id}` | Service шинэчлэх. |
+| DELETE | `/gateway/services/{id}` | Service устгах. |
+| GET | `/gateway/routes` | Route жагсаах. |
+| POST | `/gateway/routes` | Route үүсгэх. |
+| PUT | `/gateway/routes/{id}` | Route шинэчлэх. |
+| DELETE | `/gateway/routes/{id}` | Route устгах. |
+| GET | `/gateway/consumers` | Consumer жагсаах. |
+| POST | `/gateway/consumers` | Consumer үүсгэх. |
+| PUT | `/gateway/consumers/{id}` | Consumer шинэчлэх. |
+| DELETE | `/gateway/consumers/{id}` | Consumer устгах. |
+| GET | `/gateway/consumers/{id}/keys` | Consumer-ийн API key жагсаах. |
+| POST | `/gateway/consumers/{id}/keys` | API key олгох. |
+| POST | `/gateway/keys/{keyId}/revoke` | API key цуцлах. |
+| DELETE | `/gateway/keys/{keyId}` | API key устгах. |
+| GET | `/gateway/policies` | Policy жагсаах. |
+| POST | `/gateway/policies` | Policy үүсгэх. |
+| PUT | `/gateway/policies/{id}` | Policy шинэчлэх. |
+| DELETE | `/gateway/policies/{id}` | Policy устгах. |
+
+## Gerege Core (`/api/v1/core`) 🔒
+
+Gerege Core (core.dgov.mn)-ийн хайлтын wrap; service токен backend-д нуугдана.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/core/users` | Хэрэглэгч хайх. |
+| GET | `/core/organizations` | Байгууллага хайх. |
+
+---
+
+## dgov SSO consumer (`/api/v1/sso`)
+
+Платформ нь dgov SSO-ийн **OIDC consumer** (eID-ийн зэрэгцээ 2 дахь нэвтрэлт).
+Нэвтрэхээс өмнөх тул bearer шаардахгүй; body хязгаартай (4 KiB) ба service RLS
+identity-ээр (callback нь `users`-т upsert хийнэ).
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| POST | `/sso/start` | SSO authorization урсгал эхлүүлэх (redirect URL буцаана). |
+| POST | `/sso/callback` | Web урсгал дуусгах (code солилцоо → токен хос). |
+| POST | `/sso/native` | Native/мобайл SSO солилцоо. |
+| POST | `/sso/logout` | SSO logout. |
+
+## OIDC provider — login/consent/logout (`/api/v1/provider`)
+
+Зөвхөн **Hydra тохируулагдсан үед** (`ProviderConfigured()`) идэвхжинэ. Энэ нь
+dan.dgov.mn нь Ory Hydra урдаа тавьж OIDC **provider** болсон нь; Next.js BFF-ийн
+`/login`, `/consent`, `/logout` хуудсууд дуудна. Body хязгаартай (4 KiB).
+`get`/`reject`/`logout-accept` нь challenge-аар баталгаажна (bearer-гүй);
+`accept` endpoint-ууд нэвтэрсэн иргэн шаардана (subject = dan user ID).
+
+| Method | Path | Auth | Тайлбар |
 |--------|------|------|-------------|
-| POST 🔒 | `/ai/chat` | `message`(≤4000) ба/эсвэл `audio{mime,data}`(base64 ≤~700KB), `history`(≤20 ээлж) | `reply` (Монгол), `steps` (гүйцэтгэсэн tool-ууд), `degraded` (Gemini унасан үед fallback) |
-| POST 🔒 | `/ai/stt` | `audio{mime,data}` | `text` — яриа илрээгүй бол хоосон |
-| POST 🔒 | `/ai/tts` | `text`(≤2000), `voice`(сонголттой) | `mime:"audio/wav"`, `data` (base64 — browser шууд тоглуулна) |
-| POST 🔒 | `/ai/translate` | `text` эсвэл `audio`, `target_lang`(mn/en/ru/zh/ja/ko/de), `speak`(bool) | `source_text`, `translated`, `audio`(speak=true үед); чимээгүй chunk-д хоосон талбарууд |
-| GET 🔒 | `/admin/ai/prompts` | — (`settings.manage` эрх) | Prompt давхаргууд (`scope`, `instructions`) |
-| PUT 🔒 | `/admin/ai/prompts/{key}` | `content`(≤4000, хоосон болно) | Шууд үйлчилнэ (кэш хүчингүй болдог) |
+| GET | `/provider/login` | challenge | Login challenge-ийн мэдээлэл авах. |
+| GET | `/provider/consent` | challenge | Consent challenge-ийн мэдээлэл авах. |
+| POST | `/provider/login/reject` | challenge | Login challenge-ийг татгалзах. |
+| POST | `/provider/consent/reject` | challenge | Consent challenge-ийг татгалзах. |
+| POST | `/provider/logout/accept` | challenge | Logout challenge-ийг зөвшөөрөх. |
+| POST | `/provider/login/accept` | 🔒 | Нэвтэрсэн иргэний login challenge-ийг зөвшөөрөх. |
+| POST | `/provider/consent/accept` | 🔒 | Consent challenge-ийг зөвшөөрөх. |
 
 ---
 
-## Үйлдлийн endpoint-ууд (`/api/v1` угтваргүй)
+## Админ — хэрэглэгч & AI prompt (`/api/v1/admin`) 🔒
 
-`GET /health` (liveness) · `GET /ready` (Postgres + Redis шалгана) ·
-`GET /metrics` (Prometheus) · `GET /swagger/*` (Swagger UI)
+| Method | Path | Guard | Тайлбар |
+|--------|------|-------|-------------|
+| GET | `/admin/users` | 🛡️ `users.manage` | Хэрэглэгч жагсаах. |
+| PUT | `/admin/users/{id}/role` | 🛡️ `users.manage` | Хэрэглэгчийн role солих. |
+| PUT | `/admin/users/{id}/active` | 🛡️ `users.manage` | Хэрэглэгч идэвхжүүлэх/идэвхгүйжүүлэх. |
+| DELETE | `/admin/users/{id}` | 🛡️ `users.manage` | Хэрэглэгч устгах. |
+| GET | `/admin/ai/prompts` | 🛡️ `settings.manage` | Тохируулж болох AI prompt давхаргуудыг жагсаах. |
+| PUT | `/admin/ai/prompts/{key}` | 🛡️ `settings.manage` | Prompt давхарга шинэчлэх (`key` ∈ `scope` \| `instructions`). |
+
+> **Нэрийн тэмдэглэл.** Апп доторх энэ `/api/v1/admin` бүлэг нь доор *Non-`/api`
+> mounts*-д баримтжуулсан дээд түвшний `/admin` Hydra оператор гадаргуутай огт
+> өөр — ижил үг, өөр mount.
+
+## Super admin (`/api/v1/superadmin`) 🔒
+
+`RequireSuperAdmin`-ээр хамгаалагдсан — зөвхөн `RoleSuperAdmin` орно; энгийн
+admin ч болохгүй. Мутаци бүрийг audit log-д бичнэ.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/superadmin/admins` | Админуудыг жагсаах. |
+| POST | `/superadmin/admins` | Админ үүсгэх. |
+| PUT | `/superadmin/admins/{id}/grant` | Одоо байгаа хэрэглэгчид админ эрх олгох. |
+| DELETE | `/superadmin/admins/{id}` | Админ эрх хасах. |
 
 ---
 
-🔒 = `Authorization: Bearer <access_token>` шаардана. Энэ тодорхойлолтыг handler
-annotation-аас `make swag`-аар дахин үүсгэнэ.
+## Audit log (`/api/v1/audit`) 🔒 admin
+
+Hash-chained, append-only audit log; зөвхөн admin (`RequireAdmin`).
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/audit/` | Audit бичлэгүүд жагсаах. |
+| GET | `/audit/verify` | Hash chain-ийн бүрэн бүтэн байдлыг шалгах. |
+
+## Security events (`/api/v1/security`) 🔒
+
+RASP маягийн клиент телеметр. Ингест нь нэвтэрсэн хэрэглэгч бүрт нээлттэй (RLS нь
+`user_id` тавина); жагсаалт зөвхөн admin.
+
+| Method | Path | Guard | Тайлбар |
+|--------|------|-------|-------------|
+| POST | `/security/events` | 🔒 | Security event ингест хийх. |
+| GET | `/security/events` | 🔒 admin | Security event жагсаах (`RequireAdmin`). |
+
+## Сайтын харагдац (`/api/v1/site`)
+
+Сайт даяарх default харагдац (accent/font/density/theme).
+
+| Method | Path | Guard | Тайлбар |
+|--------|------|-------|-------------|
+| GET | `/site/appearance` | — (нийтийн) | Нийтийн харагдацын default унших (landing/anon). |
+| PUT | `/site/appearance` | 🛡️ `settings.manage` | Харагдацын default шинэчлэх. |
+
+## PDF гарын үсэг — PAdES (`/api/v1/sign`) 🔒
+
+eID Mongolia `/v3`-ээр серверийн туслалцаатай PAdES гарын үсэг.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| POST | `/sign/init` | Гарын үсгийн session эхлүүлэх (`id` + зөвшөөрлийн prompt буцаана). |
+| GET | `/sign/{id}` | Гарын үсгийн session-ийн төлөв poll хийх. |
+| GET | `/sign/{id}/download` | Гарын үсэг зурсан PDF татах. |
 
 ---
 
-**Government Template Platform V3.0** — **Gerege Systems Development Team** болон **Claude AI** хамтран бүтээв, 2026.
+## AI (Gemini pipeline) (`/api/v1/ai`) 🔒
+
+Бүх `/ai/*` endpoint bearer токен шаардах ба тусдаа rate limit (~20 хүсэлт/мин,
+IP тус бүр) хуваалцана. `GEMINI_API_KEY` тохируулах хүртэл 500 буцаана.
+Ассистент нь давхаргалсан system prompt дээр ажиллана — hardcoded guardrail +
+админ-тохируулга бүхий **scope** (үүнээс гадуурхыг татгалзана) + сонголтот
+**instructions** — ба платформын хариултыг `ai_knowledge` хүснэгтэд
+`search_knowledge` tool-оор үндэслэнэ.
+
+### POST `/ai/chat` 🔒
+Ассистенттэй чатлах. Текст, дуу хоолой (model шууд ойлгодог base64 audio) эсвэл
+хоёуланг илгээ. Stateless — өмнөх ээлжүүдийг `history`-д дамжуул.
+
+**Хүсэлт**
+```json
+{ "message": "what time is it?",
+  "audio": { "mime": "audio/webm", "data": "<base64>" },
+  "history": [ { "role": "user", "text": "…" }, { "role": "model", "text": "…" } ] }
+```
+| Талбар | Дүрэм |
+|-------|-------|
+| `message` | сонголтот (`audio` байхгүй бол заавал), ≤ 4000 тэмдэгт |
+| `audio` | сонголтот; `mime` ∈ webm/ogg/wav/mpeg/mp3/mp4/m4a/aac/flac, `data` base64 ≤ ~700 KB |
+| `history` | сонголтот, ≤ 20 ээлж |
+
+**Хариулт `200`**
+```json
+{ "status": true, "message": "ai reply generated", "data": {
+  "reply": "Одоо 12:30 цаг болж байна.",
+  "steps": [ { "tool": "get_server_time", "args": {}, "result": { } } ],
+  "degraded": false }, "request_id": "…" }
+```
+`steps` нь model-ийн гүйцэтгэсэн функцийн дуудлагуудыг (pipeline trace) харуулна.
+Gemini түр боломжгүй үед endpoint нь `200`-ыг монгол fallback `reply` болон
+`degraded: true`-тэй буцаана.
+
+### POST `/ai/stt` 🔒
+Speech-to-text. **Хүсэлт** `{ "audio": { "mime": "audio/webm", "data": "<base64>" } }`
+**Хариулт `200`** — `data: { "text": "…" }` (яриа илрээгүй бол хоосон).
+
+### POST `/ai/tts` 🔒
+Text-to-speech. **Хүсэлт** `{ "text": "Сайн байна уу", "voice": "Kore" }` (`voice` сонголтот)
+**Хариулт `200`** — `data: { "mime": "audio/wav", "data": "<base64 WAV>" }` — браузерт шууд тоглоно.
+
+### POST `/ai/translate` 🔒
+Амьд орчуулга. `text` **эсвэл** `audio` өг (audio эхлээд дотоод STT-ээр орно);
+`speak: true` нь орчуулгын дуутай (TTS) хувилбарыг нэмж буцаана. Чимээгүй audio
+chunk хоосон талбар буцаана — амьд орчуулгын UI богино бичлэгийг энд стриминг
+хийнэ.
+
+**Хүсэлт** `{ "audio": { … }, "target_lang": "en", "speak": false }`
+(`target_lang`: заавал, ж: `mn|en|ru|zh|ja|ko|de`)
+**Хариулт `200`** — `data: { "source_text": "Сайн уу", "translated": "Hello", "audio": { … } }`.
+
+> Prompt давхаргын тохиргоо нь дээрх **Админ — хэрэглэгч & AI prompt**-д байрлана
+> (`GET`/`PUT /api/v1/admin/ai/prompts`). Суурь guardrail давхарга нь hardcoded
+> бөгөөс хэзээ ч ил гарахгүй.
+
+---
+
+## Non-`/api` mounts
+
+### OIDC provider админ гадаргуу — `/admin` (оператор)
+
+Зөвхөн **Hydra тохируулагдсан үед** (`ProviderConfigured()`) идэвхжинэ. `/admin`-д
+(`StripPrefix`-ээр, тул дотоод pattern нь `/api/v1/…` уншина) суурьшсан энгийн
+`http.ServeMux`. Энэ нь **RP OAuth2 client бүртгэл** болон **admin API key**-ийг
+удирдах ба **admin API key**-ээр баталгаажна — `Authorization: Bearer <key>`
+эсвэл `X-API-Key: <key>` — хэрэглэгчийн JWT-ЭЭР БИШ.
+
+> ⚠️ **Нэрийн давхцал.** Энэ дээд түвшний `/admin` оператор гадаргуу нь дээрх
+> апп доторх `/api/v1/admin` бүлэгтэй өөр зүйл. Түүний өөрийн route-ууд ч strip-
+> ийн дараа `/api/v1/…` уншдаг ч тэдгээрт `/admin/api/v1/…`-ээр хүрнэ.
+
+| Method | Path (`/admin`-ийн доор) | Тайлбар |
+|--------|-----------------------|-------------|
+| GET | `/api/v1/me` | Дуудагч admin key-г таних. |
+| GET | `/api/v1/clients` | Бүртгэлтэй RP OAuth2 client-уудыг жагсаах. |
+| POST | `/api/v1/clients` | Шинэ RP client бүртгэх. |
+| GET | `/api/v1/clients/{client_id}` | Нэг RP client авах. |
+| PATCH | `/api/v1/clients/{client_id}` | RP client шинэчлэх. |
+| DELETE | `/api/v1/clients/{client_id}` | RP client устгах. |
+| POST | `/api/v1/clients/{client_id}/rotate-secret` | RP client secret эргүүлэх. |
+| GET | `/api/v1/keys` | Admin API key жагсаах. |
+| POST | `/api/v1/keys` | Admin API key үүсгэх. |
+| DELETE | `/api/v1/keys/{id}` | Admin API key цуцлах. |
+
+### Sign relay — `/rp/sign/*` (RP proxy)
+
+Зөвхөн **`SIGN_RELAY_TOKEN` болон `EID_RP_SECRET` хоёул тохируулагдсан үед**
+идэвхжинэ. Гуравдагч этгээдийн RP-үүд dan-ий eID Mongolia creds-ээр гарын үсэг
+зурах боломжийг олгодог reverse proxy: дуудагч нь хуваалцсан relay токеныг
+`Authorization: Bearer <token>`-оор танилцуулна; relay нь түүнийг dan-ий жинхэнэ
+eID RP secret-ээр солиод eID Mongolia руу дамжуулна. `/rp/sign` болон
+`/rp/sign/*` хоёулаа зохицуулагдана.
+
+---
+
+## Операциуд (`/api/v1` угтваргүй)
+
+| Method | Path | Gate | Тайлбар |
+|--------|------|------|-------------|
+| GET | `/health` | нээлттэй | Liveness — процесс амьд бол үргэлж 200. |
+| GET | `/ready` | нээлттэй | Readiness — Postgres (pgx pool) + Redis ping хийнэ. |
+| GET | `/metrics` | ObservabilityGate | Prometheus exposition (production-д bearer-gated + 404-hidden). |
+| GET | `/swagger/*` · `/swagger/doc.json` | ObservabilityGate | Swagger UI + spec (production-д gated). |
+| GET | `/api/` | нээлттэй | Root "alive" JSON. |
+
+`ObservabilityGate` нь observability bearer токен шаардах ба production-д
+баталгаажаагүй үед 404 (401 биш) буцаана.
+
+---
+
+🔒 = `Authorization: Bearer <access_token>` шаардана; 🛡️ = дээр нь нэрлэсэн RBAC
+permission шаардана. Swagger spec-ийг handler annotation-аас `make swag`-аар
+дахин үүсгэ. (Долоон хуучирсан `auth_*` handler нь бүртгэгдээгүй password/OTP
+endpoint-уудад `@Router` annotation-той хэвээр байгаа — дээрх auth гадаргуу нь
+`route_auth.go`-г тусгасан бөгөөс энэ нь эрх мэдэлтэй.)
+
+---
+
+**Government Template Platform V3.0** — Co-developed by the **Gerege Systems Development Team** and **Claude AI**, 2026.
+</content>

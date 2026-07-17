@@ -34,8 +34,8 @@ set. Upstream attribution is retained in [AUTHORS](AUTHORS). This project is
 ## Monorepo structure
 
 ```
-gerege-template/
-├── backend/           # Go · chi (net/http) · pgx (pgxpool) · PostgreSQL · Redis · JWT/OTP auth
+dan-dgov-mn/
+├── backend/           # Go · chi (net/http) · pgx (pgxpool) · PostgreSQL · Redis · eID/Google/SSO auth
 │   └── docs/          # ARCHITECTURE · DEVELOPMENT · API_CONTRACT · SECURITY (EN/MN)
 └── frontend/          # Next.js BFF (server-side proxy to the backend; cookie sessions)
 ```
@@ -46,21 +46,31 @@ gerege-template/
 ## Features
 
 - **Clean Architecture** — `handler → usecase → repository → domain`, no back-imports; the business core never imports the web framework.
-- **Auth** — JWT access + refresh (rotation), OTP-verified registration, bcrypt, login lockout; logout revokes both tokens (refresh + access deny-list).
+- **Auth — eID + Google + dgov SSO** — the only login method is **Login with eID** (eID Mongolia Relying Party: QR code / mobile deep-link / national-ID push with a long-poll session). Alongside it, **Google OAuth** account-linking and a **dgov SSO (OIDC) consumer** (`sso.dgov.mn`). Sessions are JWT access + refresh (rotation); logout revokes both (refresh + access deny-list). There is no password or email/OTP login.
+- **eID PKI profile** — reads the signed-in citizen's eID identity from the IdP: linked organizations & authorized signers, certificates, registered devices, and activity.
+- **Organizations & membership** — create/lookup organizations (state-registry lookup via Gerege Verify/XYP) and manage members/roles, RLS-scoped per user.
+- **Government services portal** — the citizen-facing `Төрийн үйлчилгээ` surface: service catalogue, applications, references, notifications, payments, appointments.
+- **API gateway** — admin-managed services / routes / consumers / API keys / policies with request telemetry (overview + logs).
+- **OIDC provider (SSO)** — DAN itself acts as an identity provider: an [Ory Hydra](https://www.ory.sh/hydra/) front-end drives the login/consent/logout flows so relying parties can `Sign in with DAN`. Enabled only when Hydra is configured.
+- **Document signing (PAdES)** — server-side PDF signing through eID Mongolia `/v3`, with a persistent Document-Signer certificate; a sign-relay lets third-party RPs sign through DAN's eID credentials.
+- **Third-party integrations** — per-user OAuth links (Google Drive/Meet, Dropbox) with tokens encrypted at rest (AES-256-GCM), plus **Gerege Space** app-native SFTP storage.
 - **AI pipeline (Gemini)** — SDK-free REST client with function calling: text/voice chat, speech-to-text, text-to-speech, live translation. Layered system prompt (hardcoded guardrails + admin-configurable scope/instructions in the DB) keeps the assistant inside its configured domain; a `search_knowledge` tool grounds answers in the `ai_knowledge` table.
+- **Audit log** — hash-chained, append-only audit trail (admin-only read + integrity verify).
+- **RBAC & super admin** — dynamic roles + permission catalogue; a 4-role model (**superadmin → admin → manager → user**) where super admin is the only role that can manage admin accounts.
+- **Site appearance** — admin-configurable site-wide look (accent / font / density / theme) for public pages, plus per-user overrides.
 - **Security-hardened** — strict security headers (CSP, HSTS, COOP/COEP/CORP), CORS allow-list, rate limiting, full HTTP server timeouts, parameterized queries, Postgres Row-Level Security with a boot-time enforceability guard. See [SECURITY.md](SECURITY.md).
-- **Observability** — OpenTelemetry tracing + Prometheus metrics + structured Zap logs.
+- **Observability** — OpenTelemetry tracing + Prometheus metrics + structured Zap logs; `/metrics` and `/swagger` are gated behind a bearer token in production.
 - **Frontend BFF** — the browser talks only to same-origin Next.js routes, which proxy to the backend server-side (tokens never reach client JS); double CSRF defense (custom header + origin check), TanStack Query data layer.
 - **Tested** — unit tests + testcontainers integration tests.
 
 ## Quick start
 
-**Prerequisites:** Go 1.26+, Node 20+, PostgreSQL 15+, Redis 7+.
+**Prerequisites:** Go 1.26+, Node 20+, PostgreSQL 15+, Redis 7+ (Docker recommended for the full stack).
 
 ```bash
 # 1) Backend  →  http://localhost:8080
 cd backend
-cp internal/config/.env.example internal/config/.env   # set JWT_SECRET (≥32 chars), DB, Redis
+cp internal/config/.env.example internal/config/.env   # set JWT_SECRET (≥32 chars), DB, Redis, EID_* RP creds
 
 # 2) Frontend →  http://localhost:3000
 cd ../frontend
@@ -69,7 +79,13 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:3000** and register / log in.
+Or bring up the whole stack (db + redis + migrate + api + web, and Hydra for OIDC-provider mode):
+
+```bash
+docker compose up -d --build
+```
+
+Open **http://localhost:3000** and choose **Login with eID** (scan the QR / open the eID mobile app, or enter a national ID to receive a push). Google account-linking and dgov SSO appear when their credentials are configured.
 
 ## Documentation
 
@@ -80,7 +96,8 @@ Open **http://localhost:3000** and register / log in.
 | [backend/docs/API_CONTRACT.md](backend/docs/API_CONTRACT.md) | REST endpoints, request/response shapes |
 | [backend/docs/AI_PIPELINE.md](backend/docs/AI_PIPELINE.md) | AI assistant internals: flows, prompt layers, tools, voice, how to extend |
 | [backend/docs/SECURITY.md](backend/docs/SECURITY.md) | Implemented controls + ASVS roadmap |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | VPS deployment runbook (compose, env files, nginx, updates, rollback) |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | VPS deployment runbook (compose, env files, nginx, Hydra, updates, rollback) |
+| [ROADMAP.md](ROADMAP.md) | What's shipped and what's next |
 | [SECURITY.md](SECURITY.md) | How to report a vulnerability |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
 

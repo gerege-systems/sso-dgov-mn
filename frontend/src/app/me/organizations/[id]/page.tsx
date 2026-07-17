@@ -5,7 +5,7 @@ import OrgDetail from '@/components/me/OrgDetail';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Байгууллага — Government Template v3.0' };
+export const metadata = { title: 'Байгууллага — DAN-Government SSO' };
 
 export default async function MeOrganizationDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;

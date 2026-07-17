@@ -1,15 +1,15 @@
-# Government Template Platform V3.0 — iOS App (TemplateApp)
+# DAN-Government SSO — iOS App (TemplateApp)
 
-Энэ template платформын **iOS хувилбар**. eID эсвэл dgov SSO-гоор нэвтэрч,
+Энэ DAN-Government SSO-ийн **iOS хувилбар**. eID эсвэл dgov SSO-гоор нэвтэрч,
 хэрэглэгчийн профайл + eID PKI мэдээллийг харуулна. Native SwiftUI, гуравдагч
 хамааралгүй (SPM пакеж ашигладаггүй).
 
 > Тайлбар: энэ бол **Relying-Party консюмер** апп — иргэний eID **апп** (өөр төсөл)
-> биш. eID нэвтрэлтийг QR/РД-push урсгалаар template-ийн backend-ээр дамжуулж хийнэ.
+> биш. eID нэвтрэлтийг QR/РД-push урсгалаар DAN-Government SSO backend-ээр дамжуулж хийнэ.
 
 ## Архитектур
 
-- Апп → `https://template.dgov.mn/api/*` (BFF) — backend-тэй шууд харьцахгүй.
+- Апп → `https://dan.dgov.mn/api/*` (BFF) — backend-тэй шууд харьцахгүй.
 - Session нь httpOnly cookie (`dgov_access`/`refresh`)-д. `URLSession` +
   `HTTPCookieStorage.shared` нь cookie-г автоматаар хадгалж/илгээнэ.
 - BFF-ийн mutating route `x-dgov-csrf: 1` header шаарддаг (Origin header
@@ -59,5 +59,5 @@ Xcode дотор:
 
 ## Тохиргоо
 
-- Backend хаяг: `APIClient.baseURL` (default `https://template.dgov.mn`).
+- Backend хаяг: `APIClient.baseURL` (default `https://dan.dgov.mn`).
   Локал BFF-д туршихад `http://localhost:3000` болгож, ATS exception нэмнэ.

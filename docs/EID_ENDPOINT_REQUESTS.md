@@ -1,6 +1,16 @@
 # eID Mongolia — RP-facing endpoint нэмэх хүсэлт
 
-> Хүсэгч: **template.dgov.mn** (RP UUID `c4f371c3-20bd-462e-8d97-5bc4a20fde08`)
+> ✅ **БИЕЛСЭН · ТҮҮХЭН БАРИМТ (2026-07-17).** Энэ баримтад хүссэн RP-facing
+> endpoint-ууд upstream eID платформд хэрэгжиж, RP тал дээр аль хэдийн
+> ашиглагдаж байна. Live client дуудлагууд `backend/pkg/eid/eid_pki.go`-д
+> (`PersonSummary`, `PersonCertificates`, `PersonDevices`, `PersonActivity`)
+> болон байгууллага нэмэх/хасах (`AddRepresentation`/`RemoveRepresentation`,
+> `backend/pkg/eid/eid.go`) байрлана; RP API дээр
+> `/api/v1/users/me/eid/{summary,certificates,devices,activity,organizations}`
+> хэлбэрээр гарсан. Баримтыг **түүхэн бүртгэл** болгон хадгалав — доорх хэсэг
+> бүрт биелсэн статусыг тэмдэглэв.
+
+> Хүсэгч: **dan.dgov.mn** (RP UUID `c4f371c3-20bd-462e-8d97-5bc4a20fde08`)
 > Хүлээн авагч: **eID Mongolia platform** (`gerege-systems/eid-platform-mn`)
 > Огноо: 2026-07-04 · API суурь: `https://eidmongolia.mn/v3`
 
@@ -37,6 +47,9 @@ endpoint-оор бэлэн; зарим нь **шинэ RP-facing endpoint шаа
 
 ### 1. Гэрчилгээний жагсаалт / тоо — `GET /v3/certificates/etsi/{personEtsi}`
 
+**Статус: ✅ БИЕЛСЭН** — `PersonCertificates` (`backend/pkg/eid/eid_pki.go`) →
+`GET /api/v1/users/me/eid/certificates`.
+
 **Яагаад:** Profile дээр "хүчинтэй N, хүчингүй M, нийт K гэрчилгээ" ба гэрчилгээний
 жагсаалт харуулах. Одоо RP зөвхөн нэвтрэх үеийн НЭГ гэрчилгээг л хардаг.
 
@@ -64,6 +77,9 @@ gated, эсвэл (b) RP-д тусгай `CERTIFICATES_READ` permission олго
 
 ### 2. Үйл ажиллагааны түүх / тоо (RP-scoped) — `GET /v3/rp/activity/etsi/{personEtsi}`
 
+**Статус: ✅ БИЕЛСЭН** — `PersonActivity` (`backend/pkg/eid/eid_pki.go`) →
+`GET /api/v1/users/me/eid/activity`.
+
 **Яагаад:** Хяналтын самбар/Аюулгүй байдал дээр "нэвтрэлт: N, гарын үсэг: M" тоолуур
 ба сүүлийн session-уудыг харуулах.
 
@@ -85,6 +101,9 @@ RP-Bearer хувилбар хэрэгтэй (бусад RP-ийн мэдээлэ
 
 ### 3. Холбоотой төхөөрөмжүүд — `GET /v3/devices/etsi/{personEtsi}`
 
+**Статус: ✅ БИЕЛСЭН** — `PersonDevices` (`backend/pkg/eid/eid_pki.go`) →
+`GET /api/v1/users/me/eid/devices`.
+
 **Яагаад:** Аюулгүй байдал хэсэгт иргэний бүртгэлтэй идэвхтэй төхөөрөмжүүдийг
 жагсаах ("Linked devices").
 
@@ -102,6 +121,9 @@ RP-Bearer хувилбар хэрэгтэй (бусад RP-ийн мэдээлэ
 `X-Device-Token`-оор шалгадаг — иргэний бүх төхөөрөмжийг RP-д жагсаах арга алга.
 
 ### 4. (Сонголт) Байгууллага бүртгэх / холбох RP урсгал
+
+**Статус: ✅ БИЕЛСЭН** — `AddRepresentation`/`RemoveRepresentation`
+(`backend/pkg/eid/eid.go`) → `GET/POST/DELETE /api/v1/users/me/eid/organizations`.
 
 **Яагаад:** Иргэн өөрийн төлөөлдөг байгууллагаа RP дотроос бүртгэх/холбох. Одоо
 энэ нь зөвхөн **admin** (`POST /v3/admin/organizations` + `/representatives`).
@@ -125,7 +147,7 @@ RP-Bearer хувилбар хэрэгтэй (бусад RP-ийн мэдээлэ
 
 ## D. Хамаарал (RP тал дээр аль хэдийн бэлэн)
 
-template.dgov.mn нь дээрх өгөгдлийг хүлээн авмагц харуулах бэлэн:
+dan.dgov.mn нь дээрх өгөгдлийг хүлээн авмагц харуулах бэлэн:
 Profile дээр eID identity + гэрчилгээ (хэрэгжсэн), цаашид гэрчилгээний тоо,
 auth/sign тоолуур, холбоотой төхөөрөмж, байгууллагын секцүүд. Endpoint нээгдэх
 тусам бид өөрийн `pkg/eid` client-д нэмж, хуудсуудыг баяжуулна.

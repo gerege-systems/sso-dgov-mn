@@ -5,7 +5,7 @@ import GovServicesView from '@/components/gov/GovServicesView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Үйлчилгээ — Government Template v3.0' };
+export const metadata = { title: 'Үйлчилгээ — DAN-Government SSO' };
 
 export default async function MeServicesPage() {
   const me = await fetchMe();

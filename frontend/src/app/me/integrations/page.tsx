@@ -6,7 +6,7 @@ import { fetchMe, authedFetch } from '@/lib/api';
 import { integrationStatuses } from '@/lib/integrations';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Интеграци — Government Template v3.0' };
+export const metadata = { title: 'Интеграци — DAN-Government SSO' };
 
 export default async function IntegrationsPage() {
   const me = await fetchMe();

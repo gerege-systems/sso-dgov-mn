@@ -5,7 +5,7 @@ import GovAppointmentsView from '@/components/gov/GovAppointmentsView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Цаг захиалга — Government Template v3.0' };
+export const metadata = { title: 'Цаг захиалга — DAN-Government SSO' };
 
 export default async function MeAppointmentsPage() {
   const me = await fetchMe();

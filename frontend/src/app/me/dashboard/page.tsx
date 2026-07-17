@@ -4,7 +4,7 @@ import HomeView from '@/components/me/HomeView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Хяналтын самбар — Government Template v3.0' };
+export const metadata = { title: 'Хяналтын самбар — DAN-Government SSO' };
 
 export default async function MeDashboardPage() {
   const me = await fetchMe();
