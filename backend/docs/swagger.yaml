@@ -1192,39 +1192,6 @@ paths:
       summary: AI prompt давхаргыг шинэчлэх
       tags:
       - admin
-  /admin/site/appearance:
-    put:
-      consumes:
-      - application/json
-      description: Админ (settings.manage) сайтын нийтийн харагдацыг өөрчилнө. accent
-        нь preset нэр эсвэл '#rrggbb' hex.
-      parameters:
-      - description: Харагдацын шинэ утга
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-        "400":
-          description: Буруу утга
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-        "403":
-          description: settings.manage эрх дутуу
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      security:
-      - BearerAuth: []
-      summary: Сайтын харагдацын default-ыг шинэчлэх
-      tags:
-      - admin
   /ai/chat:
     post:
       consumes:
@@ -2905,6 +2872,38 @@ paths:
       summary: Сайтын харагдацын default-ыг унших
       tags:
       - site
+    put:
+      consumes:
+      - application/json
+      description: Админ (settings.manage) сайтын нийтийн харагдацыг өөрчилнө. accent
+        нь preset нэр эсвэл '#rrggbb' hex.
+      parameters:
+      - description: Харагдацын шинэ утга
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Буруу утга
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: settings.manage эрх дутуу
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Сайтын харагдацын default-ыг шинэчлэх
+      tags:
+      - admin
   /sso/callback:
     post:
       consumes:

@@ -34,8 +34,11 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: false, status: 400, message: 'Буруу утга.' }, { status: 400 });
   }
 
+  // Backend admin PUT нь /v1/site/appearance-д бүртгэлтэй (route_site.go,
+  // auth + settings.manage middleware-тэй). /admin/site/appearance гэж дуудвал
+  // /v1/admin бүлгийн auth middleware-т орж 404/401 өгдөг тул зөв замаар нь.
   return proxyResult(
-    await authedFetch('/admin/site/appearance', {
+    await authedFetch('/site/appearance', {
       method: 'PUT',
       body: JSON.stringify({ accent, font, style, theme }),
     }),

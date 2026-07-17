@@ -145,57 +145,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/site/appearance": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Админ (settings.manage) сайтын нийтийн харагдацыг өөрчилнө. accent нь preset нэр эсвэл '#rrggbb' hex.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "admin"
-                ],
-                "summary": "Сайтын харагдацын default-ыг шинэчлэх",
-                "parameters": [
-                    {
-                        "description": "Харагдацын шинэ утга",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Буруу утга",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "settings.manage эрх дутуу",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/ai/chat": {
             "post": {
                 "security": [
@@ -2807,6 +2756,55 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Админ (settings.manage) сайтын нийтийн харагдацыг өөрчилнө. accent нь preset нэр эсвэл '#rrggbb' hex.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Сайтын харагдацын default-ыг шинэчлэх",
+                "parameters": [
+                    {
+                        "description": "Харагдацын шинэ утга",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Буруу утга",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "settings.manage эрх дутуу",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
                         }
                     }
                 }

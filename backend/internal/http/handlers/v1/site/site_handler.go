@@ -51,7 +51,7 @@ func (h Handler) GetAppearance(w http.ResponseWriter, r *http.Request) error {
 // @Success 200 {object} v1.BaseResponse
 // @Failure 400 {object} v1.BaseResponse "Буруу утга"
 // @Failure 403 {object} v1.BaseResponse "settings.manage эрх дутуу"
-// @Router /admin/site/appearance [put]
+// @Router /site/appearance [put]
 func (h Handler) SetAppearance(w http.ResponseWriter, r *http.Request) error {
 	var req requests.SiteAppearanceUpdateRequest
 	if err := v1.DecodeBody(r, &req); err != nil {
