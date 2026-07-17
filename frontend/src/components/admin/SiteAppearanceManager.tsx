@@ -7,7 +7,7 @@ import Alert from '@/components/Alert';
 import SegmentedControl from '@/components/SegmentedControl';
 import { getJSON, sendJSON } from '@/lib/client';
 import { useT } from '@/lib/lang';
-import type { SiteAppearance } from '@/lib/api';
+import { DEFAULT_LANDING_BG, type SiteAppearance } from '@/lib/api';
 
 const PRESETS = ['cobalt', 'teal', 'violet', 'emerald', 'amber'] as const;
 type Preset = (typeof PRESETS)[number];
@@ -33,6 +33,7 @@ export default function SiteAppearanceManager() {
   const [font, setFont] = useState<SiteAppearance['font']>('inter');
   const [style, setStyle] = useState<SiteAppearance['style']>('comfortable');
   const [theme, setTheme] = useState<SiteAppearance['theme']>('light');
+  const [landingBg, setLandingBg] = useState<string>(DEFAULT_LANDING_BG);
   const [saved, setSaved] = useState(false);
 
   // Backend-ээс уншсан утгыг формд суулгах.
@@ -44,13 +45,20 @@ export default function SiteAppearanceManager() {
     setFont(d.font);
     setStyle(d.style);
     setTheme(d.theme);
+    setLandingBg(HEX.test(d.landingBg) ? d.landingBg : DEFAULT_LANDING_BG);
   }, [query.data]);
 
   const isCustom = HEX.test(accent);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await sendJSON('/api/admin/site/appearance', 'PUT', { accent, font, style, theme });
+      const res = await sendJSON('/api/admin/site/appearance', 'PUT', {
+        accent,
+        font,
+        style,
+        theme,
+        landing_bg: landingBg,
+      });
       if (!res.ok) throw new Error(res.message || T('site.appearance.saveError'));
     },
     onSuccess: () => {
@@ -172,6 +180,30 @@ export default function SiteAppearanceManager() {
               { value: 'system', label: T('theme.system') },
             ]}
           />
+        </div>
+
+        {/* Landing (нүүр) navy дэвсгэр — зөвхөн нүүр хуудсанд нөлөөлнө */}
+        <div className="appearance__row">
+          <span className="appearance__label">{T('site.appearance.landingBg')}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <input
+              type="color"
+              aria-label={T('site.appearance.landingBg')}
+              value={landingBg}
+              onChange={(e) => setLandingBg(e.target.value)}
+              className="color-input"
+            />
+            <span className="mono" style={{ fontSize: 13 }}>{landingBg}</span>
+            {landingBg.toLowerCase() !== DEFAULT_LANDING_BG && (
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => setLandingBg(DEFAULT_LANDING_BG)}
+              >
+                {T('site.appearance.reset')}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="form-actions">

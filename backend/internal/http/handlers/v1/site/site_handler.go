@@ -61,10 +61,11 @@ func (h Handler) SetAppearance(w http.ResponseWriter, r *http.Request) error {
 		return v1.RespondWithError(w, r, err)
 	}
 	err := h.usecase.SetAppearance(r.Context(), domain.SiteAppearance{
-		Accent: req.Accent,
-		Font:   req.Font,
-		Style:  req.Style,
-		Theme:  req.Theme,
+		Accent:    req.Accent,
+		Font:      req.Font,
+		Style:     req.Style,
+		Theme:     req.Theme,
+		LandingBg: req.LandingBg,
 	})
 	if err != nil {
 		return v1.RespondWithError(w, r, err)

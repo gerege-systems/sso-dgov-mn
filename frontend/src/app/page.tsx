@@ -4,7 +4,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { hasSession } from '@/lib/session';
 import { safeNext } from '@/lib/navigation';
-import { fetchActiveTheme } from '@/lib/api';
+import { fetchActiveTheme, fetchSiteAppearance } from '@/lib/api';
 import LandingPage from '@/components/landing/LandingPage';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export default async function Home(props: {
   const next = safe === '/' ? '/me/dashboard' : safe;
 
   // Идэвхтэй theme-ийн landing текст/цэс — LandingPage copy.ts default дээр merge хийнэ.
-  const theme = await fetchActiveTheme();
+  const [theme, appearance] = await Promise.all([fetchActiveTheme(), fetchSiteAppearance()]);
 
   return (
     <LandingPage
@@ -34,6 +34,7 @@ export default async function Home(props: {
       googleLink={searchParams.glink === '1'}
       googleError={!!searchParams.gerror}
       themeLanding={theme.landing}
+      landingBg={appearance.landingBg}
     />
   );
 }

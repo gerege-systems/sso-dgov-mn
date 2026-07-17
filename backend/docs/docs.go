@@ -5784,6 +5784,7 @@ const docTemplate = `{
             "required": [
                 "accent",
                 "font",
+                "landing_bg",
                 "style",
                 "theme"
             ],
@@ -5793,6 +5794,10 @@ const docTemplate = `{
                     "maxLength": 32
                 },
                 "font": {
+                    "type": "string",
+                    "maxLength": 16
+                },
+                "landing_bg": {
                     "type": "string",
                     "maxLength": 16
                 },
@@ -6562,6 +6567,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "font": {
+                    "type": "string"
+                },
+                "landing_bg": {
                     "type": "string"
                 },
                 "style": {

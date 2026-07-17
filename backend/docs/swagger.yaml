@@ -536,6 +536,9 @@ definitions:
       font:
         maxLength: 16
         type: string
+      landing_bg:
+        maxLength: 16
+        type: string
       style:
         maxLength: 16
         type: string
@@ -545,6 +548,7 @@ definitions:
     required:
     - accent
     - font
+    - landing_bg
     - style
     - theme
     type: object
@@ -1049,6 +1053,8 @@ definitions:
       accent:
         type: string
       font:
+        type: string
+      landing_bg:
         type: string
       style:
         type: string

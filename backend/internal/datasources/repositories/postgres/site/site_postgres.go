@@ -28,7 +28,7 @@ func NewSiteRepository(pool *pgxpool.Pool) repointerface.SiteRepository {
 
 func (r *siteRepository) GetAppearance(ctx context.Context) (domain.SiteAppearance, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT accent, font, style, theme, updated_at FROM site_appearance WHERE id = 1`)
+		`SELECT accent, font, style, theme, landing_bg, updated_at FROM site_appearance WHERE id = 1`)
 	if err != nil {
 		return domain.SiteAppearance{}, fmt.Errorf("query site appearance: %w", err)
 	}
@@ -41,8 +41,8 @@ func (r *siteRepository) GetAppearance(ctx context.Context) (domain.SiteAppearan
 
 func (r *siteRepository) SetAppearance(ctx context.Context, a domain.SiteAppearance) error {
 	tag, err := r.pool.Exec(ctx,
-		`UPDATE site_appearance SET accent = $1, font = $2, style = $3, theme = $4, updated_at = now() WHERE id = 1`,
-		a.Accent, a.Font, a.Style, a.Theme)
+		`UPDATE site_appearance SET accent = $1, font = $2, style = $3, theme = $4, landing_bg = $5, updated_at = now() WHERE id = 1`,
+		a.Accent, a.Font, a.Style, a.Theme, a.LandingBg)
 	if err != nil {
 		return fmt.Errorf("update site appearance: %w", err)
 	}

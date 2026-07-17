@@ -17,11 +17,12 @@ export async function PUT(req: Request) {
   const bad = checkOrigin(req);
   if (bad) return bad;
 
-  const { accent, font, style, theme } = await readJson<{
+  const { accent, font, style, theme, landing_bg } = await readJson<{
     accent?: unknown;
     font?: unknown;
     style?: unknown;
     theme?: unknown;
+    landing_bg?: unknown;
   }>(req);
 
   const okAccent = typeof accent === 'string' && (PRESETS.has(accent) || HEX.test(accent));
@@ -29,7 +30,8 @@ export async function PUT(req: Request) {
     !okAccent ||
     typeof font !== 'string' || !FONTS.has(font) ||
     typeof style !== 'string' || !STYLES.has(style) ||
-    typeof theme !== 'string' || !THEMES.has(theme)
+    typeof theme !== 'string' || !THEMES.has(theme) ||
+    typeof landing_bg !== 'string' || !HEX.test(landing_bg)
   ) {
     return NextResponse.json({ ok: false, status: 400, message: 'Буруу утга.' }, { status: 400 });
   }
@@ -40,7 +42,7 @@ export async function PUT(req: Request) {
   return proxyResult(
     await authedFetch('/site/appearance', {
       method: 'PUT',
-      body: JSON.stringify({ accent, font, style, theme }),
+      body: JSON.stringify({ accent, font, style, theme, landing_bg }),
     }),
   );
 }

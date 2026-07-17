@@ -1559,9 +1559,11 @@ html[lang="en"] .i18n-banner { display: block; }
    Hero-ийн баруун талд ОДОО БАЙГАА нэвтрэх карт (.signin-card) шигтгэнэ.
    ============================================================================ */
 .lp {
-  /* Landing-д зориулсан гүн navy + алт */
+  /* Landing-д зориулсан гүн navy + алт. --lp-navy-г админ SiteAppearance-аар
+     дарж болно (LandingPage inline style); --lp-navy-2 нь түүнээс деривэ хийгдэх
+     тул ганц утга солиход нав/hero/cta/footer бүгд нэг мөр өөрчлөгдөнө. */
   --lp-navy:       oklch(24% 0.055 260);
-  --lp-navy-2:     oklch(29% 0.062 260);
+  --lp-navy-2:     color-mix(in oklab, var(--lp-navy), white 7%);
   --lp-navy-line:  oklch(100% 0 0 / 0.12);
   --lp-navy-line2: oklch(100% 0 0 / 0.22);
   --lp-on-navy:    oklch(98% 0.004 260);

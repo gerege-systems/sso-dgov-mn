@@ -4,11 +4,12 @@
 package requests
 
 // SiteAppearanceUpdateRequest нь сайтын харагдацын default-ыг шинэчлэх админ
-// хүсэлт. accent нь preset нэр эсвэл '#rrggbb' hex — утгын нарийн шалгалт
-// usecase давхаргад (domain.ValidSiteAccent г.м.).
+// хүсэлт. accent нь preset нэр эсвэл '#rrggbb' hex, landing_bg нь '#rrggbb' hex —
+// утгын нарийн шалгалт usecase давхаргад (domain.ValidSiteAccent / ValidLandingBg).
 type SiteAppearanceUpdateRequest struct {
-	Accent string `json:"accent" validate:"required,max=32"`
-	Font   string `json:"font" validate:"required,max=16"`
-	Style  string `json:"style" validate:"required,max=16"`
-	Theme  string `json:"theme" validate:"required,max=16"`
+	Accent    string `json:"accent" validate:"required,max=32"`
+	Font      string `json:"font" validate:"required,max=16"`
+	Style     string `json:"style" validate:"required,max=16"`
+	Theme     string `json:"theme" validate:"required,max=16"`
+	LandingBg string `json:"landing_bg" validate:"required,max=16"`
 }

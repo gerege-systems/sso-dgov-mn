@@ -179,13 +179,19 @@ export interface SiteAppearance {
   font: 'inter' | 'serif' | 'system';
   style: 'comfortable' | 'compact';
   theme: 'light' | 'dark' | 'system';
+  /** Landing (нүүр) navy дэвсгэрийн '#rrggbb' hex. */
+  landingBg: string;
 }
+
+/** Landing navy дэвсгэрийн built-in default (globals.css --lp-navy-тэй нийцнэ). */
+export const DEFAULT_LANDING_BG = '#0f1f39';
 
 export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
   accent: 'cobalt',
   font: 'inter',
   style: 'comfortable',
   theme: 'light',
+  landingBg: DEFAULT_LANDING_BG,
 };
 
 /** GET /themes/active — нийтийн (auth-гүй) идэвхтэй landing theme-ийн config.
@@ -202,13 +208,17 @@ export async function fetchActiveTheme(): Promise<import('./theme').ThemeConfig>
  *  <html>-ийн эхний data-* болон bootstrap fallback-д ашиглана. Backend унтарсан
  *  эсвэл алдаа гарвал template default-ыг буцаана (хуудас хэзээ ч унахгүй). */
 export async function fetchSiteAppearance(): Promise<SiteAppearance> {
-  const r = await backendFetch<Partial<SiteAppearance>>('/site/appearance', { method: 'GET' });
+  const r = await backendFetch<Partial<SiteAppearance> & { landing_bg?: string }>('/site/appearance', {
+    method: 'GET',
+  });
   if (!r.ok || !r.data) return DEFAULT_SITE_APPEARANCE;
   const d = r.data;
+  const hex = /^#[0-9a-fA-F]{6}$/;
   return {
     accent: typeof d.accent === 'string' ? d.accent : DEFAULT_SITE_APPEARANCE.accent,
     font: d.font ?? DEFAULT_SITE_APPEARANCE.font,
     style: d.style ?? DEFAULT_SITE_APPEARANCE.style,
     theme: d.theme ?? DEFAULT_SITE_APPEARANCE.theme,
+    landingBg: typeof d.landing_bg === 'string' && hex.test(d.landing_bg) ? d.landing_bg : DEFAULT_LANDING_BG,
   };
 }

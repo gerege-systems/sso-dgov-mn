@@ -16,6 +16,7 @@ type SiteAppearanceResponse struct {
 	Font      string     `json:"font"`
 	Style     string     `json:"style"`
 	Theme     string     `json:"theme"`
+	LandingBg string     `json:"landing_bg"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
@@ -26,6 +27,7 @@ func ToSiteAppearance(a domain.SiteAppearance) SiteAppearanceResponse {
 		Font:      a.Font,
 		Style:     a.Style,
 		Theme:     a.Theme,
+		LandingBg: a.LandingBg,
 		UpdatedAt: a.UpdatedAt,
 	}
 }
