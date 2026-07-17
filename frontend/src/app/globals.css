@@ -2037,3 +2037,36 @@ html[lang="en"] .i18n-banner { display: block; }
 .theme-preview__lede { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin: 0; }
 .theme-preview__btn { display: inline-flex; align-items: center; padding: 9px 16px; border-radius: var(--radius-input); font-size: 13px; font-weight: 600; }
 .theme-preview__nav { font-size: 12.5px; color: var(--dan-blue-text); }
+
+/* ============================================================================
+   ColorField — найдвартай өнгө сонгогч (1 дарж палитр, хос дарж OS сонгогч)
+   ============================================================================ */
+.cfield { position: relative; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--fg); }
+.cfield__swatch {
+  width: 34px; height: 26px; border-radius: 7px; border: 1px solid var(--border-strong);
+  padding: 0; cursor: pointer; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
+  transition: transform 0.1s ease;
+}
+.cfield__swatch:hover { transform: scale(1.06); }
+.cfield.is-open .cfield__swatch { outline: 2px solid var(--dan-blue); outline-offset: 1px; }
+.cfield__label { line-height: 1.2; }
+.cfield__native { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: 0; bottom: 0; }
+
+.cfield__pop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 70;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--shadow-menu); padding: 10px; width: max-content;
+  animation: user-menu-in 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cfield__grid { display: grid; grid-template-columns: repeat(8, 20px); gap: 6px; }
+.cfield__preset {
+  width: 20px; height: 20px; border-radius: 5px; border: 1px solid var(--border);
+  padding: 0; cursor: pointer; transition: transform 0.1s ease;
+}
+.cfield__preset:hover { transform: scale(1.18); border-color: var(--fg); }
+.cfield__more {
+  display: block; width: 100%; margin-top: 10px; padding: 7px 10px; font-size: 12.5px;
+  border: 1px solid var(--border); border-radius: var(--radius-input); background: var(--surface-2);
+  color: var(--fg); cursor: pointer;
+}
+.cfield__more:hover { border-color: var(--border-strong); }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Save, X, Plus, Trash2 } from 'lucide-react';
 import Alert from '@/components/Alert';
 import SegmentedControl from '@/components/SegmentedControl';
@@ -165,14 +165,8 @@ export default function ThemeEditor({ theme, onDone }: Props) {
             </div>
             <div className="color-grid">
               {THEME_COLOR_FIELDS.map((f) => (
-                <label key={f.key} className="color-field">
-                  {/* Uncontrolled (defaultValue): controlled `value` нь native OS
-                      color picker-ыг re-render бүрт "буцаадаг" тул өнгө суудаггүй.
-                      onChange нь preview/save-д state-ыг шинэчилсээр байна. */}
-                  <input type="color" className="color-input" defaultValue={colorVal(f.key)}
-                    onChange={(e) => setColor(f.key, e.target.value)} aria-label={L(f.labelMn, f.labelEn)} />
-                  <span>{L(f.labelMn, f.labelEn)}</span>
-                </label>
+                <ColorField key={f.key} value={colorVal(f.key)} label={L(f.labelMn, f.labelEn)}
+                  onChange={(v) => setColor(f.key, v)} />
               ))}
             </div>
           </div>
@@ -229,6 +223,78 @@ export default function ThemeEditor({ theme, onDone }: Props) {
         </button>
       </div>
     </section>
+  );
+}
+
+// ---- өнгө сонгогч ----------------------------------------------------------
+// Бэлэн палитр. 1 дарахад энэ палитраас сонгоно (найдвартай — цэвэр товч);
+// хос дарахад (double-click) OS-ийн бүрэн өнгө сонгогч нээгдэнэ.
+const PRESET_COLORS = [
+  '#1767e7', '#2563eb', '#0ea5e9', '#06b6d4', '#14b8a6', '#22c55e', '#84cc16', '#eab308',
+  '#f59e0b', '#f97316', '#ef4444', '#e11d48', '#ec4899', '#a855f7', '#8b5cf6', '#6366f1',
+  '#c39a4e', '#0f1f39', '#111827', '#1f2937', '#374151', '#64748b', '#9ca3af', '#cbd5e1',
+  '#e5e7eb', '#f1f3f6', '#ffffff', '#000000',
+];
+
+/**
+ * ColorField — найдвартай өнгө сонгогч. Swatch дээр:
+ *  • 1 дарахад бэлэн палитрын popover нээгдэж, дарж сонгоно (цэвэр товч тул
+ *    native picker-ийн эвдрэлгүй),
+ *  • хос дарахад OS-ийн бүрэн өнгө сонгогч (input[type=color]) нээгдэнэ.
+ */
+function ColorField({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const nativeRef = useRef<HTMLInputElement>(null);
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (!wrapRef.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const openNative = () => {
+    const el = nativeRef.current;
+    if (!el) return;
+    try { el.value = value; } catch { /* noop */ }
+    el.click();
+  };
+  // Хос дарахаас ялгахын тулд ганц дарахыг бага зэрэг хойшлуулна.
+  const onSwatchClick = () => {
+    if (clickTimer.current) return;
+    clickTimer.current = setTimeout(() => { clickTimer.current = undefined; setOpen((o) => !o); }, 200);
+  };
+  const onSwatchDouble = () => {
+    if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = undefined; }
+    setOpen(false);
+    openNative();
+  };
+
+  return (
+    <div className={`cfield${open ? ' is-open' : ''}`} ref={wrapRef}>
+      <button type="button" className="cfield__swatch" style={{ background: value }}
+        onClick={onSwatchClick} onDoubleClick={onSwatchDouble}
+        aria-label={label} title={`${label} — 1 дарж палитр, хос дарж бүрэн сонгогч`} />
+      <span className="cfield__label">{label}</span>
+      {/* OS-ийн бүрэн сонгогч — нуугдмал, хос дарахад програмаар нээнэ */}
+      <input ref={nativeRef} type="color" className="cfield__native" defaultValue={value}
+        tabIndex={-1} aria-hidden="true" onChange={(e) => onChange(e.target.value)} />
+      {open && (
+        <div className="cfield__pop" role="menu">
+          <div className="cfield__grid">
+            {PRESET_COLORS.map((c) => (
+              <button key={c} type="button" className="cfield__preset" style={{ background: c }}
+                aria-label={c} title={c} onClick={() => { onChange(c); setOpen(false); }} />
+            ))}
+          </div>
+          <button type="button" className="cfield__more" onClick={() => { setOpen(false); openNative(); }}>
+            Бусад өнгө…
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
