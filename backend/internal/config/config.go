@@ -58,6 +58,10 @@ type Config struct {
 	GSpacePassword string `mapstructure:"GSPACE_PASSWORD"`
 	GSpaceBasePath string `mapstructure:"GSPACE_BASE_PATH"`
 	GSpaceQuota    int64  `mapstructure:"GSPACE_QUOTA_BYTES"`
+	// GSpaceHostKey — SFTP host-ийн хүлээгдэж буй нийтийн түлхүүр (known_hosts /
+	// authorized_keys мөрийн формат, ж: "ssh-ed25519 AAAA..."). Тохируулбал host
+	// key-г баталгаажуулна (MITM-аас хамгаална); production-д ЗААВАЛ шаардлагатай.
+	GSpaceHostKey string `mapstructure:"GSPACE_HOST_KEY"`
 
 	// eID identity provider (RP contract) — энэ template нь Relying Party.
 	// "Login with eID" нь цорын ганц нэвтрэх арга тул эдгээр нь сонголттой
@@ -272,6 +276,7 @@ func InitializeAppConfig() error {
 	_ = viper.BindEnv("GSPACE_PASSWORD")
 	_ = viper.BindEnv("GSPACE_BASE_PATH")
 	_ = viper.BindEnv("GSPACE_QUOTA_BYTES")
+	_ = viper.BindEnv("GSPACE_HOST_KEY")
 	// OIDC PROVIDER тал (dan.dgov.mn нь Hydra-г урдаа тавьж SSO болно) — нууц/
 	// орчин-тусгай тул ил bind хийнэ.
 	_ = viper.BindEnv("HYDRA_ADMIN_URL")

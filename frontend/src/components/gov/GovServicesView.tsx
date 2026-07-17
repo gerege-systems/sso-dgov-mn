@@ -16,10 +16,13 @@ export default function GovServicesView() {
   const [err, setErr] = useState('');
 
   const q = useQuery({ queryKey: ['gov-services'], queryFn: () => getJSON<GovService[]>('/api/gov/services') });
-  const items = q.data ?? [];
+  const items = useMemo(() => q.data ?? [], [q.data]);
 
   const categories = useMemo(() => ['all', ...Array.from(new Set(items.map((s) => s.category)))], [items]);
-  const filtered = cat === 'all' ? items : items.filter((s) => s.category === cat);
+  const filtered = useMemo(
+    () => (cat === 'all' ? items : items.filter((s) => s.category === cat)),
+    [cat, items],
+  );
 
   const apply = async (s: GovService) => {
     setApplying(s.id); setErr(''); setMsg('');

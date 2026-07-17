@@ -155,7 +155,12 @@ func NewApp() (*App, error) {
 	r.Use(middlewares.MetricsMiddleware())
 	r.Use(middlewares.SecurityHeadersMiddleware())
 	r.Use(middlewares.CORSMiddleware())
-	r.Use(middlewares.BodySizeLimitMiddleware(middlewares.DefaultBodyMaxBytes))
+	// Глобал net нь upload-ийн дээд хязгаар (26 MiB) — файл байршуулдаг sign
+	// route-ууд үүнийг шаарддаг. Эцгийн middleware нь дэд route-ийг зөвхөн
+	// чангалж чаддаг тул энд 1 MiB тавибал sign upload эцэгтээ 413 болно.
+	// Ердийн JSON route-уудыг DecodeBody-ийн 1 MiB cap + auth-ийн 4 KiB
+	// route-cap хамгаална.
+	r.Use(middlewares.BodySizeLimitMiddleware(middlewares.UploadBodyMaxBytes))
 	r.Use(middlewares.AccessLogMiddleware())
 	r.Use(middlewares.TimeoutMiddleware(middlewares.DefaultRequestTimeout))
 
@@ -237,7 +242,7 @@ func NewApp() (*App, error) {
 	// Гарын үсэг (хувь хүн) + байгууллагын тамга (ADMIN) — зураг Google Drive-д, URL DB-д.
 	orgStampRepo := orgstamppostgres.NewOrgStampRepository(pool)
 	assetsUC := assets.NewUsecase(usersUC, userRepo, orgStampRepo, eidClient)
-	integrationsUC, err := integrations.NewUsecase(userIntegrationsRepo, config.AppConfig.IntegrationEncKey)
+	integrationsUC, err := integrations.NewUsecase(userIntegrationsRepo, config.AppConfig.IntegrationEncKey, isProduction)
 	if err != nil {
 		return nil, fmt.Errorf("init integrations usecase: %w", err)
 	}
@@ -251,6 +256,10 @@ func NewApp() (*App, error) {
 		User:     config.AppConfig.GSpaceUser,
 		Password: config.AppConfig.GSpacePassword,
 		BasePath: config.AppConfig.GSpaceBasePath,
+		HostKey:  config.AppConfig.GSpaceHostKey,
+		// Production-д host key заавал (MITM-аас хамгаална); development-д
+		// тохируулаагүй бол шалгахгүйгээр зөвшөөрнө.
+		AllowInsecureHostKey: !isProduction,
 	})
 	gspaceUC := gspace.NewUsecase(gspaceClient, config.AppConfig.GSpaceQuota)
 
@@ -268,17 +277,26 @@ func NewApp() (*App, error) {
 
 	// Super admin бүртгэлийн шидтэн (урилга → Google → eID → и-мэйл OTP →
 	// TOTP) + MFA-тай super admin нэвтрэлтийн 2 дахь шат. TOTP secret-ийг
-	// storage-д шифрлэхэд INTEGRATION_ENC_KEY шаардлагатай — тохируулаагүй бол
-	// secret-ийг ил текстээр хадгалах эрсдэлтэй тул энэ ФУНКЦИЙГ УНТРААНА
-	// (providerUC-тэй ижил gate). Бүх api-г унагаахгүй — зөвхөн superadmin
-	// onboarding/MFA route бүртгэгдэхгүй болно.
+	// storage-д AES-GCM-ээр шифрлэх түлхүүр хэрэгтэй. INTEGRATION_ENC_KEY
+	// тохируулсан бол түүнийг ашиглана; тохируулаагүй бол JWT_SECRET-ээс
+	// domain-separated тогтвортой түлхүүр гаргаж авна (репод ил биш,
+	// restart-д тогтвортой) — ингэснээр superadmin MFA-г нэмэлт env
+	// тохируулахгүйгээр асаана. crypto.New утгыг SHA-256-аар 32 байт болгодог
+	// тул урт ямар ч байсан ажиллана. АНХААР: энэ түлхүүр (эсвэл JWT_SECRET)-ийг
+	// нэгэнт superadmin MFA идэвхжсэн хойно солиход өмнөх TOTP secret задрахаа
+	// болино — тиймээс тогтвортой байлгана.
+	totpEncKey := config.AppConfig.IntegrationEncKey
+	if totpEncKey == "" {
+		totpEncKey = config.AppConfig.JWTSecret + "|superadmin-mfa-v1"
+		logger.Warn("superadmin MFA: INTEGRATION_ENC_KEY not set — deriving TOTP encryption key from JWT_SECRET (set INTEGRATION_ENC_KEY for a dedicated key)", logger.Fields{})
+	}
 	var onboardingUC onboarding.Usecase
-	if config.AppConfig.IntegrationEncKey != "" {
+	{
 		recoveryRepo := recoverypostgres.NewRecoveryCodeRepository(pool)
 		uc, ucErr := onboarding.NewUsecase(
 			googleClient, eidClient, verifier,
 			userRepo, recoveryRepo, superadminInviteRepo,
-			jwtService, redisCache, config.AppConfig.IntegrationEncKey,
+			jwtService, redisCache, totpEncKey,
 			onboarding.Config{
 				Issuer:         config.AppConfig.JWTIssuer,
 				PendingTTL:     30 * time.Minute,
@@ -292,8 +310,6 @@ func NewApp() (*App, error) {
 			return nil, fmt.Errorf("init superadmin onboarding usecase: %w", ucErr)
 		}
 		onboardingUC = uc
-	} else {
-		logger.Warn("superadmin onboarding/MFA disabled: INTEGRATION_ENC_KEY not set (TOTP secret encryption requires it)", logger.Fields{})
 	}
 
 	// Security events — RASP-style ingest (нэвтэрсэн хэрэглэгч бичнэ, admin унших).
@@ -398,10 +414,29 @@ func NewApp() (*App, error) {
 	// Gateway-ийн лог руу async бичих middleware (detached ctx тул хоцролтгүй;
 	// best-effort). DAN-ий өөрийн first-party API трафикийг лог-лохгүй —
 	// шүүлтүүр middleware дотор (isRPGatewayPath).
+	//
+	// Хүсэлт бүрт хязгааргүй goroutine салгахын оронд буфертэй queue + цөөн
+	// тогтмол worker ашиглана: DB удаашрах/ханах үед goroutine хуримтлагдахгүй,
+	// queue дүүрвэл лог-ийг чимээгүй хаяна (best-effort). Бичилт бүр богино
+	// timeout-той тул ханасан DB нэг ч worker-ийг мөнхөд түгжихгүй.
+	gwLogQueue := make(chan gateway.RequestLogInput, 512)
+	for i := 0; i < 4; i++ {
+		go func() {
+			for in := range gwLogQueue {
+				writeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				gatewayUC.RecordRequest(writeCtx, in)
+				cancel()
+			}
+		}()
+	}
 	gwLogMW := middlewares.GatewayRequestLogMiddleware(func(method, path, ip string, status, latencyMS int) {
-		go gatewayUC.RecordRequest(context.Background(), gateway.RequestLogInput{
+		select {
+		case gwLogQueue <- gateway.RequestLogInput{
 			Method: method, Path: path, ClientIP: ip, Status: status, LatencyMS: latencyMS,
-		})
+		}:
+		default:
+			// Queue дүүрсэн — энэ нэг лог мөрийг хаяна (edge трафикийг блоклохгүй).
+		}
 	})
 
 	// API Route-ууд
@@ -422,7 +457,7 @@ func NewApp() (*App, error) {
 		if applicationsUC != nil {
 			routes.NewApplicationsRoute(api, applicationsUC, rbacUC, authMiddleware).Routes()
 		}
-		routes.NewCoreRoute(api, coreUC, authMiddleware).Routes()
+		routes.NewCoreRoute(api, coreUC, rbacUC, authMiddleware).Routes()
 		routes.NewSSORoute(api, ssoUC).Routes()
 		routes.NewAdminRoute(api, usersUC, rbacUC, aiUC, authMiddleware).Routes()
 		routes.NewSuperAdminRoute(api, superadminUC, authMiddleware).Routes()

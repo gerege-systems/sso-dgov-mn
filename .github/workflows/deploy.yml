@@ -39,6 +39,10 @@ jobs:
           USER: ${{ secrets.DEPLOY_USER }}
           PORT: ${{ secrets.DEPLOY_PORT }}
           DPATH: ${{ secrets.DEPLOY_PATH }}
+          # AES-GCM түлхүүр (superadmin MFA / integrations). deploy.sh нь
+          # backend.env-д байхгүй бол л нэг удаа бичнэ. Secret тохируулаагүй бол
+          # хоосон дамжина → deploy.sh алгасна (аюулгүй).
+          ENC_KEY: ${{ secrets.INTEGRATION_ENC_KEY }}
           # Exact commit that passed CI (empty on manual dispatch → origin/main HEAD).
           TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
@@ -61,4 +65,4 @@ jobs:
                git reset --hard origin/main; \
              fi; \
              echo \"▶ Now at: \$(git rev-parse --short HEAD) — \$(git log -1 --pretty=%s)\"; \
-             bash deploy/deploy.sh"
+             INTEGRATION_ENC_KEY='$ENC_KEY' bash deploy/deploy.sh"

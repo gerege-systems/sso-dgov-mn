@@ -176,10 +176,14 @@ func (u *usecase) AcceptConsent(ctx context.Context, userID, challenge string, g
 		granted = req.RequestedScope
 	}
 
-	var idClaims, atClaims map[string]any
-	if resp, uerr := u.users.GetByID(ctx, usersuc.GetByIDRequest{ID: userID}); uerr == nil {
-		idClaims, atClaims = claimsForScopes(granted, resp.User)
+	// Иргэний бүртгэлийг заавал уншиж identity claims-ыг угсарна. Алдаа гарвал
+	// fail-closed — эс бөгөөс grant нь хүссэн scope-той (nationalid/profile) мөртлөө
+	// холбогдох claim-гүй токен гаргаж, RP хэрэглэгчийг таньж чадахгүй болно.
+	resp, uerr := u.users.GetByID(ctx, usersuc.GetByIDRequest{ID: userID})
+	if uerr != nil {
+		return "", apperror.InternalCause(fmt.Errorf("consent: load user: %w", uerr))
 	}
+	idClaims, atClaims := claimsForScopes(granted, resp.User)
 
 	redirect, err := u.hydra.AcceptConsent(ctx, challenge, hydra.ConsentAccept{
 		GrantScope: granted,
@@ -245,15 +249,18 @@ func claimsForScopes(scopes []string, u domain.User) (idToken, accessToken map[s
 		case "nationalid":
 			setIfNonEmpty(idToken, "national_id", u.NationalID)
 			setIfNonEmpty(idToken, "register_number", u.CivilID)
+		case "google":
+			// Google холболт — ЗӨВХӨН RP "google" scope-ыг хүсэж, иргэн зөвшөөрсөн
+			// үед дамжуулна. Scope-гүйгээр болзолгүй дамжуулбал openid-only RP хүртэл
+			// иргэний Google и-мэйл/нэр/зургийг зөвшөөрөлгүйгээр авах data-minimization
+			// зөрчил үүснэ.
+			if strings.TrimSpace(u.GoogleSub) != "" {
+				idToken["google_sub"] = u.GoogleSub
+				setIfNonEmpty(idToken, "google_email", u.GoogleEmail)
+				setIfNonEmpty(idToken, "google_name", u.GoogleName)
+				setIfNonEmpty(idToken, "google_picture", u.GooglePicture)
+			}
 		}
-	}
-	// Google холболт — иргэн DAN дээр Google-ээр нэвтэрсэн/холбосон бол RP-д
-	// дамжуулна (RP өөр дээрээ "Google холбогдсон" гэж тооцно).
-	if strings.TrimSpace(u.GoogleSub) != "" {
-		idToken["google_sub"] = u.GoogleSub
-		setIfNonEmpty(idToken, "google_email", u.GoogleEmail)
-		setIfNonEmpty(idToken, "google_name", u.GoogleName)
-		setIfNonEmpty(idToken, "google_picture", u.GooglePicture)
 	}
 	return idToken, accessToken
 }
