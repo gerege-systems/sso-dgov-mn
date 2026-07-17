@@ -268,24 +268,32 @@ func NewApp() (*App, error) {
 
 	// Super admin бүртгэлийн шидтэн (урилга → Google → eID → и-мэйл OTP →
 	// TOTP) + MFA-тай super admin нэвтрэлтийн 2 дахь шат. TOTP secret-ийг
-	// storage-д шифрлэхэд INTEGRATION_ENC_KEY-г дахин ашиглана (тохируулаагүй
-	// бол boot зогсоно — secret-ийг ил текстээр хадгалахыг зөвшөөрөхгүй).
-	recoveryRepo := recoverypostgres.NewRecoveryCodeRepository(pool)
-	onboardingUC, err := onboarding.NewUsecase(
-		googleClient, eidClient, verifier,
-		userRepo, recoveryRepo, superadminInviteRepo,
-		jwtService, redisCache, config.AppConfig.IntegrationEncKey,
-		onboarding.Config{
-			Issuer:         config.AppConfig.JWTIssuer,
-			PendingTTL:     30 * time.Minute,
-			OTPTTL:         time.Duration(config.AppConfig.REDISExpired) * time.Minute,
-			OTPMaxAttempts: config.AppConfig.OTPMaxAttempts,
-			MFAMaxAttempts: 5,
-			EIDDisplayText: config.AppConfig.EIDDisplayText,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("init superadmin onboarding usecase: %w", err)
+	// storage-д шифрлэхэд INTEGRATION_ENC_KEY шаардлагатай — тохируулаагүй бол
+	// secret-ийг ил текстээр хадгалах эрсдэлтэй тул энэ ФУНКЦИЙГ УНТРААНА
+	// (providerUC-тэй ижил gate). Бүх api-г унагаахгүй — зөвхөн superadmin
+	// onboarding/MFA route бүртгэгдэхгүй болно.
+	var onboardingUC onboarding.Usecase
+	if config.AppConfig.IntegrationEncKey != "" {
+		recoveryRepo := recoverypostgres.NewRecoveryCodeRepository(pool)
+		uc, ucErr := onboarding.NewUsecase(
+			googleClient, eidClient, verifier,
+			userRepo, recoveryRepo, superadminInviteRepo,
+			jwtService, redisCache, config.AppConfig.IntegrationEncKey,
+			onboarding.Config{
+				Issuer:         config.AppConfig.JWTIssuer,
+				PendingTTL:     30 * time.Minute,
+				OTPTTL:         time.Duration(config.AppConfig.REDISExpired) * time.Minute,
+				OTPMaxAttempts: config.AppConfig.OTPMaxAttempts,
+				MFAMaxAttempts: 5,
+				EIDDisplayText: config.AppConfig.EIDDisplayText,
+			},
+		)
+		if ucErr != nil {
+			return nil, fmt.Errorf("init superadmin onboarding usecase: %w", ucErr)
+		}
+		onboardingUC = uc
+	} else {
+		logger.Warn("superadmin onboarding/MFA disabled: INTEGRATION_ENC_KEY not set (TOTP secret encryption requires it)", logger.Fields{})
 	}
 
 	// Security events — RASP-style ingest (нэвтэрсэн хэрэглэгч бичнэ, admin унших).
@@ -419,7 +427,10 @@ func NewApp() (*App, error) {
 		routes.NewAdminRoute(api, usersUC, rbacUC, aiUC, authMiddleware).Routes()
 		routes.NewSuperAdminRoute(api, superadminUC, authMiddleware).Routes()
 		// Super admin бүртгэл + MFA — нэвтрээгүй гадаргуу (rate limit + service RLS).
-		routes.NewSuperAdminOnboardRoute(api, onboardingUC, authRateLimiter, pollRateLimiter).Routes()
+		// Зөвхөн INTEGRATION_ENC_KEY тохируулагдсан үед идэвхжинэ (эс бөгөөс inert).
+		if onboardingUC != nil {
+			routes.NewSuperAdminOnboardRoute(api, onboardingUC, authRateLimiter, pollRateLimiter).Routes()
+		}
 		routes.NewAIRoute(api, aiUC, authMiddleware, aiRateLimiter).Routes()
 		routes.NewAuditRoute(api, auditUC, authMiddleware).Routes()
 		routes.NewSecurityRoute(api, securityUC, authMiddleware).Routes()
