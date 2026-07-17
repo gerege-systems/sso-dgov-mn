@@ -46,18 +46,37 @@ interface NavGroup {
   labelKey?: DictKey;
   items: NavItem[];
 }
-// Систем = icon rail дахь дээд түвшний бүлэг. adminOnly бол зөвхөн admin харна.
+// Систем = icon rail дахь дээд түвшний бүлэг. adminOnly бол зөвхөн admin харна;
+// superAdminOnly бол зөвхөн super admin харна.
 interface NavSystem {
   key: string;
   labelKey: DictKey;
   brand: string; // sidepanel-ийн дээд мөр — идэвхтэй систем бүрээр солигдоно (English)
   icon: typeof User;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
   groups: NavGroup[];
 }
 
 // BPMN, translator, AI зэрэг хэсгүүдийг хассан — зөвхөн generic admin цөм.
 const SYSTEMS: NavSystem[] = [
+  {
+    // Super Admin — админ системээс ТУСДАА, дээд түвшний систем (зөвхөн super admin
+    // харна). Rail-д admin-ы дээр эхэнд байрлана.
+    key: 'superadmin',
+    labelKey: 'sys.superadmin',
+    brand: 'Super Admin System',
+    icon: Crown,
+    superAdminOnly: true,
+    groups: [
+      {
+        labelKey: 'group.superadmin',
+        items: [
+          { href: '/admin/superadmin', labelKey: 'nav.superadminAdmins', icon: Crown, superAdminOnly: true },
+        ],
+      },
+    ],
+  },
   {
     key: 'admin',
     labelKey: 'sys.admin',
@@ -69,13 +88,6 @@ const SYSTEMS: NavSystem[] = [
         labelKey: 'group.general',
         items: [
           { href: '/admin/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, perm: 'dashboard.view' },
-        ],
-      },
-      {
-        // Зөвхөн super admin харна (superAdminOnly тул бүлэг автоматаар нуугдана).
-        labelKey: 'group.superadmin',
-        items: [
-          { href: '/admin/superadmin', labelKey: 'nav.superadminAdmins', icon: Crown, superAdminOnly: true },
         ],
       },
       {
@@ -186,6 +198,7 @@ export default function AppShell({ user, children }: Props) {
       .map((g) => ({ ...g, items: g.items.filter(canSeeItem) }))
       .filter((g) => g.items.length > 0);
   const systems = SYSTEMS.filter((s) => {
+    if (s.superAdminOnly && !isSuper) return false;
     if (s.adminOnly && !isAdmin) return false;
     return visibleGroups(s).length > 0;
   });
