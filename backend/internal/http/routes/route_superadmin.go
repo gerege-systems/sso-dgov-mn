@@ -38,7 +38,13 @@ func (rt *superadminRoute) Routes() {
 		r.Use(middlewares.RequireSuperAdmin())
 		r.Get("/admins", v1.Wrap(rt.handler.ListAdmins))
 		r.Post("/admins", v1.Wrap(rt.handler.CreateAdmin))
+		r.Post("/admins/by-register", v1.Wrap(rt.handler.AddAdminByRegister))
 		r.Put("/admins/{id}/grant", v1.Wrap(rt.handler.GrantAdmin))
 		r.Delete("/admins/{id}", v1.Wrap(rt.handler.RevokeAdmin))
+		// Super admin урилга (allow-list) — урилга нь эрхийг ШУУД олгодоггүй,
+		// зөвхөн /auth/superadmin/onboard шидтэнг эхлүүлэх хаалгыг нээнэ.
+		r.Get("/invites", v1.Wrap(rt.handler.ListInvites))
+		r.Post("/invites", v1.Wrap(rt.handler.CreateInvite))
+		r.Delete("/invites/{email}", v1.Wrap(rt.handler.DeleteInvite))
 	})
 }

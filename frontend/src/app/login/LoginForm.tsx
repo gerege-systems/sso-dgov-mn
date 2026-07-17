@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ShieldCheck, RefreshCw, HelpCircle } from 'lucide-react';
 import Alert from '@/components/Alert';
+import MFAChallenge from '@/components/superadmin/MFAChallenge';
 import { postJSON } from '@/lib/client';
 import { safeNext } from '@/lib/navigation';
 import { useT } from '@/lib/lang';
@@ -41,7 +42,7 @@ type Phase = 'idle' | 'starting' | 'waiting' | 'expired' | 'refused' | 'error' |
 
 const POLL_INTERVAL_MS = 2500;
 
-export default function LoginForm({ next, notice, googleLink, googleError }: { next: string; notice?: string; googleLink?: boolean; googleError?: boolean }) {
+export default function LoginForm({ next, notice, googleLink, googleError, mfaGate }: { next: string; notice?: string; googleLink?: boolean; googleError?: boolean; mfaGate?: boolean }) {
   const { T } = useT();
 
   const [method, setMethod] = useState<Method>('id');
@@ -49,6 +50,10 @@ export default function LoginForm({ next, notice, googleLink, googleError }: { n
   const [start, setStart] = useState<StartData | null>(null);
   const [nationalId, setNationalId] = useState('');
   const [idError, setIdError] = useState('');
+  // MFA-той superadmin — eID poll эсвэл Google callback дараа 2 дахь хүчин зүйл
+  // шаардвал энэ challenge-ийг харуулна. mfaToken байвал eID poll урсгал (клиент
+  // token эзэмшинэ); null бол Google callback (sa_mfa cookie ашиглана).
+  const [mfa, setMfa] = useState<{ token?: string } | null>(mfaGate ? {} : null);
 
   // unmount хийсний дараа интервалд timer-уудыг цэвэрлэхэд ашиглана.
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -79,11 +84,20 @@ export default function LoginForm({ next, notice, googleLink, googleError }: { n
 
   const poll = useCallback(
     async (sessionId: string) => {
-      const res = await postJSON<{ state?: string }>('/api/auth/eid/poll', { session_id: sessionId });
+      const res = await postJSON<{ state?: string; mfa_required?: boolean; mfa_token?: string }>('/api/auth/eid/poll', { session_id: sessionId });
       if (!mounted.current) return;
 
       if (!res.ok) {
         // Сүлжээ/түр зуурын алдаа — дараагийн интервалд дахин оролдоно.
+        return;
+      }
+
+      // MFA-той superadmin — session-ий оронд mfa_token ирнэ. Poll-ыг зогсоож,
+      // TOTP/recovery challenge руу шилжинэ (mfa_token-ийг challenge-д дамжуулна).
+      if (res.data?.mfa_required && res.data?.mfa_token) {
+        stopTimers();
+        setPhase('success');
+        setMfa({ token: res.data.mfa_token });
         return;
       }
 
@@ -222,6 +236,9 @@ export default function LoginForm({ next, notice, googleLink, googleError }: { n
 
   const isTerminal = phase === 'expired' || phase === 'refused' || phase === 'error';
   const busy = phase === 'starting' || phase === 'waiting';
+
+  // MFA gate идэвхжсэн бол зөвхөн 2 дахь хүчин зүйлийн challenge-ийг харуулна.
+  if (mfa) return <MFAChallenge mfaToken={mfa.token} next={next} />;
 
   return (
     <div className="form-grid" aria-live="polite">

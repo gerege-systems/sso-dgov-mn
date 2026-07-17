@@ -43,6 +43,10 @@ func (uc *usecase) ListAdmins(ctx context.Context) (ListResponse, error) {
 // оноож болохгүй (зөвхөн bootstrap/DB), мөн super admin бүртгэлийг энэ замаар
 // өөрчилж болохгүй — эс бөгөөс users.manage эрхтэй энгийн admin өөр бүртгэлийг
 // super admin болгож эрх нэмэгдүүлэх, эсвэл super admin-г буулгах боломжтой болно.
+//
+// Мөн ADMIN эрхийг зөвхөн super admin олгож/хасна: энгийн admin нь зөвхөн
+// manager ↔ user хооронд л сольж чадна (admin өөртэйгөө тэнцүү эрх тараахаас
+// сэргийлнэ). Super admin нь admin-ыг superadmin usecase-ээр удирдана.
 func (uc *usecase) UpdateRole(ctx context.Context, req UpdateRoleRequest) error {
 	if req.RoleID == domain.RoleSuperAdmin {
 		return apperror.Forbidden("cannot assign the super admin role")
@@ -53,6 +57,14 @@ func (uc *usecase) UpdateRole(ctx context.Context, req UpdateRoleRequest) error 
 	}
 	if existing.IsSuperAdmin() {
 		return apperror.Forbidden("cannot modify a super admin account")
+	}
+	if req.CallerRoleID != domain.RoleSuperAdmin {
+		if req.RoleID == domain.RoleAdmin {
+			return apperror.Forbidden("only a super admin can grant the admin role")
+		}
+		if existing.RoleID == domain.RoleAdmin {
+			return apperror.Forbidden("only a super admin can change an admin account")
+		}
 	}
 	if err := uc.repo.UpdateRole(ctx, req.UserID, req.RoleID); err != nil {
 		return mapRepoError(err, "update role")

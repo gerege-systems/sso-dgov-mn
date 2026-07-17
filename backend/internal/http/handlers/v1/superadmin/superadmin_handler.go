@@ -83,6 +83,33 @@ func (h Handler) CreateAdmin(w http.ResponseWriter, r *http.Request) error {
 	return v1.NewSuccessResponse(w, r, http.StatusCreated, "admin created successfully", responses.FromAdminUser(res.User))
 }
 
+// AddAdminByRegister godoc
+// @Summary      Регистрээр админ нэмэх
+// @Description  Регистрийн дугаараар БАЙГАА хэрэглэгчийг admin болгоно (шинэ хэрэглэгч үүсгэхгүй). Зөвхөн super admin хандана.
+// @Tags         superadmin
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        payload  body      requests.SuperadminAddAdminByRegisterRequest  true  "Register"
+// @Success      200  {object}  v1.BaseResponse  "Promoted to admin"
+// @Failure      404  {object}  v1.BaseResponse  "Register not registered in DAN"
+// @Failure      409  {object}  v1.BaseResponse  "Already an admin"
+// @Router       /v1/superadmin/admins/by-register [post]
+func (h Handler) AddAdminByRegister(w http.ResponseWriter, r *http.Request) error {
+	var req requests.SuperadminAddAdminByRegisterRequest
+	if err := v1.DecodeBody(r, &req); err != nil {
+		return v1.NewErrorResponse(w, r, http.StatusBadRequest, "invalid request body")
+	}
+	if err := validators.ValidatePayloads(req); err != nil {
+		return v1.RespondWithError(w, r, err)
+	}
+	res, err := h.usecase.AddAdminByRegister(r.Context(), superadminuc.AddAdminByRegisterRequest{Register: req.Register})
+	if err != nil {
+		return v1.RespondWithError(w, r, err)
+	}
+	return v1.NewSuccessResponse(w, r, http.StatusOK, "admin added successfully", responses.FromAdminUser(res.User))
+}
+
 // GrantAdmin godoc
 // @Summary      Хэрэглэгчид админ эрх олгох
 // @Description  Байгаа хэрэглэгчийг admin болгоно. Зөвхөн super admin хандана.

@@ -16,7 +16,7 @@ export default async function ManagerUsersPage() {
   return (
     <>
       <PageHead eyebrowKey="sys.manager" titleKey="nav.users" subKey="manager.users.sub" />
-      <UsersManager currentUserId={me.id} />
+      <UsersManager currentUserId={me.id} currentUserRoleId={me.roleId} />
     </>
   );
 }

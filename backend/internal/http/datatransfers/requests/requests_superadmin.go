@@ -5,6 +5,12 @@ package requests
 
 // SuperadminCreateAdminRequest нь POST /superadmin/admins-ийн body — шинэ admin
 // бүртгэл үүсгэнэ. Нэр (мн/en) сонголттой; username/email/password заавал.
+// SuperadminAddAdminByRegisterRequest нь регистрийн дугаараар байгаа хэрэглэгчийг
+// admin болгох хүсэлт.
+type SuperadminAddAdminByRegisterRequest struct {
+	Register string `json:"register" validate:"required,min=8,max=20"`
+}
+
 type SuperadminCreateAdminRequest struct {
 	Username    string `json:"username" validate:"required,min=3,max=50"`
 	Email       string `json:"email" validate:"required,email"`

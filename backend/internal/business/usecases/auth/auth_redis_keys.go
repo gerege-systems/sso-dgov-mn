@@ -71,3 +71,13 @@ func AccessDenyKey(jti string) string {
 func GoogleLinkKey(token string) string {
 	return fmt.Sprintf("google_link:%s", token)
 }
+
+// SuperadminMFAKey нь MFA-тай super admin нэвтрэхэд (Google/eID амжилттай ч
+// session ХАРААХАН олгогдоогүй) үүсгэгддэг богино хугацааны токеныг
+// (→ user_id) хадгална. Токеныг TOTP/нөөц кодоор баталгаажуулсны дараа л
+// session олгогдоно (superadmin_onboarding.SuperadminMFA). Энэ түлхүүрийг auth
+// (үүсгэгч) ба superadmin_onboarding (хэрэглэгч) хоёулаа ашигладаг тул энд —
+// нэг эх сурвалжид — тодорхойлов.
+func SuperadminMFAKey(token string) string {
+	return fmt.Sprintf("superadmin_mfa:%s", token)
+}

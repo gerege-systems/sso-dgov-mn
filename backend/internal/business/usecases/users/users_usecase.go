@@ -116,6 +116,9 @@ type (
 	UpdateRoleRequest struct {
 		UserID string
 		RoleID int
+		// CallerRoleID нь үйлдлийг хийж буй хэрэглэгчийн эрх — admin эрх
+		// олгох/хасахыг зөвхөн super admin хийнэ (handler claims-ээс дамжуулна).
+		CallerRoleID int
 	}
 
 	SetActiveRequest struct {

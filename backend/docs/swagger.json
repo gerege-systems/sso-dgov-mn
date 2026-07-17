@@ -3650,6 +3650,534 @@
                 }
             }
         },
+        "/v1/auth/superadmin/mfa": {
+            "post": {
+                "description": "Google эсвэл eID нэвтрэлтээс авсан mfa_token-ийг TOTP код ЭСВЭЛ нөөц кодоор баталгаажуулж session олгоно. Нөөц код нэг удаагийн (хэрэглэгдмэгц идэвхгүй болно). Хэт олон буруу оролдлого → токен цуцлагдана.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin нэвтрэлт — 2FA (TOTP / нөөц код)",
+                "parameters": [
+                    {
+                        "description": "mfa_token + TOTP эсвэл нөөц код",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminMFARequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logged in",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminMFAResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid code",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "MFA token invalid/expired or too many attempts",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/eid/poll": {
+            "post": {
+                "description": "eID session-ийн төлвийг long-poll-оор (≤25с) асууна: RUNNING/COMPLETE/EXPIRED/REFUSED. COMPLETE үед identity нь шидтэнд БАРИГДАЖ, алхам \"email\" болно. АНХААР: энэ алхамд токен ОЛГОГДОХГҮЙ.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — eID төлөв асуух (long-poll)",
+                "parameters": [
+                    {
+                        "description": "Onboard token + eID session id",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardEIDPollRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session state",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardEIDPollResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid body or wrong step",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Onboard session invalid or expired",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/eid/start": {
+            "post": {
+                "description": "Бүртгэлийн eID баталгаажуулах алхмыг QR/deep-link-ээр эхлүүлнэ. callbackUrl хоосон бол CROSS-DEVICE (desktop QR); хоосон биш бол SAME-DEVICE (mobile browser).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — eID эхлүүлэх (QR / deep-link)",
+                "parameters": [
+                    {
+                        "description": "Onboard token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardEIDStartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "eID session started",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardEIDStartResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid body or wrong step",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Onboard session invalid or expired",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/eid/start-id": {
+            "post": {
+                "description": "Бүртгэлийн eID алхмыг иргэний РД-аар эхлүүлж, бүртгэлтэй төхөөрөмж рүү баталгаажуулах push илгээнэ (device_link шаардлагагүй).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — eID эхлүүлэх (РД-аар push)",
+                "parameters": [
+                    {
+                        "description": "Onboard token + иргэний РД",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardEIDStartIDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "eID session started",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardEIDStartResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid national_id or wrong step",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Onboard session invalid or expired",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/email/send": {
+            "post": {
+                "description": "Урилгын и-мэйл рүү 6 оронтой баталгаажуулах код илгээнэ (хаяг нь шидтэний session-оос авагдана — клиент өөр хаяг заах боломжгүй).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — и-мэйл OTP илгээх",
+                "parameters": [
+                    {
+                        "description": "Onboard token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardStepResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Wrong step",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Onboard session invalid or expired",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/email/verify": {
+            "post": {
+                "description": "И-мэйл рүү илгээсэн кодыг шалгана. Амжилттай бол алхам \"totp\" болно. Хэт олон буруу оролдлого → 403.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — и-мэйл OTP баталгаажуулах",
+                "parameters": [
+                    {
+                        "description": "Onboard token + код",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email verified",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardStepResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid or expired code",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Onboard session invalid / too many attempts",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/google": {
+            "post": {
+                "description": "Google OAuth code-ийг солиж, и-мэйлийг super admin урилгын allow-list-ийн эсрэг шалгана. Урилгагүй / аль хэдийн ашигласан урилга бол 403. Амжилттай бол шидтэний onboard_token үүсгэж, дараагийн алхмыг (eid) буцаана.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — Google алхам",
+                "parameters": [
+                    {
+                        "description": "OAuth code + redirect_uri",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardGoogleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Onboarding started",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardStartResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid code",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Email is not invited or invite already used",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/totp/init": {
+            "post": {
+                "description": "Шинэ TOTP secret үүсгэж, authenticator app-д уншуулах otpauth:// URI-г буцаана (QR-г frontend зурна; secret нь гараар оруулах хувилбарт). Дахин дуудвал ШИНЭ secret үүснэ.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — TOTP (2FA) тохируулга эхлүүлэх",
+                "parameters": [
+                    {
+                        "description": "Onboard token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "TOTP secret + otpauth URI",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardTOTPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Wrong step",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Onboard session invalid or expired",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/superadmin/onboard/totp/verify": {
+            "post": {
+                "description": "Authenticator app-ийн кодыг шалгаж, бүртгэлийг төгсгөнө: super admin хэрэглэгч үүсгэж/ахиулж, нөөц кодуудыг хадгалж, урилгыг ашигласан болгож, session (token + refresh_token) олгоно. recovery_codes нь ЗӨВХӨН ЭНЭ хариунд, ЗӨВХӨН НЭГ УДАА буцна — дахин авах боломжгүй.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin-onboard"
+                ],
+                "summary": "Super admin бүртгэл — TOTP баталгаажуулж ТӨГСГӨХ",
+                "parameters": [
+                    {
+                        "description": "Onboard token + TOTP код",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminOnboardCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Super admin created + logged in (recovery codes shown once)",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminOnboardDoneResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid code or incomplete steps",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Onboard session invalid or expired",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Email or Google account already linked to another user",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/gspace": {
             "get": {
                 "security": [
@@ -4661,6 +5189,57 @@
                 }
             }
         },
+        "/v1/superadmin/admins/by-register": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Регистрийн дугаараар БАЙГАА хэрэглэгчийг admin болгоно (шинэ хэрэглэгч үүсгэхгүй). Зөвхөн super admin хандана.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin"
+                ],
+                "summary": "Регистрээр админ нэмэх",
+                "parameters": [
+                    {
+                        "description": "Register",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminAddAdminByRegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Promoted to admin",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Register not registered in DAN",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Already an admin",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/superadmin/admins/{id}": {
             "delete": {
                 "security": [
@@ -4770,6 +5349,183 @@
                     },
                     "409": {
                         "description": "Already an admin",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/superadmin/invites": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Super admin болох урилгуудыг (хүлээгдэж буй + ашигласан) буцаана. Зөвхөн super admin хандана.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin"
+                ],
+                "summary": "Super admin урилгуудыг жагсаах",
+                "responses": {
+                    "200": {
+                        "description": "Invites fetched",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminInviteResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not a super admin",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "И-мэйлийг super admin болох allow-list-д нэмнэ. Урилга нь эрхийг ШУУД олгодоггүй — урьсан хүн /auth/superadmin/onboard шидтэнг (Google + eID + и-мэйл OTP + TOTP) бүрэн давж байж super admin болно. Зөвхөн super admin хандана.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin"
+                ],
+                "summary": "Super admin урих",
+                "parameters": [
+                    {
+                        "description": "Invite email",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SuperadminInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Invite created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SuperadminInviteResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid email",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not a super admin",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Email already invited",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/superadmin/invites/{email}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Урилгыг allow-list-ээс хасна — хараахан бүртгүүлээгүй бол цаашид бүртгүүлэх боломжгүй болно. Зөвхөн super admin хандана.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin"
+                ],
+                "summary": "Super admin урилгыг цуцлах",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invited email (URL-encoded)",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invite deleted",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not a super admin",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Invite not found",
                         "schema": {
                             "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
                         }
@@ -5492,6 +6248,19 @@
                 }
             }
         },
+        "template_internal_http_datatransfers_requests.SuperadminAddAdminByRegisterRequest": {
+            "type": "object",
+            "required": [
+                "register"
+            ],
+            "properties": {
+                "register": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 8
+                }
+            }
+        },
         "template_internal_http_datatransfers_requests.SuperadminCreateAdminRequest": {
             "type": "object",
             "required": [
@@ -5528,6 +6297,123 @@
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminInviteRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminMFARequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "mfa_token"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "mfa_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminOnboardCodeRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "onboard_token"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "onboard_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminOnboardEIDPollRequest": {
+            "type": "object",
+            "required": [
+                "onboard_token",
+                "session_id"
+            ],
+            "properties": {
+                "onboard_token": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminOnboardEIDStartIDRequest": {
+            "type": "object",
+            "required": [
+                "national_id",
+                "onboard_token"
+            ],
+            "properties": {
+                "callbackUrl": {
+                    "type": "string"
+                },
+                "national_id": {
+                    "type": "string"
+                },
+                "onboard_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminOnboardEIDStartRequest": {
+            "type": "object",
+            "required": [
+                "onboard_token"
+            ],
+            "properties": {
+                "callbackUrl": {
+                    "type": "string"
+                },
+                "onboard_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminOnboardGoogleRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "redirect_uri"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "redirect_uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.SuperadminOnboardTokenRequest": {
+            "type": "object",
+            "required": [
+                "onboard_token"
+            ],
+            "properties": {
+                "onboard_token": {
+                    "type": "string"
                 }
             }
         },
@@ -5944,6 +6830,12 @@
                 "last_name_en": {
                     "type": "string"
                 },
+                "mfa_required": {
+                    "type": "boolean"
+                },
+                "mfa_token": {
+                    "type": "string"
+                },
                 "refresh_token": {
                     "type": "string"
                 },
@@ -6038,6 +6930,12 @@
                 },
                 "linked": {
                     "type": "boolean"
+                },
+                "mfa_required": {
+                    "type": "boolean"
+                },
+                "mfa_token": {
+                    "type": "string"
                 },
                 "user": {
                     "$ref": "#/definitions/template_internal_http_datatransfers_responses.UserResponse"
@@ -6257,6 +7155,233 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminInviteResponse": {
+            "type": "object",
+            "properties": {
+                "accepted_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "invited_by": {
+                    "type": "string"
+                },
+                "pending": {
+                    "description": "Pending нь урилга хараахан ашиглагдаагүй (бүртгэл хийгдээгүй) эсэх —\nUI-д \"хүлээгдэж буй / ашигласан\" гэж ялгахад.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminMFAResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "eid": {
+                    "description": "EID нь eID-ээр нэвтэрсэн хэрэглэгчийн identity + сертификатын мэдээлэл.\nНууц үгээр бүртгүүлсэн хэрэглэгчид nil (omitempty).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.EIDInfo"
+                        }
+                    ]
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "first_name_en": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "full_name_en": {
+                    "type": "string"
+                },
+                "google": {
+                    "description": "Google нь холбогдсон Google account-аас хадгалсан профайл. Google\nхолбоогүй хэрэглэгчид nil (omitempty).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.GoogleInfo"
+                        }
+                    ]
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "last_name_en": {
+                    "type": "string"
+                },
+                "recovery_codes_left": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "role_id": {
+                    "type": "integer"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "used_recovery_code": {
+                    "description": "UsedRecoveryCode нь нөөц кодоор нэвтэрсэн эсэх; тийм бол\nrecovery_codes_left нь үлдсэн кодын тоо (UI сануулга харуулна).",
+                    "type": "boolean"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminOnboardDoneResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "eid": {
+                    "description": "EID нь eID-ээр нэвтэрсэн хэрэглэгчийн identity + сертификатын мэдээлэл.\nНууц үгээр бүртгүүлсэн хэрэглэгчид nil (omitempty).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.EIDInfo"
+                        }
+                    ]
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "first_name_en": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "full_name_en": {
+                    "type": "string"
+                },
+                "google": {
+                    "description": "Google нь холбогдсон Google account-аас хадгалсан профайл. Google\nхолбоогүй хэрэглэгчид nil (omitempty).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.GoogleInfo"
+                        }
+                    ]
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "last_name_en": {
+                    "type": "string"
+                },
+                "recovery_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "role_id": {
+                    "type": "integer"
+                },
+                "step": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminOnboardEIDPollResponse": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string"
+                },
+                "step": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminOnboardEIDStartResponse": {
+            "type": "object",
+            "properties": {
+                "device_link_url": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "verification_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminOnboardStartResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "onboard_token": {
+                    "type": "string"
+                },
+                "step": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminOnboardStepResponse": {
+            "type": "object",
+            "properties": {
+                "step": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SuperadminOnboardTOTPResponse": {
+            "type": "object",
+            "properties": {
+                "otpauth_url": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "step": {
                     "type": "string"
                 }
             }

@@ -9,7 +9,7 @@ export const metadata = { title: 'Нэвтрэх — DAN-Government SSO' };
 
 export default async function LoginPage(
   props: {
-    searchParams: Promise<{ next?: string; notice?: string; glink?: string; gerror?: string }>;
+    searchParams: Promise<{ next?: string; notice?: string; glink?: string; gerror?: string; mfa?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -23,6 +23,7 @@ export default async function LoginPage(
           notice={searchParams.notice}
           googleLink={searchParams.glink === '1'}
           googleError={!!searchParams.gerror}
+          mfaGate={searchParams.mfa === '1'}
         />
       </section>
     </SigninShell>

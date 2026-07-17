@@ -91,10 +91,16 @@ type User struct {
 	GoogleName          string     // Google дэлгэцийн нэр
 	GooglePicture       string     // Google профайл зургийн URL
 	GoogleLinkedAt      *time.Time // анх холбосон огноо
-	CreatedAt           time.Time
-	UpdatedAt           *time.Time
-	DeletedAt           *time.Time
-	PasswordChangedAt   *time.Time
+	// MFA — superadmin onboarding-д тохируулагдана. EmailVerified нь email OTP
+	// баталгаажсан эсэх; MFAEnabled нь TOTP идэвхтэй эсэх; TOTPSecret нь AES-GCM
+	// шифрлэгдсэн (usecase давхаргад шифрлэнэ/тайлна), хоосон бол 2FA-гүй.
+	EmailVerified     bool
+	MFAEnabled        bool
+	TOTPSecret        string
+	CreatedAt         time.Time
+	UpdatedAt         *time.Time
+	DeletedAt         *time.Time
+	PasswordChangedAt *time.Time
 }
 
 // GoogleAccount нь Google OAuth-аас ирсэн профайл — eID хэрэглэгчид холбоход

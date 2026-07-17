@@ -30,10 +30,28 @@ type Usecase interface {
 	// GrantAdmin нь байгаа хэрэглэгчид admin эрх олгоно (RoleAdmin болгоно).
 	// Аль хэдийн админ (admin/super admin) бол apperror.Conflict.
 	GrantAdmin(ctx context.Context, req GrantAdminRequest) error
+	// AddAdminByRegister нь регистрийн дугаараар (Core-оос батлагдсан иргэн)
+	// БАЙГАА хэрэглэгчийг admin болгоно. Тухайн регистрээр DAN-д бүртгэлтэй
+	// хэрэглэгч байхгүй бол apperror.NotFound ("эхлээд eID-ээр нэвтэрсэн байх
+	// шаардлагатай") — шинэ хэрэглэгч ҮҮСГЭХГҮЙ. Промоушн хийсэн хэрэглэгчийг буцаана.
+	AddAdminByRegister(ctx context.Context, req AddAdminByRegisterRequest) (CreateAdminResponse, error)
 	// RevokeAdmin нь admin-ийн эрхийг хасч, энгийн хэрэглэгч (RoleUser) болгоно.
 	// Зорилтот нь яг RoleAdmin байх ёстой (super admin-г хасахгүй) бөгөөд
 	// дуудагч өөрийгөө хасаж болохгүй.
 	RevokeAdmin(ctx context.Context, req RevokeAdminRequest) error
+
+	// ListInvites нь super admin болох урилгуудыг (хүлээгдэж буй + ашигласан)
+	// буцаана.
+	ListInvites(ctx context.Context) (ListInvitesResponse, error)
+	// CreateInvite нь и-мэйлийг super admin болох allow-list-д нэмнэ. Урьсан
+	// хүн (и-мэйл) нь урилгад тэмдэглэгдэнэ. Давхардсан и-мэйл →
+	// apperror.Conflict. АНХААР: энэ нь super admin эрхийг ШУУД олгодоггүй —
+	// урьсан хүн /auth/superadmin/onboard шидтэнг (Google + eID + и-мэйл OTP +
+	// TOTP) бүрэн давж байж л super admin болно.
+	CreateInvite(ctx context.Context, req CreateInviteRequest) (CreateInviteResponse, error)
+	// DeleteInvite нь урилгыг цуцална (хараахан ашиглаагүй бол дахин
+	// бүртгүүлэх боломжгүй болно). Байхгүй бол apperror.NotFound.
+	DeleteInvite(ctx context.Context, req DeleteInviteRequest) error
 }
 
 // Request / Response төрлүүд (Input/Output Boundary).
@@ -58,6 +76,10 @@ type (
 	GrantAdminRequest struct {
 		UserID string
 	}
+	AddAdminByRegisterRequest struct {
+		// Register нь иргэний регистрийн дугаар (national_id).
+		Register string
+	}
 
 	RevokeAdminRequest struct {
 		// UserID нь эрхийг нь хасах хэрэглэгч.
@@ -65,5 +87,23 @@ type (
 		// ActorID нь үйлдлийг гүйцэтгэж буй super admin — өөрийгөө хасахаас
 		// сэргийлэх (lockout guard) шалгалтад ашиглагдана.
 		ActorID string
+	}
+
+	ListInvitesResponse struct {
+		Invites []domain.SuperadminInvite
+	}
+
+	CreateInviteRequest struct {
+		// Email нь урих хаяг (нормчлогдоно).
+		Email string
+		// ActorEmail нь урьж буй super admin-ий и-мэйл (invited_by).
+		ActorEmail string
+	}
+	CreateInviteResponse struct {
+		Invite domain.SuperadminInvite
+	}
+
+	DeleteInviteRequest struct {
+		Email string
 	}
 )

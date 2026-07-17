@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"template/internal/business/usecases/users"
+	httpauth "template/internal/http/auth"
 	"template/internal/http/datatransfers/requests"
 	"template/internal/http/datatransfers/responses"
 	v1 "template/internal/http/handlers/v1"
@@ -63,7 +64,15 @@ func (h Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) error {
 	if err := validators.ValidatePayloads(req); err != nil {
 		return v1.RespondWithError(w, r, err)
 	}
-	if err := h.usersUC.UpdateRole(r.Context(), users.UpdateRoleRequest{UserID: id, RoleID: req.RoleID}); err != nil {
+	// Дуудагчийн эрхийг usecase-д дамжуулна — admin эрх олгох/хасахыг зөвхөн
+	// super admin хийнэ (энгийн admin нь зөвхөн manager ↔ user).
+	caller, err := httpauth.CurrentUserFromContext(r)
+	if err != nil {
+		return v1.NewErrorResponse(w, r, http.StatusUnauthorized, "invalid token")
+	}
+	if err := h.usersUC.UpdateRole(r.Context(), users.UpdateRoleRequest{
+		UserID: id, RoleID: req.RoleID, CallerRoleID: caller.RoleID,
+	}); err != nil {
 		return v1.RespondWithError(w, r, err)
 	}
 	return v1.NewSuccessResponse(w, r, http.StatusOK, "user role updated successfully", nil)

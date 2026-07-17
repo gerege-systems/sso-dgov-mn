@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash2, Loader2, Plus, Save, X, ShieldPlus } from 'lucide-react';
+import { Trash2, Loader2, Plus, Save, X, ShieldPlus, Search, IdCard, Mail, Link2, Check } from 'lucide-react';
 import { useT } from '@/lib/lang';
 import { getJSON, sendJSON } from '@/lib/client';
 import { ROLE_SUPERADMIN, roleLabel } from '@/lib/types';
@@ -16,6 +16,14 @@ interface AdminUser {
   role_id: number;
   active: boolean;
   created_at: string;
+}
+
+interface Invite {
+  email: string;
+  invited_by?: string;
+  created_at: string;
+  accepted_at?: string | null;
+  pending: boolean;
 }
 
 interface Props {
@@ -33,10 +41,26 @@ export default function SuperadminManager({ currentUserId }: Props) {
   const [form, setForm] = useState(emptyForm);
   const [grantId, setGrantId] = useState('');
 
+  // Register-ээр админ болгох (DAN-д бүртгэлтэй байгаа хэрэглэгч) — Core preview.
+  const [register, setRegister] = useState('');
+  const [preview, setPreview] = useState<{ name: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+
+  // Superadmin онбординг урилга (и-мэйл).
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+
   // Админ түвшний бүртгэлүүд (super admin + admin).
   const adminsQuery = useQuery({
     queryKey: ['superadmin-admins'],
     queryFn: () => getJSON<AdminUser[]>('/api/superadmin/admins'),
+  });
+  // Superadmin онбординг урилгууд (pending/accepted).
+  const invitesQuery = useQuery({
+    queryKey: ['superadmin-invites'],
+    queryFn: () => getJSON<Invite[]>('/api/superadmin/invites'),
   });
   // Эрх олгох боломжтой (админ биш) хэрэглэгчид — /admin/users-ийн эхний хуудас.
   const usersQuery = useQuery({
@@ -51,9 +75,84 @@ export default function SuperadminManager({ currentUserId }: Props) {
   const loadError = adminsQuery.isError ? (adminsQuery.error as Error).message || T('superadmin.loadError') : '';
   const error = actionError || loadError;
 
+  const invites = invitesQuery.data ?? null;
+  const onboardLink = typeof window !== 'undefined' ? `${window.location.origin}/superadmin/onboard` : '/superadmin/onboard';
+
   const reload = async () => {
     await queryClient.invalidateQueries({ queryKey: ['superadmin-admins'] });
     await queryClient.invalidateQueries({ queryKey: ['superadmin-grantable'] });
+  };
+
+  // Register-ээр Core-оос хэрэглэгч хайж нэрийг урьдчилан харуулна.
+  const lookupRegister = async () => {
+    const reg = register.trim();
+    if (!reg) return;
+    setPreview(null);
+    setActionError('');
+    setPreviewLoading(true);
+    try {
+      const rec = await getJSON<Record<string, unknown>>(`/api/core/users?search_text=${encodeURIComponent(reg)}`);
+      const last = (rec?.last_name as string) ?? '';
+      const first = (rec?.first_name as string) ?? '';
+      const name = `${last} ${first}`.trim();
+      if (rec && rec.id != null) setPreview({ name: name || String(rec.id) });
+      else setActionError(T('superadmin.registerNotFound'));
+    } catch (e) {
+      setActionError((e as Error).message || T('superadmin.registerNotFound'));
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const promoteByRegister = async () => {
+    const reg = register.trim();
+    if (!reg) return;
+    setActionError('');
+    setPromoting(true);
+    const res = await sendJSON('/api/superadmin/admins/by-register', 'POST', { register: reg });
+    setPromoting(false);
+    if (res.ok) {
+      setRegister('');
+      setPreview(null);
+      await reload();
+    } else {
+      setActionError(res.message || T('superadmin.actionError'));
+    }
+  };
+
+  const reloadInvites = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['superadmin-invites'] });
+  };
+
+  const addInvite = async () => {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    setActionError('');
+    setInviting(true);
+    const res = await sendJSON('/api/superadmin/invites', 'POST', { email });
+    setInviting(false);
+    if (res.ok) {
+      setInviteEmail('');
+      await reloadInvites();
+    } else {
+      setActionError(res.message || T('superadmin.actionError'));
+    }
+  };
+
+  const deleteInvite = async (email: string) => {
+    if (!window.confirm(T('superadmin.inviteDeleteConfirm'))) return;
+    setActionError('');
+    const res = await sendJSON(`/api/superadmin/invites/${encodeURIComponent(email)}`, 'DELETE');
+    if (res.ok) await reloadInvites();
+    else setActionError(res.message || T('superadmin.actionError'));
+  };
+
+  const copyOnboardLink = async () => {
+    try {
+      await navigator.clipboard.writeText(onboardLink);
+      setInviteLinkCopied(true);
+      setTimeout(() => setInviteLinkCopied(false), 1500);
+    } catch { /* clipboard байхгүй */ }
   };
 
   const createAdmin = async () => {
@@ -103,6 +202,38 @@ export default function SuperadminManager({ currentUserId }: Props) {
   return (
     <div className="users">
       {error && <div className="alert alert--danger" role="alert">{error}</div>}
+
+      {/* Регистрээр админ болгох — DAN-д бүртгэлтэй байгаа хэрэглэгчийг Core-оос
+          хайж, нэрийг нь баталгаажуулаад админ эрх олгоно. */}
+      <div className="card" style={{ padding: 16, marginBottom: 16, display: 'grid', gap: 10 }}>
+        <label className="field__label">{T('superadmin.byRegisterTitle')}</label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            className="input mono"
+            value={register}
+            onChange={(e) => { setRegister(e.target.value); setPreview(null); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') lookupRegister(); }}
+            placeholder={T('superadmin.registerPlaceholder')}
+            style={{ minWidth: 220, flex: 1 }}
+          />
+          <button className="btn btn--secondary" type="button" onClick={lookupRegister} disabled={previewLoading || !register.trim()}>
+            {previewLoading ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <Search size={16} strokeWidth={2} />}
+            <span>{T('superadmin.lookup')}</span>
+          </button>
+        </div>
+        {preview && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span className="chip chip--neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IdCard size={14} strokeWidth={2} /><span translate="no">{preview.name}</span>
+            </span>
+            <button className="btn btn--primary" type="button" onClick={promoteByRegister} disabled={promoting}>
+              {promoting ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <ShieldPlus size={16} strokeWidth={2} />}
+              <span>{T('superadmin.makeAdmin')}</span>
+            </button>
+          </div>
+        )}
+        <p className="muted" style={{ fontSize: 12, margin: 0 }}>{T('superadmin.byRegisterHint')}</p>
+      </div>
 
       {/* Шинэ админ үүсгэх + байгаа хэрэглэгчид эрх олгох */}
       <div className="card" style={{ padding: 16, marginBottom: 16, display: 'grid', gap: 16 }}>
@@ -222,6 +353,84 @@ export default function SuperadminManager({ currentUserId }: Props) {
           </table>
         </div>
       )}
+
+      {/* Superadmin онбординг урилга — и-мэйлээр урьж, тухайн хүн /superadmin/onboard
+          дээр Google + eID + 2FA-аар өөрийгөө бүртгэнэ. */}
+      <div className="card" style={{ padding: 16, marginTop: 24, display: 'grid', gap: 12 }}>
+        <div>
+          <label className="field__label">{T('superadmin.inviteTitle')}</label>
+          <p className="muted" style={{ fontSize: 12, margin: '4px 0 0' }}>{T('superadmin.inviteSub')}</p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            className="input"
+            type="email"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') addInvite(); }}
+            placeholder={T('superadmin.inviteEmailPlaceholder')}
+            style={{ minWidth: 240, flex: 1 }}
+          />
+          <button className="btn btn--primary" type="button" onClick={addInvite} disabled={inviting || !inviteEmail.trim()}>
+            {inviting ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <Mail size={16} strokeWidth={2} />}
+            <span>{T('superadmin.invite')}</span>
+          </button>
+        </div>
+
+        {/* Хуваалцах онбординг холбоос */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
+          <Link2 size={14} strokeWidth={2} className="muted" />
+          <code className="mono" style={{ fontSize: 12, wordBreak: 'break-all' }}>{onboardLink}</code>
+          <button className="btn btn--ghost btn--sm" type="button" onClick={copyOnboardLink} title={T('superadmin.copyLink')}>
+            {inviteLinkCopied ? <Check size={14} strokeWidth={2} /> : <Link2 size={14} strokeWidth={2} />}
+            <span>{T('superadmin.copyLink')}</span>
+          </button>
+        </div>
+
+        {invitesQuery.isPending && (
+          <div className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Loader2 size={16} strokeWidth={2} className="spin" /><span>{T('superadmin.loading')}</span>
+          </div>
+        )}
+
+        {invites !== null && invites.length === 0 && (
+          <p className="muted" style={{ margin: 0 }}>{T('superadmin.invitesEmpty')}</p>
+        )}
+
+        {invites !== null && invites.length > 0 && (
+          <div className="users-table-wrap" style={{ marginTop: 4 }}>
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>{T('superadmin.email')}</th>
+                  <th>{T('users.col.status')}</th>
+                  <th>{T('users.col.created')}</th>
+                  <th aria-label="actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map((inv) => (
+                  <tr key={inv.email}>
+                    <td className="mono">{inv.email}</td>
+                    <td>
+                      {inv.pending
+                        ? <span className="chip chip--pending">{T('superadmin.invitePending')}</span>
+                        : <span className="chip chip--success">{T('superadmin.inviteAccepted')}</span>}
+                    </td>
+                    <td className="mono">{fmtDate(inv.created_at)}</td>
+                    <td className="users-table__actions">
+                      <button className="btn btn--ghost btn--sm" type="button" onClick={() => deleteInvite(inv.email)} title={T('superadmin.inviteDelete')}>
+                        <Trash2 size={14} strokeWidth={2} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

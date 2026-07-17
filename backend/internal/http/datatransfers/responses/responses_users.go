@@ -165,8 +165,14 @@ func FromEIDStartResponse(r auth.EIDStartResponse) EIDStartResponse {
 // төлөв (RUNNING / COMPLETE / EXPIRED / REFUSED). COMPLETE үед UserResponse-ийн
 // бүх талбар (token / refresh_token-ийг оруулаад) /login-той ИЖИЛ хэлбэрээр
 // бөглөгдөнө — frontend BFF-ийн data.token / data.refresh_token уншилт өөрчлөгдөхгүй.
+//
+// COMPLETE + mfa_required=true (зөвхөн MFA идэвхтэй super admin) бол токен/
+// хэрэглэгч БАЙХГҮЙ — клиент mfa_token-оор POST /auth/superadmin/mfa-г дуудаж
+// session авна.
 type EIDPollResponse struct {
-	State string `json:"state"`
+	State       string `json:"state"`
+	MFARequired bool   `json:"mfa_required,omitempty"`
+	MFAToken    string `json:"mfa_token,omitempty"`
 	UserResponse
 }
 
@@ -174,6 +180,12 @@ type EIDPollResponse struct {
 // COMPLETE биш үед зөвхөн state бөглөнө (хэрэглэгчийн талбарууд хоосон).
 func FromEIDPollResponse(r auth.EIDPollResponse) EIDPollResponse {
 	out := EIDPollResponse{State: r.State}
+	// MFA шаардлагатай — session олгогдоогүй тул зөвхөн mfa_token буцна.
+	if r.MFARequired {
+		out.MFARequired = true
+		out.MFAToken = r.MFAToken
+		return out
+	}
 	if r.State == "COMPLETE" {
 		out.UserResponse = FromV1Domain(r.User)
 		out.Token = r.AccessToken
@@ -194,15 +206,27 @@ func ToResponseList(domains []domain.User) []UserResponse {
 
 // GoogleLoginResponse нь POST /auth/google-ийн хариу. Linked=true бол User
 // (токентой) дүүрэн; false бол link_token + email (eID-ээр баталгаажуулах).
+//
+// mfa_required=true (зөвхөн MFA идэвхтэй super admin) бол User БАЙХГҮЙ —
+// клиент mfa_token + TOTP/нөөц кодоор POST /auth/superadmin/mfa-г дуудаж
+// session авна. Клиент linked-ээс ӨМНӨ mfa_required-ийг шалгах ёстой.
 type GoogleLoginResponse struct {
-	Linked    bool          `json:"linked"`
-	User      *UserResponse `json:"user,omitempty"`
-	LinkToken string        `json:"link_token,omitempty"`
-	Email     string        `json:"email,omitempty"`
+	Linked      bool          `json:"linked"`
+	User        *UserResponse `json:"user,omitempty"`
+	LinkToken   string        `json:"link_token,omitempty"`
+	Email       string        `json:"email,omitempty"`
+	MFARequired bool          `json:"mfa_required,omitempty"`
+	MFAToken    string        `json:"mfa_token,omitempty"`
 }
 
 // FromGoogleLoginResponse нь usecase-ийн үр дүнг DTO рүү буулгана.
 func FromGoogleLoginResponse(r auth.GoogleLoginResponse) GoogleLoginResponse {
+	// MFA шаардлагатай — токен/хэрэглэгч буцаахгүй (session хараахан олгогдоогүй).
+	if r.MFARequired {
+		return GoogleLoginResponse{
+			Linked: true, MFARequired: true, MFAToken: r.MFAToken, Email: r.Email,
+		}
+	}
 	if r.Linked {
 		u := FromLoginResponse(r.Login)
 		return GoogleLoginResponse{Linked: true, User: &u}

@@ -38,6 +38,7 @@ import (
 	siteuc "template/internal/business/usecases/site"
 	"template/internal/business/usecases/sso"
 	"template/internal/business/usecases/superadmin"
+	onboarding "template/internal/business/usecases/superadmin_onboarding"
 	themeuc "template/internal/business/usecases/theme"
 	"template/internal/business/usecases/users"
 	"template/internal/config"
@@ -53,9 +54,11 @@ import (
 	orgpostgres "template/internal/datasources/repositories/postgres/org"
 	orgstamppostgres "template/internal/datasources/repositories/postgres/orgstamp"
 	rbacpostgres "template/internal/datasources/repositories/postgres/rbac"
+	recoverypostgres "template/internal/datasources/repositories/postgres/recovery"
 	securitypostgres "template/internal/datasources/repositories/postgres/security"
 	sitepostgres "template/internal/datasources/repositories/postgres/site"
 	ssouserpostgres "template/internal/datasources/repositories/postgres/ssouser"
+	superadmininvitepostgres "template/internal/datasources/repositories/postgres/superadmininvite"
 	themepostgres "template/internal/datasources/repositories/postgres/theme"
 	userintegrationspostgres "template/internal/datasources/repositories/postgres/userintegrations"
 	userspostgres "template/internal/datasources/repositories/postgres/users"
@@ -257,9 +260,33 @@ func NewApp() (*App, error) {
 	auditRepo := auditpostgres.NewAuditRepository(pool)
 	auditUC := audit.NewUsecase(auditRepo)
 
-	// Super admin — админ хэрэглэгчдийг удирдах (үүсгэх/эрх олгох/хасах). users
-	// давхаргаар (кэш-зөв мутациуд) ажиллаж, мутаци бүрийг audit log-д бичнэ.
-	superadminUC := superadmin.NewUsecase(usersUC, auditUC)
+	// Super admin — админ хэрэглэгчдийг удирдах (үүсгэх/эрх олгох/хасах) +
+	// super admin урилга (allow-list). users давхаргаар (кэш-зөв мутациуд)
+	// ажиллаж, мутаци бүрийг audit log-д бичнэ.
+	superadminInviteRepo := superadmininvitepostgres.NewSuperadminInviteRepository(pool)
+	superadminUC := superadmin.NewUsecase(usersUC, auditUC, superadminInviteRepo)
+
+	// Super admin бүртгэлийн шидтэн (урилга → Google → eID → и-мэйл OTP →
+	// TOTP) + MFA-тай super admin нэвтрэлтийн 2 дахь шат. TOTP secret-ийг
+	// storage-д шифрлэхэд INTEGRATION_ENC_KEY-г дахин ашиглана (тохируулаагүй
+	// бол boot зогсоно — secret-ийг ил текстээр хадгалахыг зөвшөөрөхгүй).
+	recoveryRepo := recoverypostgres.NewRecoveryCodeRepository(pool)
+	onboardingUC, err := onboarding.NewUsecase(
+		googleClient, eidClient, verifier,
+		userRepo, recoveryRepo, superadminInviteRepo,
+		jwtService, redisCache, config.AppConfig.IntegrationEncKey,
+		onboarding.Config{
+			Issuer:         config.AppConfig.JWTIssuer,
+			PendingTTL:     30 * time.Minute,
+			OTPTTL:         time.Duration(config.AppConfig.REDISExpired) * time.Minute,
+			OTPMaxAttempts: config.AppConfig.OTPMaxAttempts,
+			MFAMaxAttempts: 5,
+			EIDDisplayText: config.AppConfig.EIDDisplayText,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("init superadmin onboarding usecase: %w", err)
+	}
 
 	// Security events — RASP-style ingest (нэвтэрсэн хэрэглэгч бичнэ, admin унших).
 	securityRepo := securitypostgres.NewSecurityEventRepository(pool)
@@ -391,6 +418,8 @@ func NewApp() (*App, error) {
 		routes.NewSSORoute(api, ssoUC).Routes()
 		routes.NewAdminRoute(api, usersUC, rbacUC, aiUC, authMiddleware).Routes()
 		routes.NewSuperAdminRoute(api, superadminUC, authMiddleware).Routes()
+		// Super admin бүртгэл + MFA — нэвтрээгүй гадаргуу (rate limit + service RLS).
+		routes.NewSuperAdminOnboardRoute(api, onboardingUC, authRateLimiter, pollRateLimiter).Routes()
 		routes.NewAIRoute(api, aiUC, authMiddleware, aiRateLimiter).Routes()
 		routes.NewAuditRoute(api, auditUC, authMiddleware).Routes()
 		routes.NewSecurityRoute(api, securityUC, authMiddleware).Routes()

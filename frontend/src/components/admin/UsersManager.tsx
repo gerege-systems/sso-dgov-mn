@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trash2, Loader2, Check, Ban, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useT } from '@/lib/lang';
 import { getJSON, sendJSON } from '@/lib/client';
-import { ROLE_SUPERADMIN } from '@/lib/types';
+import { ROLE_SUPERADMIN, ROLE_ADMIN, isSuperAdmin } from '@/lib/types';
 
 interface AdminUser {
   id: string;
@@ -25,6 +25,8 @@ interface RoleItem {
 
 interface Props {
   currentUserId: string;
+  /** Нэвтэрсэн хэрэглэгчийн role — admin эрхийг зөвхөн super admin олгоно. */
+  currentUserRoleId: number;
   /** readOnly бол зөвхөн харах горим. */
   readOnly?: boolean;
 }
@@ -34,8 +36,11 @@ interface Props {
 // мөрийн тоо хуудасны хэмжээнээс бага үед идэвхгүй болгоно.
 const PAGE_SIZE = 50;
 
-export default function UsersManager({ currentUserId, readOnly = false }: Props) {
+export default function UsersManager({ currentUserId, currentUserRoleId, readOnly = false }: Props) {
   const { T, lang, tRole } = useT();
+  // Admin эрхийг зөвхөн super admin олгож/хасна (backend users.UpdateRole ч
+  // хаадаг) — энгийн admin нь зөвхөн manager ↔ user л сольж чадна.
+  const callerIsSuperAdmin = isSuperAdmin(currentUserRoleId);
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [actionError, setActionError] = useState('');
@@ -116,8 +121,12 @@ export default function UsersManager({ currentUserId, readOnly = false }: Props)
               {items.map((u) => {
                 const isSelf = u.id === currentUserId;
                 // Super admin бүртгэлийг энэ хуудаснаас өөрчлөхгүй (backend ч
-                // хаадаг) — зөвхөн /admin/superadmin-аар удирдана.
-                const isProtected = isSelf || u.role_id === ROLE_SUPERADMIN;
+                // хаадаг) — зөвхөн /admin/superadmin-аар удирдана. Мөн ADMIN
+                // бүртгэлийг зөвхөн super admin өөрчилнө.
+                const isProtected =
+                  isSelf ||
+                  u.role_id === ROLE_SUPERADMIN ||
+                  (u.role_id === ROLE_ADMIN && !callerIsSuperAdmin);
                 return (
                   <tr key={u.id}>
                     <td>
@@ -146,7 +155,10 @@ export default function UsersManager({ currentUserId, readOnly = false }: Props)
                           onChange={(e) => changeRole(u.id, Number(e.target.value))}
                         >
                           {roles
+                            // superadmin-ыг хэзээ ч санал болгохгүй; admin-ыг
+                            // зөвхөн super admin-д (backend 403 өгдөгтэй нийцүүлэв).
                             .filter((r) => r.id !== ROLE_SUPERADMIN)
+                            .filter((r) => r.id !== ROLE_ADMIN || callerIsSuperAdmin)
                             .map((r) => <option key={r.id} value={r.id}>{tRole(r.key, r.name)}</option>)}
                         </select>
                       )}

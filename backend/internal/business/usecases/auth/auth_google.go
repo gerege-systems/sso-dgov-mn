@@ -30,6 +30,38 @@ func googleAccountOf(gu google.User) domain.GoogleAccount {
 // googleLinkTTL нь Google→eID холбохыг хүлээх токены амьдрах хугацаа.
 const googleLinkTTL = 15 * time.Minute
 
+// superadminMFATTL нь MFA код оруулахыг хүлээж буй токены амьдрах хугацаа —
+// богино (5 мин) байх нь хулгайлагдсан токены ашиглах цонхыг нарийсгана.
+const superadminMFATTL = 5 * time.Minute
+
+// startSuperadminMFA нь MFA-тай super admin-д session олгохын ӨМНӨ богино
+// хугацааны mfa_token үүсгэж Redis-д (→ user_id) хадгална. Клиент дараа нь
+// POST /auth/superadmin/mfa руу токен + TOTP/нөөц кодоо илгээж session авна.
+//
+// Redis алдаа гарвал fail-closed: токен хадгалагдаагүй бол баталгаажуулалт
+// боломжгүй тул нэвтрэлтийг АМЖИЛТГҮЙ болгоно — MFA-г алгасаж session олгох
+// нь энэ функцийн зорилгыг бүрмөсөн үгүйсгэнэ.
+func (uc *usecase) startSuperadminMFA(ctx context.Context, userID string) (string, error) {
+	token, tErr := randomLinkToken()
+	if tErr != nil {
+		return "", apperror.InternalCause(fmt.Errorf("mfa token: %w", tErr))
+	}
+	key := SuperadminMFAKey(token)
+	if setErr := uc.redisCache.Set(ctx, key, userID); setErr != nil {
+		return "", apperror.InternalCause(fmt.Errorf("store mfa token: %w", setErr))
+	}
+	if expErr := uc.redisCache.Expire(ctx, key, superadminMFATTL); expErr != nil {
+		// TTL тогтоож чадаагүй токеныг үлдээхгүй — цэвэрлээд татгалзана.
+		_ = uc.redisCache.Del(ctx, key)
+		return "", apperror.InternalCause(fmt.Errorf("expire mfa token: %w", expErr))
+	}
+	return token, nil
+}
+
+// requiresMFA нь тухайн хэрэглэгчид MFA gate хэрэгтэй эсэхийг шийднэ: зөвхөн
+// MFA идэвхжүүлсэн super admin. Энгийн хэрэглэгч/админы нэвтрэлт огт өөрчлөгдөхгүй.
+func requiresMFA(user domain.User) bool { return user.IsSuperAdmin() && user.MFAEnabled }
+
 // mintSession нь хэрэглэгчид access+refresh токен хос үүсгэж, refresh-ийг
 // Redis-д тэмдэглэнэ (Login/EIDPoll/Google хуваалцдаг).
 func (uc *usecase) mintSession(ctx context.Context, user domain.User) (jwt.TokenPair, error) {
@@ -78,6 +110,23 @@ func (uc *usecase) GoogleLogin(ctx context.Context, code, redirectURI string) (r
 				"usecase": usecaseName, "method": funcName, "file": fileName, "error": refreshErr.Error(),
 			})
 		}
+		// MFA-тай super admin бол ЭНД session олгохгүй — эхлээд TOTP/нөөц код.
+		// (Энгийн хэрэглэгч/админд энэ салаа хэзээ ч хүрэхгүй тул тэдний
+		// нэвтрэлт яг хэвээрээ.)
+		if requiresMFA(user) {
+			mfaToken, mfaErr := uc.startSuperadminMFA(ctx, user.ID)
+			if mfaErr != nil {
+				logger.ErrorWithContext(ctx, "GoogleLogin failed: start superadmin mfa", logger.Fields{
+					"usecase": usecaseName, "method": funcName, "file": fileName,
+					"step": "start_superadmin_mfa", "error": mfaErr.Error(), "user_id": user.ID,
+				})
+				return GoogleLoginResponse{}, mfaErr
+			}
+			return GoogleLoginResponse{
+				Linked: true, MFARequired: true, MFAToken: mfaToken, Email: user.Email,
+			}, nil
+		}
+
 		pair, mintErr := uc.mintSession(ctx, user)
 		if mintErr != nil {
 			return GoogleLoginResponse{}, apperror.InternalCause(fmt.Errorf("mint session: %w", mintErr))

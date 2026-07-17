@@ -5,33 +5,41 @@ package superadmin
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"template/internal/apperror"
 	"template/internal/business/domain"
 	"template/internal/business/usecases/audit"
 	"template/internal/business/usecases/users"
+	repointerface "template/internal/datasources/repositories/interface"
 	"template/pkg/logger"
 )
 
 // Audit action-ууд (hash-chained audit log). category нь бүгд "superadmin".
 const (
-	actionCreateAdmin = "superadmin.create_admin"
-	actionGrantAdmin  = "superadmin.grant_admin"
-	actionRevokeAdmin = "superadmin.revoke_admin"
-	auditCategory     = "superadmin"
+	actionCreateAdmin  = "superadmin.create_admin"
+	actionGrantAdmin   = "superadmin.grant_admin"
+	actionRevokeAdmin  = "superadmin.revoke_admin"
+	actionCreateInvite = "superadmin.create_invite"
+	actionDeleteInvite = "superadmin.delete_invite"
+	auditCategory      = "superadmin"
 )
 
-// usecase нь users use case (кэш-зөв мутациуд) болон audit log-оос хамаарна.
-// ListAdmins/Store/UpdateRole/SetActive-ийг users давхаргаар дуудсанаар кэш
-// цэвэрлэлт болон domain баталгаажуулалтыг давхардуулахгүй дахин ашиглана.
+// usecase нь users use case (кэш-зөв мутациуд), audit log болон superadmin
+// урилгын repo-оос хамаарна. ListAdmins/Store/UpdateRole/SetActive-ийг users
+// давхаргаар дуудсанаар кэш цэвэрлэлт болон domain баталгаажуулалтыг
+// давхардуулахгүй дахин ашиглана.
 type usecase struct {
 	usersUC users.Usecase
 	auditUC audit.Usecase
+	invites repointerface.SuperadminInviteRepository
 }
 
-// NewUsecase нь super admin use case-ийг үүсгэнэ.
-func NewUsecase(usersUC users.Usecase, auditUC audit.Usecase) Usecase {
-	return &usecase{usersUC: usersUC, auditUC: auditUC}
+// NewUsecase нь super admin use case-ийг үүсгэнэ. invitesRepo нь nil байж болно
+// (урилгын endpoint-ууд тухайн үед "тохируулаагүй" алдаа буцаана).
+func NewUsecase(usersUC users.Usecase, auditUC audit.Usecase, invitesRepo repointerface.SuperadminInviteRepository) Usecase {
+	return &usecase{usersUC: usersUC, auditUC: auditUC, invites: invitesRepo}
 }
 
 func (uc *usecase) ListAdmins(ctx context.Context) (ListAdminsResponse, error) {
@@ -81,13 +89,44 @@ func (uc *usecase) GrantAdmin(ctx context.Context, req GrantAdminRequest) error 
 	if existing.User.IsAdmin() {
 		return apperror.Conflict("user is already an admin")
 	}
-	if err := uc.usersUC.UpdateRole(ctx, users.UpdateRoleRequest{UserID: req.UserID, RoleID: domain.RoleAdmin}); err != nil {
+	// CallerRoleID — энэ usecase нь route түвшинд RequireSuperAdmin-аар
+	// хамгаалагдсан тул дуудагч нь super admin. Admin эрхийг зөвхөн super admin
+	// олгодог шалгалтыг (users.UpdateRole) давахад шаардлагатай.
+	if err := uc.usersUC.UpdateRole(ctx, users.UpdateRoleRequest{
+		UserID: req.UserID, RoleID: domain.RoleAdmin, CallerRoleID: domain.RoleSuperAdmin,
+	}); err != nil {
 		return err
 	}
 	uc.record(ctx, actionGrantAdmin, req.UserID, map[string]any{
 		"email": existing.User.Email,
 	})
 	return nil
+}
+
+// AddAdminByRegister нь регистрийн дугаараар БАЙГАА хэрэглэгчийг admin болгоно.
+// Тухайн регистрээр DAN-д хэрэглэгч байхгүй бол татгалзана (шинэ хэрэглэгч
+// үүсгэхгүй) — тэр хүн эхлээд eID-ээр нэвтэрсэн байх ёстой.
+func (uc *usecase) AddAdminByRegister(ctx context.Context, req AddAdminByRegisterRequest) (CreateAdminResponse, error) {
+	register := strings.ToUpper(strings.TrimSpace(req.Register))
+	if register == "" {
+		return CreateAdminResponse{}, apperror.BadRequest("register is required")
+	}
+	found, err := uc.usersUC.GetByNationalID(ctx, users.GetByNationalIDRequest{NationalID: register})
+	if err != nil {
+		var domErr *apperror.DomainError
+		if errors.As(err, &domErr) && domErr.Type == apperror.ErrTypeNotFound {
+			return CreateAdminResponse{}, apperror.NotFound("this register is not registered in DAN — the person must sign in via eID first")
+		}
+		return CreateAdminResponse{}, err
+	}
+	if found.User.IsAdmin() {
+		return CreateAdminResponse{}, apperror.Conflict("user is already an admin")
+	}
+	if err := uc.GrantAdmin(ctx, GrantAdminRequest{UserID: found.User.ID}); err != nil {
+		return CreateAdminResponse{}, err
+	}
+	found.User.RoleID = domain.RoleAdmin
+	return CreateAdminResponse{User: found.User}, nil
 }
 
 // RevokeAdmin нь admin эрхийг хасч, энгийн хэрэглэгч болгоно.
@@ -108,7 +147,11 @@ func (uc *usecase) RevokeAdmin(ctx context.Context, req RevokeAdminRequest) erro
 	if existing.User.RoleID != domain.RoleAdmin {
 		return apperror.BadRequest("user is not an admin")
 	}
-	if err := uc.usersUC.UpdateRole(ctx, users.UpdateRoleRequest{UserID: req.UserID, RoleID: domain.RoleUser}); err != nil {
+	// Дуудагч нь super admin (RequireSuperAdmin) — admin бүртгэлийг өөрчлөх
+	// шалгалтыг давахад шаардлагатай.
+	if err := uc.usersUC.UpdateRole(ctx, users.UpdateRoleRequest{
+		UserID: req.UserID, RoleID: domain.RoleUser, CallerRoleID: domain.RoleSuperAdmin,
+	}); err != nil {
 		return err
 	}
 	uc.record(ctx, actionRevokeAdmin, req.UserID, map[string]any{

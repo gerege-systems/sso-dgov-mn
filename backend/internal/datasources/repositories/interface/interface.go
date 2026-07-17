@@ -102,6 +102,53 @@ type UserRepository interface {
 	SetSignature(ctx context.Context, userID, img string) error
 	// SetLatinName нь хэрэглэгчийн латин нэрийг (first_name_en/last_name_en) гараар засна.
 	SetLatinName(ctx context.Context, userID, firstEn, lastEn string) error
+	// UpsertSuperAdmin нь superadmin onboarding-ийн ТӨГСГӨЛД (Google + eID +
+	// email OTP + TOTP бүгд баталгаажсаны дараа) super admin хэрэглэгчийг
+	// үүсгэх/ахиулах. Түлхүүр нь UpsertFromEID-ийн адил civil_id: тухайн иргэн
+	// аль хэдийн eID-ээр нэвтэрч байсан бол мөрийг нь ахиулж (role_id,
+	// email/email_verified, mfa_enabled, totp_secret, Google профайл), эс бөгөөс
+	// шинэ идэвхтэй super admin мөр оруулна. totp_secret нь usecase давхаргад
+	// AES-GCM-ээр шифрлэгдсэн ирнэ (энд ил текст ХЭЗЭЭ Ч бичигдэхгүй).
+	// Давхардсан email/google_sub нь apperror.Conflict болж гарна.
+	UpsertSuperAdmin(ctx context.Context, in *domain.User) (domain.User, error)
+}
+
+// RecoveryCodeRepository нь 2FA нөөц кодуудын (user_recovery_codes) gateway юм.
+// Кодууд нь per-user тул хүснэгт RLS-тэй (repo нь withRLS транзакцид
+// app.user_id/app.user_role GUC тавьдаг — migration 35). DB-д зөвхөн SHA-256
+// hash хадгалагдана; энгийн текст код энэ давхаргад хэзээ ч хүрэхгүй.
+type RecoveryCodeRepository interface {
+	// Replace нь тухайн хэрэглэгчийн ӨМНӨХ бүх кодыг устгаад, шинэ hash-уудыг
+	// нэг транзакцид оруулна (нөөц кодыг дахин үүсгэх нь хуучныг хүчингүй
+	// болгоно).
+	Replace(ctx context.Context, userID string, hashes []string) error
+	// ListActive нь хэрэглэгчийн хэрэглэгдээгүй (used_at IS NULL) кодуудыг
+	// буцаана — үлдсэн кодын тоог харуулахад.
+	ListActive(ctx context.Context, userID string) ([]domain.RecoveryCode, error)
+	// Consume нь өгсөн hash-тай, хэрэглэгдээгүй НЭГ кодыг атомаар "хэрэглэсэн"
+	// болгож тэмдэглэнэ (used_at = now()). Тохирох идэвхтэй код байхгүй
+	// (буруу код эсвэл аль хэдийн хэрэглэсэн) бол apperror.NotFound — иймээс
+	// код нэг л удаа ажиллана.
+	Consume(ctx context.Context, userID, hash string) error
+}
+
+// SuperadminInviteRepository нь superadmin урилгын allow-list
+// (superadmin_invites) gateway юм. Хэрэглэгч-тус-бүрийн биш, админаар
+// удирдагддаг нийтийн config хүснэгт тул RLS-гүй (plain pool query).
+type SuperadminInviteRepository interface {
+	// Create нь урилга үүсгэнэ (email нь нормчлогдсон ирнэ). Аль хэдийн
+	// урьсан и-мэйл дээр apperror.Conflict.
+	Create(ctx context.Context, email, invitedBy string) (domain.SuperadminInvite, error)
+	// List нь бүх урилгыг (шинэ нь эхэндээ) буцаана.
+	List(ctx context.Context) ([]domain.SuperadminInvite, error)
+	// GetByEmail нь и-мэйлээр урилгыг олно; байхгүй бол apperror.NotFound
+	// (onboarding-ийн Google алхам үүгээр гатлана).
+	GetByEmail(ctx context.Context, email string) (domain.SuperadminInvite, error)
+	// Delete нь урилгыг цуцална. Байхгүй бол apperror.NotFound.
+	Delete(ctx context.Context, email string) error
+	// MarkAccepted нь урилгыг ашигласан гэж тэмдэглэнэ (accepted_at = now())
+	// — onboarding төгсөхөд дуудагдана. Дахин ашиглах боломжгүй болно.
+	MarkAccepted(ctx context.Context, email string) error
 }
 
 // RBACRepository нь динамик role-ууд болон тэдгээрийн эрхийг (role↔permission)

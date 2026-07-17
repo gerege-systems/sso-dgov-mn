@@ -17,6 +17,9 @@ interface GoogleData {
   user?: { token?: string; refresh_token?: string };
   link_token?: string;
   email?: string;
+  // MFA-той superadmin — session-ий оронд 2 дахь хүчин зүйлийн gate буцаана.
+  mfa_required?: boolean;
+  mfa_token?: string;
 }
 
 export async function GET(req: Request) {
@@ -51,6 +54,17 @@ export async function GET(req: Request) {
   }
 
   const data = result.data;
+
+  // MFA-той superadmin → session-ий оронд mfa_token ирнэ. Түүнийг богино
+  // хугацааны httpOnly cookie-д (sa_mfa) хадгалаад TOTP challenge руу шилжүүлнэ —
+  // mfa_token клиент JS-д хэзээ ч хүрэхгүй. next байвал challenge-ийн дараа тэр рүү.
+  if (data.mfa_required && data.mfa_token) {
+    (await cookies()).set('sa_mfa', data.mfa_token, { ...cookieOptions(300), maxAge: 300 }); // 5 мин
+    const mfaURL = nextPath
+      ? `${origin}/login?mfa=1&next=${encodeURIComponent(nextPath)}`
+      : `${origin}/login?mfa=1`;
+    return NextResponse.redirect(mfaURL);
+  }
 
   // Аль хэдийн холбогдсон → шууд нэвтрүүлнэ (SSO урсгалд next-ийн /oauth/login
   // руу буцаж challenge-ыг accept хийнэ).

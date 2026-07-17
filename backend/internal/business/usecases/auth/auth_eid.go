@@ -251,6 +251,23 @@ func (uc *usecase) EIDPoll(ctx context.Context, req EIDPollRequest) (resp EIDPol
 	// Google account-ийг энэ бодит хүнд холбоно (non-fatal).
 	uc.linkGoogleIfPending(ctx, user.ID, req.GoogleLinkToken)
 
+	// MFA-тай super admin бол ЭНД session олгохгүй — eID баталгаажсан ч эхлээд
+	// TOTP/нөөц код шаардана (нэвтрэх бүх зам MFA-гаар дамжина). Энгийн
+	// хэрэглэгчийн eID нэвтрэлт огт өөрчлөгдөхгүй.
+	if requiresMFA(user) {
+		mfaToken, mfaErr := uc.startSuperadminMFA(ctx, user.ID)
+		if mfaErr != nil {
+			err = mfaErr
+			logger.ErrorWithContext(ctx, "EIDPoll failed: start superadmin mfa", logger.Fields{
+				"usecase": usecaseName, "method": funcName, "file": fileName,
+				"step": "start_superadmin_mfa", "error": mfaErr.Error(), "user_id": user.ID,
+			})
+			return EIDPollResponse{}, err
+		}
+		resp = EIDPollResponse{State: eid.StateComplete, MFARequired: true, MFAToken: mfaToken}
+		return resp, nil
+	}
+
 	pair, mintErr := uc.jwtService.GenerateTokenPair(user.ID, user.IsAdmin(), user.RoleID, user.Email)
 	if mintErr != nil {
 		err = apperror.InternalCause(fmt.Errorf("generate token: %w", mintErr))

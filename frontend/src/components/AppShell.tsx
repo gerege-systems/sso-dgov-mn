@@ -72,9 +72,15 @@ const SYSTEMS: NavSystem[] = [
         ],
       },
       {
+        // Зөвхөн super admin харна (superAdminOnly тул бүлэг автоматаар нуугдана).
+        labelKey: 'group.superadmin',
+        items: [
+          { href: '/admin/superadmin', labelKey: 'nav.superadminAdmins', icon: Crown, superAdminOnly: true },
+        ],
+      },
+      {
         labelKey: 'group.management',
         items: [
-          { href: '/admin/superadmin', labelKey: 'nav.superadmin', icon: Crown, superAdminOnly: true },
           { href: '/admin/users', labelKey: 'nav.users', icon: Users, perm: 'users.manage' },
           { href: '/admin/core', labelKey: 'nav.coreSearch', icon: Search, perm: 'users.manage' },
           { href: '/admin/roles', labelKey: 'nav.roles', icon: ShieldHalf, perm: 'roles.manage' },
