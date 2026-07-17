@@ -195,6 +195,15 @@ export default function ThemeEditor({ theme, onDone }: Props) {
           style={{ ...previewVars, fontFamily: previewFont }}>
           <div className="theme-preview__bar">{T('themes.preview')}</div>
           <div className="theme-preview__body">
+            {/* Landing hero-ийн navy дэвсгэрийн preview зурвас (--lp-navy). */}
+            <div style={{
+              background: 'var(--lp-navy)', color: '#f7f9fc', borderRadius: 8,
+              padding: '9px 12px', marginBottom: 12, fontSize: 12, fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--gold)' }} />
+              {L('Нүүрний navy дэвсгэр', 'Landing navy background')}
+            </div>
             <div className="theme-preview__brand">{mergedCopy.brand || 'DAN-Government SSO'}</div>
             <div className="theme-preview__hero">
               {mergedCopy.hero.titleLead} <span style={{ color: 'var(--gold)' }}>{mergedCopy.hero.titleAccent}</span> {mergedCopy.hero.titleTail}

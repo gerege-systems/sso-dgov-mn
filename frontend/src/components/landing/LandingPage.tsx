@@ -24,8 +24,6 @@ interface Props {
   googleError?: boolean;
   /** Идэвхтэй theme-ийн landing текст/цэс (mn/en) — copy.ts default дээр давхарлана. */
   themeLanding?: { mn?: Partial<LandingCopy>; en?: Partial<LandingCopy> };
-  /** Админ тохируулсан landing navy дэвсгэрийн '#rrggbb' hex (--lp-navy-г дарна). */
-  landingBg?: string;
 }
 
 /**
@@ -34,22 +32,15 @@ interface Props {
  * картыг (SigninShell доторх `.signin-card` + LoginForm) шигтгэв. Брэнд токен
  * (DAN blue + gold, light/dark) дээр найруулав.
  */
-export default function LandingPage({ next, notice, googleLink, googleError, themeLanding, landingBg }: Props) {
+export default function LandingPage({ next, notice, googleLink, googleError, themeLanding }: Props) {
   const { lang, setLang } = useLang();
   // Идэвхтэй theme-ийн текст байвал copy.ts default дээр гүн merge хийнэ.
   const override = themeLanding?.[lang];
   const t = override ? deepMerge(landingCopy[lang], override) : landingCopy[lang];
   const brand = t.brand || 'DAN-Government SSO';
 
-  // Админ landing navy-г тохируулсан бол --lp-navy-г SSR inline-аар дарна (bootstrap
-  // хэрэггүй — .lp дотор бүх lp-* үүнээс уламжилна; --lp-navy-2 нь CSS-д деривэ).
-  const lpStyle =
-    landingBg && /^#[0-9a-fA-F]{6}$/.test(landingBg)
-      ? ({ ['--lp-navy']: landingBg } as React.CSSProperties)
-      : undefined;
-
   return (
-    <div className="lp" style={lpStyle}>
+    <div className="lp">
       {/* ---------- Nav ---------- */}
       <header className="lp-nav">
         <div className="lp-nav__inner">

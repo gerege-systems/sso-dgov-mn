@@ -6,6 +6,11 @@
    ============================================================================ */
 
 :root {
+  /* Landing (нүүр) hero-ийн navy дэвсгэрийн default. :root-д тавьсан тул admin
+     theme (theme-bootstrap.js) <html>-д --lp-navy-г override хийхэд .lp дотор
+     уламжлагдана. Landing light/dark аль алинд ижил (үргэлж гүн navy). */
+  --lp-navy:   oklch(24% 0.055 260);
+
   /* Гадаргуу */
   --bg:        oklch(98.5% 0.003 260);
   --surface:   oklch(100% 0 0);
@@ -1559,10 +1564,9 @@ html[lang="en"] .i18n-banner { display: block; }
    Hero-ийн баруун талд ОДОО БАЙГАА нэвтрэх карт (.signin-card) шигтгэнэ.
    ============================================================================ */
 .lp {
-  /* Landing-д зориулсан гүн navy + алт. --lp-navy-г админ SiteAppearance-аар
-     дарж болно (LandingPage inline style); --lp-navy-2 нь түүнээс деривэ хийгдэх
-     тул ганц утга солиход нав/hero/cta/footer бүгд нэг мөр өөрчлөгдөнө. */
-  --lp-navy:       oklch(24% 0.055 260);
+  /* Landing-д зориулсан гүн navy + алт. --lp-navy нь :root-д тодорхойлогдсон
+     (admin theme үүнийг <html>-д override хийж болно); --lp-navy-2 нь түүнээс
+     деривэ хийгдэх тул ганц утга солиход нав/hero/cta/footer бүгд өөрчлөгдөнө. */
   --lp-navy-2:     color-mix(in oklab, var(--lp-navy), white 7%);
   --lp-navy-line:  oklch(100% 0 0 / 0.12);
   --lp-navy-line2: oklch(100% 0 0 / 0.22);

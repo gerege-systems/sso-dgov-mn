@@ -66,9 +66,6 @@ func (uc *usecase) SetAppearance(ctx context.Context, a domain.SiteAppearance) e
 	if !domain.SiteThemes[a.Theme] {
 		return apperror.BadRequest("invalid theme")
 	}
-	if !domain.ValidLandingBg(a.LandingBg) {
-		return apperror.BadRequest("invalid landing_bg (#rrggbb hex)")
-	}
 	if err := uc.repo.SetAppearance(ctx, a); err != nil {
 		return err
 	}
