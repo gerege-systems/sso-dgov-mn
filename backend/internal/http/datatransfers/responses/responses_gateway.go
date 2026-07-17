@@ -75,63 +75,6 @@ func ToGatewayRouteList(list []domain.GatewayRoute) []GatewayRouteResponse {
 	return out
 }
 
-// ── Consumers + keys ─────────────────────────────────────────────────────—
-
-type GatewayConsumerResponse struct {
-	ID        string     `json:"id"`
-	Username  string     `json:"username"`
-	CustomID  string     `json:"custom_id"`
-	Tags      []string   `json:"tags"`
-	Enabled   bool       `json:"enabled"`
-	KeyCount  int        `json:"key_count"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at"`
-}
-
-func FromGatewayConsumer(c domain.GatewayConsumer) GatewayConsumerResponse {
-	return GatewayConsumerResponse{
-		ID: c.ID, Username: c.Username, CustomID: c.CustomID, Tags: nonNil(c.Tags),
-		Enabled: c.Enabled, KeyCount: c.KeyCount, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
-	}
-}
-
-func ToGatewayConsumerList(list []domain.GatewayConsumer) []GatewayConsumerResponse {
-	out := make([]GatewayConsumerResponse, 0, len(list))
-	for _, c := range list {
-		out = append(out, FromGatewayConsumer(c))
-	}
-	return out
-}
-
-type GatewayKeyResponse struct {
-	ID         string `json:"id"`
-	ConsumerID string `json:"consumer_id"`
-	Label      string `json:"label"`
-	Prefix     string `json:"prefix"`
-	// Plaintext нь зөвхөн үүсгэх хариунд буцна (бусад үед хоосон) — клиент үүнийг
-	// нэг л удаа харж, хадгалах ёстой.
-	Plaintext  string     `json:"plaintext,omitempty"`
-	LastUsedAt *time.Time `json:"last_used_at"`
-	ExpiresAt  *time.Time `json:"expires_at"`
-	Revoked    bool       `json:"revoked"`
-	CreatedAt  time.Time  `json:"created_at"`
-}
-
-func FromGatewayKey(k domain.GatewayAPIKey) GatewayKeyResponse {
-	return GatewayKeyResponse{
-		ID: k.ID, ConsumerID: k.ConsumerID, Label: k.Label, Prefix: k.Prefix, Plaintext: k.Plaintext,
-		LastUsedAt: k.LastUsedAt, ExpiresAt: k.ExpiresAt, Revoked: k.Revoked, CreatedAt: k.CreatedAt,
-	}
-}
-
-func ToGatewayKeyList(list []domain.GatewayAPIKey) []GatewayKeyResponse {
-	out := make([]GatewayKeyResponse, 0, len(list))
-	for _, k := range list {
-		out = append(out, FromGatewayKey(k))
-	}
-	return out
-}
-
 // ── Policies ─────────────────────────────────────────────────────────────—
 
 type GatewayPolicyResponse struct {

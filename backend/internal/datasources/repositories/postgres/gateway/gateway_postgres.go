@@ -180,127 +180,9 @@ func (r *gatewayRepository) DeleteRoute(ctx context.Context, id string) error {
 	return r.execDelete(ctx, `DELETE FROM gateway_routes WHERE id = $1`, id, "route not found")
 }
 
-// ── Consumers ─────────────────────────────────────────────────────────────—
-
-const consumerSelect = `SELECT c.id, c.username, c.custom_id, c.tags, c.enabled, c.created_at, c.updated_at,
-	(SELECT count(*) FROM gateway_api_keys k WHERE k.consumer_id = c.id AND NOT k.revoked) AS key_count
-	FROM gateway_consumers c`
-
-func scanConsumer(row pgx.Row) (domain.GatewayConsumer, error) {
-	var c domain.GatewayConsumer
-	err := row.Scan(&c.ID, &c.Username, &c.CustomID, &c.Tags, &c.Enabled, &c.CreatedAt, &c.UpdatedAt, &c.KeyCount)
-	return c, err
-}
-
-func (r *gatewayRepository) ListConsumers(ctx context.Context) ([]domain.GatewayConsumer, error) {
-	rows, err := r.pool.Query(ctx, consumerSelect+` ORDER BY c.username`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := make([]domain.GatewayConsumer, 0, 16)
-	for rows.Next() {
-		c, scanErr := scanConsumer(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		out = append(out, c)
-	}
-	return out, rows.Err()
-}
-
-func (r *gatewayRepository) GetConsumer(ctx context.Context, id string) (domain.GatewayConsumer, error) {
-	c, err := scanConsumer(r.pool.QueryRow(ctx, consumerSelect+` WHERE c.id = $1`, id))
-	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.GatewayConsumer{}, apperror.NotFound("consumer not found")
-	}
-	return c, err
-}
-
-func (r *gatewayRepository) CreateConsumer(ctx context.Context, in *domain.GatewayConsumer) (domain.GatewayConsumer, error) {
-	var id string
-	err := r.pool.QueryRow(ctx,
-		`INSERT INTO gateway_consumers(username, custom_id, tags, enabled) VALUES ($1,$2,$3,$4) RETURNING id`,
-		in.Username, in.CustomID, in.Tags, in.Enabled).Scan(&id)
-	if err != nil {
-		return domain.GatewayConsumer{}, mapWrite(err, "consumer username already exists")
-	}
-	return r.GetConsumer(ctx, id)
-}
-
-func (r *gatewayRepository) UpdateConsumer(ctx context.Context, in *domain.GatewayConsumer) (domain.GatewayConsumer, error) {
-	tag, err := r.pool.Exec(ctx,
-		`UPDATE gateway_consumers SET username=$2, custom_id=$3, tags=$4, enabled=$5, updated_at=now() WHERE id=$1`,
-		in.ID, in.Username, in.CustomID, in.Tags, in.Enabled)
-	if err != nil {
-		return domain.GatewayConsumer{}, mapWrite(err, "consumer username already exists")
-	}
-	if tag.RowsAffected() == 0 {
-		return domain.GatewayConsumer{}, apperror.NotFound("consumer not found")
-	}
-	return r.GetConsumer(ctx, in.ID)
-}
-
-func (r *gatewayRepository) DeleteConsumer(ctx context.Context, id string) error {
-	return r.execDelete(ctx, `DELETE FROM gateway_consumers WHERE id = $1`, id, "consumer not found")
-}
-
-// ── API keys ─────────────────────────────────────────────────────────────—
-
-const keyColumns = `id, consumer_id, label, key_prefix, key_hash, last_used_at, expires_at, revoked, created_at`
-
-func scanKey(row pgx.Row) (domain.GatewayAPIKey, error) {
-	var k domain.GatewayAPIKey
-	err := row.Scan(&k.ID, &k.ConsumerID, &k.Label, &k.Prefix, &k.Hash,
-		&k.LastUsedAt, &k.ExpiresAt, &k.Revoked, &k.CreatedAt)
-	return k, err
-}
-
-func (r *gatewayRepository) ListKeys(ctx context.Context, consumerID string) ([]domain.GatewayAPIKey, error) {
-	rows, err := r.pool.Query(ctx,
-		`SELECT `+keyColumns+` FROM gateway_api_keys WHERE consumer_id = $1 ORDER BY created_at DESC`, consumerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := make([]domain.GatewayAPIKey, 0, 8)
-	for rows.Next() {
-		k, scanErr := scanKey(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		out = append(out, k)
-	}
-	return out, rows.Err()
-}
-
-func (r *gatewayRepository) CreateKey(ctx context.Context, in *domain.GatewayAPIKey) (domain.GatewayAPIKey, error) {
-	k, err := scanKey(r.pool.QueryRow(ctx,
-		`INSERT INTO gateway_api_keys(consumer_id, label, key_prefix, key_hash, expires_at)
-		 VALUES ($1,$2,$3,$4,$5) RETURNING `+keyColumns,
-		in.ConsumerID, in.Label, in.Prefix, in.Hash, in.ExpiresAt))
-	if err != nil {
-		return domain.GatewayAPIKey{}, mapWrite(err, "api key already exists")
-	}
-	// Plaintext-ийг дуудагчаас дамжуулж буцаана (DB-д хадгалагдахгүй).
-	k.Plaintext = in.Plaintext
-	return k, nil
-}
-
-func (r *gatewayRepository) RevokeKey(ctx context.Context, id string) error {
-	tag, err := r.pool.Exec(ctx, `UPDATE gateway_api_keys SET revoked = true WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return apperror.NotFound("api key not found")
-	}
-	return nil
-}
-
-func (r *gatewayRepository) DeleteKey(ctx context.Context, id string) error {
-	return r.execDelete(ctx, `DELETE FROM gateway_api_keys WHERE id = $1`, id, "api key not found")
-}
+// Consumers + API keys retired — нэгдсэн Applications (Hydra OAuth2 client)
+// болов (route_applications.go). Telemetry-ийн consumer нэр нь одоо applications-
+// оос уншигдана (ListRequestLogs/Overview).
 
 // ── Policies ─────────────────────────────────────────────────────────────—
 
@@ -370,11 +252,11 @@ func (r *gatewayRepository) DeletePolicy(ctx context.Context, id string) error {
 
 func (r *gatewayRepository) ListRequestLogs(ctx context.Context, limit int) ([]domain.GatewayRequestLog, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT l.id, l.route_id, COALESCE(r.name,''), l.consumer_id, COALESCE(c.username,''),
+		`SELECT l.id, l.route_id, COALESCE(r.name,''), l.consumer_id, COALESCE(a.name,''),
 		 l.method, l.path, l.status, l.latency_ms, l.client_ip, l.created_at
 		 FROM gateway_request_logs l
 		 LEFT JOIN gateway_routes r ON r.id = l.route_id
-		 LEFT JOIN gateway_consumers c ON c.id = l.consumer_id
+		 LEFT JOIN applications a ON a.id = l.consumer_id
 		 ORDER BY l.created_at DESC LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
@@ -401,8 +283,8 @@ func (r *gatewayRepository) Overview(ctx context.Context) (domain.GatewayOvervie
 		SELECT
 			(SELECT count(*) FROM gateway_services),
 			(SELECT count(*) FROM gateway_routes),
-			(SELECT count(*) FROM gateway_consumers),
-			(SELECT count(*) FROM gateway_api_keys WHERE NOT revoked),
+			(SELECT count(*) FROM applications),
+			(SELECT count(*) FROM application_services),
 			COALESCE(count(*),0),
 			COALESCE(count(*) FILTER (WHERE status >= 500),0),
 			COALESCE(count(*) FILTER (WHERE status = 429),0),

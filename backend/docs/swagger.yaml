@@ -113,6 +113,44 @@ definitions:
     required:
     - user_id
     type: object
+  template_internal_http_datatransfers_requests.ApplicationRequest:
+    properties:
+      app_type:
+        enum:
+        - web
+        - spa
+        - native
+        - m2m
+        type: string
+      enabled:
+        type: boolean
+      name:
+        maxLength: 128
+        minLength: 1
+        type: string
+      redirect_uris:
+        items:
+          type: string
+        type: array
+      service_ids:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+    required:
+    - app_type
+    - name
+    type: object
+  template_internal_http_datatransfers_requests.ApplicationServicesRequest:
+    properties:
+      service_ids:
+        items:
+          type: string
+        type: array
+    type: object
   template_internal_http_datatransfers_requests.AssetURLRequest:
     properties:
       url:
@@ -221,32 +259,6 @@ definitions:
     required:
     - data
     - name
-    type: object
-  template_internal_http_datatransfers_requests.GatewayConsumerRequest:
-    properties:
-      custom_id:
-        maxLength: 80
-        type: string
-      enabled:
-        type: boolean
-      tags:
-        items:
-          type: string
-        type: array
-      username:
-        maxLength: 80
-        minLength: 2
-        type: string
-    required:
-    - username
-    type: object
-  template_internal_http_datatransfers_requests.GatewayKeyRequest:
-    properties:
-      expires_at:
-        type: string
-      label:
-        maxLength: 80
-        type: string
     type: object
   template_internal_http_datatransfers_requests.GatewayPolicyRequest:
     properties:
@@ -1410,6 +1422,142 @@ paths:
       summary: Текстийг яриа болгох (TTS)
       tags:
       - ai
+  /applications:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application-уудыг жагсаах
+      tags:
+      - applications
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Application
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application (OAuth2 client) үүсгэх
+      tags:
+      - applications
+  /applications/{id}:
+    delete:
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application устгах (Hydra client + overlay)
+      tags:
+      - applications
+    get:
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application-ыг id-гээр авах
+      tags:
+      - applications
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Application
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application шинэчлэх
+      tags:
+      - applications
+  /applications/{id}/rotate-secret:
+    post:
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application-ын client secret эргүүлэх
+      tags:
+      - applications
+  /applications/{id}/services:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Service IDs
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ApplicationServicesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application-д зөвшөөрсөн gateway service-үүдийг оноох
+      tags:
+      - applications
   /auth/eid/poll:
     post:
       consumes:
@@ -1951,159 +2099,6 @@ paths:
       summary: Gerege Core хэрэглэгч хайх
       tags:
       - core
-  /gateway/consumers:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: Consumer-уудыг жагсаах
-      tags:
-      - gateway
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Consumer
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayConsumerRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: Consumer үүсгэх
-      tags:
-      - gateway
-  /gateway/consumers/{id}:
-    delete:
-      parameters:
-      - description: Consumer ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: Consumer устгах
-      tags:
-      - gateway
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Consumer ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Consumer
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayConsumerRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: Consumer шинэчлэх
-      tags:
-      - gateway
-  /gateway/consumers/{id}/keys:
-    get:
-      parameters:
-      - description: Consumer ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: Consumer-ийн API key-үүдийг жагсаах
-      tags:
-      - gateway
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Consumer ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Key
-        in: body
-        name: body
-        schema:
-          $ref: '#/definitions/template_internal_http_datatransfers_requests.GatewayKeyRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: Consumer-д шинэ API key үүсгэх (plaintext-ийг нэг удаа буцаана)
-      tags:
-      - gateway
-  /gateway/keys/{keyId}:
-    delete:
-      parameters:
-      - description: Key ID
-        in: path
-        name: keyId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: API key-г устгах
-      tags:
-      - gateway
-  /gateway/keys/{keyId}/revoke:
-    post:
-      parameters:
-      - description: Key ID
-        in: path
-        name: keyId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: API key-г хүчингүй болгох (revoke)
-      tags:
-      - gateway
   /gateway/logs:
     get:
       parameters:

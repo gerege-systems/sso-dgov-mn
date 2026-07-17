@@ -31,7 +31,7 @@ boundary — see [Row-Level Security](#row-level-security-rls).
 │  + internal/provider/{adminapi, adminkeys, devapps, signrelay}    │
 ├─────────────────────────────────────────────────────────────────┤
 │                       Usecase Layer                               │
-│  internal/business/usecases/*  (18 bounded contexts)              │
+│  internal/business/usecases/*  (19 bounded contexts)              │
 │  (Business logic, validation, orchestration)                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                     Repository Layer                              │
@@ -46,7 +46,7 @@ boundary — see [Row-Level Security](#row-level-security-rls).
 
 ## Feature Modules (bounded contexts)
 
-The platform is composed of **18 usecase modules** under
+The platform is composed of **19 usecase modules** under
 `internal/business/usecases/`, each an interface + implementation wired by hand in
 the composition root. Beyond the boilerplate core (`auth`, `users`, `rbac`, `ai`)
 the platform adds the eID/SSO/government-service surface:
@@ -59,7 +59,8 @@ the platform adds the eID/SSO/government-service surface:
 | `ai`           | Gemini pipeline — function-calling chat, STT/TTS, live translation, layered prompts, server-side tools + knowledge base. |
 | `org`          | Organizations + memberships (eID-linked; **RLS**). |
 | `gov`          | Citizen "Government services" portal — applications, references, notifications, payments, appointments (per-user, **RLS**) over a public service catalogue. |
-| `gateway`      | API gateway — services / routes / consumers / API keys / policies + telemetry. |
+| `gateway`      | API gateway — services / routes / policies + telemetry (each service carries an OAuth `scope`). |
+| `applications` | Unified OAuth2 **client registry** (RP + m2m) backed by **Ory Hydra** — merges the old gateway consumers/API-keys and the SSO RP registration; per-service access = OAuth scopes (`application_services` → `gateway_services.scope`). Admin-managed (`gateway.manage`), gated on Hydra. |
 | `core`         | Gerege Core (`core.dgov.mn`) USER FIND / ORG FIND lookup wrapper. |
 | `sso`          | **dgov SSO** OIDC consumer (`sso.dgov.mn`) — a second login option alongside eID. |
 | `provider`     | **OIDC Provider** — login/consent/logout core in front of **Ory Hydra**; dan is itself an SSO IdP. |
@@ -87,7 +88,7 @@ the platform adds the eID/SSO/government-service surface:
 │   ├── apperror/                   # Typed domain errors (→ HTTP status)
 │   ├── business/
 │   │   ├── domain/                 # Enterprise entities (innermost circle)
-│   │   └── usecases/               # 18 bounded contexts (interface + impl)
+│   │   └── usecases/               # 19 bounded contexts (interface + impl)
 │   ├── config/                     # Viper-backed config + .env.example
 │   ├── constants/                  # Env, logger, error, endpoint constants
 │   ├── datasources/
@@ -348,8 +349,16 @@ delegate login to dan via **Ory Hydra**. This surface activates only when
 registered.
 
 - **Login / consent / logout core** — `usecases/provider` + `pkg/hydra` handle Hydra's challenges; first-party clients (`SSO_FIRSTPARTY_CLIENTS`) skip the consent UI. Mounted under `/api/v1/provider`.
-- **Operator surface** — `internal/provider/adminapi` is mounted at **`/admin`** (via `http.StripPrefix`) for RP OAuth2-client registration/management, backed by the `devapps` store and `adminkeys` (bootstrap keys from `SSO_ADMIN_API_KEYS`, SHA-256 matched).
+- **Applications (unified client registry)** — `usecases/applications` (mounted at `/api/v1/applications`, guarded by `gateway.manage`) is the current way to register OAuth2 clients: RP "Login with DAN" apps (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` are public, PKCE, no secret) and m2m clients (`client_credentials`). Each is a Hydra OAuth2 client whose scopes are the allowed gateway services (`application_services` → `gateway_services.scope`); the confidential `client_secret` is revealed once on create/rotate.
+- **Operator surface (legacy)** — `internal/provider/adminapi` is mounted at **`/admin`** (via `http.StripPrefix`) for RP OAuth2-client registration/management, backed by the `devapps` (`developer_apps`) store and `adminkeys` (bootstrap keys from `SSO_ADMIN_API_KEYS`, SHA-256 matched). This admin-API-key operator surface and the `developer_apps` overlay still exist but are **superseded by the unified Applications model for new work**.
 - **Sign relay** — `internal/provider/signrelay` is mounted at **`/rp/sign/*`**, a reverse proxy that lets downstream RPs perform eID PDF signing *through* dan using dan's eidmongolia RP credentials (enabled by `SIGN_RELAY_TOKEN` + `EID_RP_SECRET`).
+
+> **Enforcement caveat.** Assigning services to an application sets that client's
+> OAuth **scopes** — this is registration/config only. *Runtime* per-request
+> enforcement would require a gateway proxy that introspects the presented token
+> (`hydra.Admin.Introspect` exists) against each route's service scope, and that
+> proxy **does not exist yet**. So today the service assignment is not live
+> authorization — don't mistake it for enforced authz.
 
 ## Database
 
@@ -426,7 +435,8 @@ reconnaissance.
 All API routes live under `/api/v1`; each module mounts `/v1/<module>`:
 `auth`, `users`, `users/me/eid`, `rbac`, `org`, `gov`, `integrations`, `assets`,
 `gspace`, `gateway`, `core`, `sso`, `admin`, `superadmin`, `ai`, `audit`,
-`security`, `site`, `sign`, and (when configured) `provider`. Infra endpoints
+`security`, `site`, `sign`, and (when Hydra is configured) `provider` +
+`applications`. Infra endpoints
 (`/health`, `/ready`, `/metrics`, `/swagger`) and the provider surfaces (`/admin`,
 `/rp/sign`) sit at the root. **Full endpoint tables live in
 [API_CONTRACT.md](API_CONTRACT.md)** and the generated OpenAPI spec (`/swagger`).

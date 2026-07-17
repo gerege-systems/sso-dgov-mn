@@ -9,7 +9,6 @@ package gateway
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"template/internal/business/domain"
 )
@@ -26,18 +25,6 @@ type Usecase interface {
 	CreateRoute(ctx context.Context, in RouteInput) (domain.GatewayRoute, error)
 	UpdateRoute(ctx context.Context, id string, in RouteInput) (domain.GatewayRoute, error)
 	DeleteRoute(ctx context.Context, id string) error
-
-	// Consumers + API keys
-	ListConsumers(ctx context.Context) ([]domain.GatewayConsumer, error)
-	CreateConsumer(ctx context.Context, in ConsumerInput) (domain.GatewayConsumer, error)
-	UpdateConsumer(ctx context.Context, id string, in ConsumerInput) (domain.GatewayConsumer, error)
-	DeleteConsumer(ctx context.Context, id string) error
-	ListKeys(ctx context.Context, consumerID string) ([]domain.GatewayAPIKey, error)
-	// CreateKey нь шинэ түлхүүр үүсгэж, plaintext-ийг НЭГ удаа буцаана (дараа нь
-	// зөвхөн hash хадгалагдана).
-	CreateKey(ctx context.Context, consumerID string, in KeyInput) (domain.GatewayAPIKey, error)
-	RevokeKey(ctx context.Context, id string) error
-	DeleteKey(ctx context.Context, id string) error
 
 	// Policies
 	ListPolicies(ctx context.Context) ([]domain.GatewayPolicy, error)
@@ -70,16 +57,6 @@ type (
 		StripPath    bool
 		PreserveHost bool
 		Enabled      bool
-	}
-	ConsumerInput struct {
-		Username string
-		CustomID string
-		Tags     []string
-		Enabled  bool
-	}
-	KeyInput struct {
-		Label     string
-		ExpiresAt *time.Time
 	}
 	PolicyInput struct {
 		RouteID *string

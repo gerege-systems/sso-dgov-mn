@@ -56,16 +56,6 @@ func (rt *gatewayRoute) Routes() {
 		r.Put("/routes/{id}", v1.Wrap(rt.handler.UpdateRoute))
 		r.Delete("/routes/{id}", v1.Wrap(rt.handler.DeleteRoute))
 
-		// Consumers + keys
-		r.Get("/consumers", v1.Wrap(rt.handler.ListConsumers))
-		r.Post("/consumers", v1.Wrap(rt.handler.CreateConsumer))
-		r.Put("/consumers/{id}", v1.Wrap(rt.handler.UpdateConsumer))
-		r.Delete("/consumers/{id}", v1.Wrap(rt.handler.DeleteConsumer))
-		r.Get("/consumers/{id}/keys", v1.Wrap(rt.handler.ListKeys))
-		r.Post("/consumers/{id}/keys", v1.Wrap(rt.handler.CreateKey))
-		r.Post("/keys/{keyId}/revoke", v1.Wrap(rt.handler.RevokeKey))
-		r.Delete("/keys/{keyId}", v1.Wrap(rt.handler.DeleteKey))
-
 		// Policies
 		r.Get("/policies", v1.Wrap(rt.handler.ListPolicies))
 		r.Post("/policies", v1.Wrap(rt.handler.CreatePolicy))

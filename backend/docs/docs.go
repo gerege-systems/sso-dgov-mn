@@ -445,6 +445,216 @@ const docTemplate = `{
                 }
             }
         },
+        "/applications": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "Application-уудыг жагсаах",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "Application (OAuth2 client) үүсгэх",
+                "parameters": [
+                    {
+                        "description": "Application",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.ApplicationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/applications/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "Application-ыг id-гээр авах",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "Application шинэчлэх",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Application",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.ApplicationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "Application устгах (Hydra client + overlay)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/applications/{id}/rotate-secret": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "Application-ын client secret эргүүлэх",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/applications/{id}/services": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "Application-д зөвшөөрсөн gateway service-үүдийг оноох",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Service IDs",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.ApplicationServicesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/eid/poll": {
             "post": {
                 "description": "session_id-ийн төлвийг IdP-ээс long-poll-оор (≤25с) асууна. state нь RUNNING/COMPLETE/EXPIRED/REFUSED. COMPLETE үед identity-аар хэрэглэгчийг бүртгэж/шинэчилж, access+refresh токен хосыг /login-той ижил хэлбэрээр буцаана.",
@@ -1251,243 +1461,6 @@ const docTemplate = `{
                         "description": "core_id / regno",
                         "name": "search_text",
                         "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/gateway/consumers": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "Consumer-уудыг жагсаах",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "Consumer үүсгэх",
-                "parameters": [
-                    {
-                        "description": "Consumer",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.GatewayConsumerRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/gateway/consumers/{id}": {
-            "put": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "Consumer шинэчлэх",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Consumer ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Consumer",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.GatewayConsumerRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "Consumer устгах",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Consumer ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/gateway/consumers/{id}/keys": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "Consumer-ийн API key-үүдийг жагсаах",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Consumer ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "Consumer-д шинэ API key үүсгэх (plaintext-ийг нэг удаа буцаана)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Consumer ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Key",
-                        "name": "body",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.GatewayKeyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/gateway/keys/{keyId}": {
-            "delete": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "API key-г устгах",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Key ID",
-                        "name": "keyId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/gateway/keys/{keyId}/revoke": {
-            "post": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "gateway"
-                ],
-                "summary": "API key-г хүчингүй болгох (revoke)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Key ID",
-                        "name": "keyId",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -5201,6 +5174,61 @@ const docTemplate = `{
                 }
             }
         },
+        "template_internal_http_datatransfers_requests.ApplicationRequest": {
+            "type": "object",
+            "required": [
+                "app_type",
+                "name"
+            ],
+            "properties": {
+                "app_type": {
+                    "type": "string",
+                    "enum": [
+                        "web",
+                        "spa",
+                        "native",
+                        "m2m"
+                    ]
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 1
+                },
+                "redirect_uris": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "service_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "template_internal_http_datatransfers_requests.ApplicationServicesRequest": {
+            "type": "object",
+            "properties": {
+                "service_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "template_internal_http_datatransfers_requests.AssetURLRequest": {
             "type": "object",
             "required": [
@@ -5348,44 +5376,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "maxLength": 200
-                }
-            }
-        },
-        "template_internal_http_datatransfers_requests.GatewayConsumerRequest": {
-            "type": "object",
-            "required": [
-                "username"
-            ],
-            "properties": {
-                "custom_id": {
-                    "type": "string",
-                    "maxLength": 80
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "username": {
-                    "type": "string",
-                    "maxLength": 80,
-                    "minLength": 2
-                }
-            }
-        },
-        "template_internal_http_datatransfers_requests.GatewayKeyRequest": {
-            "type": "object",
-            "properties": {
-                "expires_at": {
-                    "type": "string"
-                },
-                "label": {
-                    "type": "string",
-                    "maxLength": 80
                 }
             }
         },

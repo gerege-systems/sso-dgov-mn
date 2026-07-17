@@ -33,7 +33,7 @@ dan-*аар* нэвтэрнэ) юм. PostgreSQL дахь Row-Level Security нь
 │  + internal/provider/{adminapi, adminkeys, devapps, signrelay}    │
 ├─────────────────────────────────────────────────────────────────┤
 │                       Usecase Layer                               │
-│  internal/business/usecases/*  (18 bounded contexts)              │
+│  internal/business/usecases/*  (19 bounded contexts)              │
 │  (Business logic, validation, orchestration)                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                     Repository Layer                              │
@@ -48,7 +48,7 @@ dan-*аар* нэвтэрнэ) юм. PostgreSQL дахь Row-Level Security нь
 
 ## Feature модулиуд (bounded contexts)
 
-Платформ нь `internal/business/usecases/` дор **18 usecase модулиас** бүрддэг —
+Платформ нь `internal/business/usecases/` дор **19 usecase модулиас** бүрддэг —
 тус бүр нь interface + implementation бөгөөд composition root дотор гараар
 холбогддог. Boilerplate цөмөөс (`auth`, `users`, `rbac`, `ai`) гадна платформ нь
 eID/SSO/төрийн үйлчилгээний гадаргууг нэмдэг:
@@ -61,7 +61,8 @@ eID/SSO/төрийн үйлчилгээний гадаргууг нэмдэг:
 | `ai`           | Gemini pipeline — function-calling чат, STT/TTS, шууд орчуулга, давхаргат prompt, server-тал tools + мэдлэгийн сан. |
 | `org`          | Байгууллага + гишүүнчлэл (eID-тэй холбогдсон; **RLS**). |
 | `gov`          | Иргэний "Төрийн үйлчилгээ" портал — хүсэлт, лавлагаа, мэдэгдэл, төлбөр, цаг захиалга (per-user, **RLS**); каталог нийтийн. |
-| `gateway`      | API gateway — services / routes / consumers / API keys / policies + телеметр. |
+| `gateway`      | API gateway — services / routes / policies + телеметр (service бүр OAuth `scope`-той). |
+| `applications` | Нэгдсэн OAuth2 **client бүртгэл** (RP + m2m), **Ory Hydra**-аар дэмжигдсэн — хуучин gateway consumers/API-key болон SSO RP бүртгэлийг нэгтгэнэ; service тус бүрийн хандалт = OAuth scope (`application_services` → `gateway_services.scope`). Админ удирдана (`gateway.manage`), Hydra дээр gated. |
 | `core`         | Gerege Core (`core.dgov.mn`) USER FIND / ORG FIND лавлагааны wrap. |
 | `sso`          | **dgov SSO** OIDC consumer (`sso.dgov.mn`) — eID-ийн зэрэгцээ 2 дахь нэвтрэлт. |
 | `provider`     | **OIDC Provider** — **Ory Hydra**-гийн урд талын login/consent/logout цөм; dan өөрөө SSO IdP. |
@@ -89,7 +90,7 @@ eID/SSO/төрийн үйлчилгээний гадаргууг нэмдэг:
 │   ├── apperror/                   # Typed domain errors (→ HTTP status)
 │   ├── business/
 │   │   ├── domain/                 # Enterprise entities (хамгийн дотоод хүрээ)
-│   │   └── usecases/               # 18 bounded contexts (interface + impl)
+│   │   └── usecases/               # 19 bounded contexts (interface + impl)
 │   ├── config/                     # Viper-backed config + .env.example
 │   ├── constants/                  # Env, logger, error, endpoint constants
 │   ├── datasources/
@@ -347,8 +348,17 @@ true үед идэвхжинэ (`HYDRA_ADMIN_URL` + `HYDRA_PUBLIC_URL` + `SSO_ST
 байт`); эс бөгөөс inert бөгөөс route нь огт бүртгэгдэхгүй.
 
 - **Login / consent / logout цөм** — `usecases/provider` + `pkg/hydra` нь Hydra-гийн challenge-ийг зохицуулна; first-party client-ууд (`SSO_FIRSTPARTY_CLIENTS`) consent UI-г алгасна. `/api/v1/provider` дор mount.
-- **Операторын гадаргуу** — `internal/provider/adminapi` нь **`/admin`** дор (`http.StripPrefix`-ээр) RP OAuth2-client бүртгэл/удирдлагад mount; `devapps` store болон `adminkeys` (bootstrap key нь `SSO_ADMIN_API_KEYS`-аас, SHA-256-аар тааруулна)-аар дэмжигдэнэ.
+- **Applications (нэгдсэн client бүртгэл)** — `usecases/applications` (`/api/v1/applications` дор mount, `gateway.manage`-ээр хамгаалагдсан) нь OAuth2 client бүртгэх одоогийн арга: RP "Login with DAN" апп-ууд (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` нь public, PKCE, secret-гүй) болон m2m client-ууд (`client_credentials`). Тус бүр нь Hydra OAuth2 client бөгөөс scope нь зөвшөөрсөн gateway service-үүд (`application_services` → `gateway_services.scope`); confidential `client_secret` нь create/rotate үед нэг удаа харагдана.
+- **Операторын гадаргуу (legacy)** — `internal/provider/adminapi` нь **`/admin`** дор (`http.StripPrefix`-ээр) RP OAuth2-client бүртгэл/удирдлагад mount; `devapps` (`developer_apps`) store болон `adminkeys` (bootstrap key нь `SSO_ADMIN_API_KEYS`-аас, SHA-256-аар тааруулна)-аар дэмжигдэнэ. Энэ admin-API-key операторын гадаргуу болон `developer_apps` overlay нь хэвээр байгаа ч шинэ ажилд **нэгдсэн Applications загвараар орлогдсон**.
 - **Sign relay** — `internal/provider/signrelay` нь **`/rp/sign/*`** дор mount; доод RP-үүд dan-ий eidmongolia RP credential-ээр *дамжин* eID PDF гарын үсэг зурах reverse proxy (`SIGN_RELAY_TOKEN` + `EID_RP_SECRET`-ээр идэвхжинэ).
+
+> **Enforcement caveat (хэрэгжүүлэлтийн анхааруулга).** Апп-д service оноох нь тухайн
+> client-ийн OAuth **scope**-ыг тохируулна — энэ нь зөвхөн бүртгэл/тохиргоо.
+> *Runtime* дахь хүсэлт тус бүрийн шалгалтад танилцуулсан токеныг
+> (`hydra.Admin.Introspect` байдаг) route бүрийн service scope-той тулгаж
+> introspect хийдэг gateway proxy хэрэгтэй бөгөөд тэр proxy **одоогоор
+> байхгүй**. Тиймээс өнөөдөр service оноолт нь амьд authorization биш — үүнийг
+> хэрэгжсэн authz гэж бүү андуур.
 
 ## Өгөгдлийн сан (Database)
 
@@ -424,7 +434,8 @@ endpoint-ийг хамгаална: **development**-д үргэлж нээлтт
 Бүх API route нь `/api/v1` дор; модуль тус бүр `/v1/<module>`-ийг mount хийнэ:
 `auth`, `users`, `users/me/eid`, `rbac`, `org`, `gov`, `integrations`, `assets`,
 `gspace`, `gateway`, `core`, `sso`, `admin`, `superadmin`, `ai`, `audit`,
-`security`, `site`, `sign`, болон (тохируулагдсан үед) `provider`. Infra endpoint
+`security`, `site`, `sign`, болон (Hydra тохируулагдсан үед) `provider` +
+`applications`. Infra endpoint
 (`/health`, `/ready`, `/metrics`, `/swagger`) болон provider гадаргуу (`/admin`,
 `/rp/sign`) нь root дээр байрлана. **Endpoint-ийн бүрэн хүснэгтийг
 [API_CONTRACT.md](API_CONTRACT_MN.md)** болон үүсгэсэн OpenAPI spec (`/swagger`)-ээс үз.

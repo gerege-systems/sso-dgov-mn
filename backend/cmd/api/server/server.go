@@ -21,6 +21,7 @@ import (
 	docs "template/docs" // swagger тодорхойлолт, swaggo-оор init үед бүртгэгддэг
 	"template/internal/business/domain"
 	"template/internal/business/usecases/ai"
+	applicationsuc "template/internal/business/usecases/applications"
 	"template/internal/business/usecases/assets"
 	"template/internal/business/usecases/audit"
 	"template/internal/business/usecases/auth"
@@ -45,6 +46,7 @@ import (
 	"template/internal/datasources/drivers"
 	repointerface "template/internal/datasources/repositories/interface"
 	aipostgres "template/internal/datasources/repositories/postgres/ai"
+	applicationspostgres "template/internal/datasources/repositories/postgres/applications"
 	auditpostgres "template/internal/datasources/repositories/postgres/audit"
 	gatewaypostgres "template/internal/datasources/repositories/postgres/gateway"
 	govpostgres "template/internal/datasources/repositories/postgres/gov"
@@ -346,6 +348,13 @@ func NewApp() (*App, error) {
 		providerUC = provideruc.NewUsecase(hydraAdmin, usersUC, config.AppConfig.SSOFirstPartyClientsList())
 	}
 
+	// Нэгдсэн Applications (Gateway consumer + SSO RP) — Hydra OAuth2 client-ээр
+	// ажилладаг тул зөвхөн Hydra тохируулагдсан үед идэвхжинэ (эс бөгөөс inert).
+	var applicationsUC applicationsuc.Usecase
+	if hydraAdmin != nil {
+		applicationsUC = applicationsuc.NewUsecase(applicationspostgres.NewApplicationRepository(pool), hydraAdmin)
+	}
+
 	// API Route-ууд
 	r.Route("/api", func(api chi.Router) {
 		api.Get("/", routes.RootHandler)
@@ -359,6 +368,9 @@ func NewApp() (*App, error) {
 		routes.NewAssetsRoute(api, assetsUC, authMiddleware, govWriteRateLimiter).Routes()
 		routes.NewGSpaceRoute(api, gspaceUC, authMiddleware, govWriteRateLimiter).Routes()
 		routes.NewGatewayRoute(api, gatewayUC, rbacUC, authMiddleware).Routes()
+		if applicationsUC != nil {
+			routes.NewApplicationsRoute(api, applicationsUC, rbacUC, authMiddleware).Routes()
+		}
 		routes.NewCoreRoute(api, coreUC, authMiddleware).Routes()
 		routes.NewSSORoute(api, ssoUC).Routes()
 		routes.NewAdminRoute(api, usersUC, rbacUC, aiUC, authMiddleware).Routes()

@@ -50,33 +50,6 @@ type GatewayRoute struct {
 	UpdatedAt    *time.Time
 }
 
-// GatewayConsumer нь бүртгэлтэй API client.
-type GatewayConsumer struct {
-	ID        string
-	Username  string
-	CustomID  string
-	Tags      []string
-	Enabled   bool
-	KeyCount  int // join-оор уншина (зөвхөн унших)
-	CreatedAt time.Time
-	UpdatedAt *time.Time
-}
-
-// GatewayAPIKey нь consumer-ийн credential. Зөвхөн SHA-256 hash хадгалагдана;
-// Plaintext-ийг үүсгэх үед НЭГ удаа л буцаана (Plaintext талбар тэр үед л дүүрнэ).
-type GatewayAPIKey struct {
-	ID         string
-	ConsumerID string
-	Label      string
-	Prefix     string
-	Hash       string
-	Plaintext  string // зөвхөн үүсгэх хариунд дүүрнэ; DB-д хадгалагдахгүй
-	LastUsedAt *time.Time
-	ExpiresAt  *time.Time
-	Revoked    bool
-	CreatedAt  time.Time
-}
-
 // GatewayPolicy нь route-д (route_id NULL бол global) хавсаргасан plugin.
 type GatewayPolicy struct {
 	ID        string

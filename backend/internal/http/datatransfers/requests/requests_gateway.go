@@ -5,7 +5,6 @@ package requests
 
 import (
 	"encoding/json"
-	"time"
 )
 
 // GatewayServiceRequest нь upstream service үүсгэх/шинэчлэх body.
@@ -30,20 +29,6 @@ type GatewayRouteRequest struct {
 	StripPath    bool     `json:"strip_path"`
 	PreserveHost bool     `json:"preserve_host"`
 	Enabled      bool     `json:"enabled"`
-}
-
-// GatewayConsumerRequest нь consumer үүсгэх/шинэчлэх body.
-type GatewayConsumerRequest struct {
-	Username string   `json:"username" validate:"required,min=2,max=80"`
-	CustomID string   `json:"custom_id" validate:"omitempty,max=80"`
-	Tags     []string `json:"tags" validate:"omitempty,dive,max=40"`
-	Enabled  bool     `json:"enabled"`
-}
-
-// GatewayKeyRequest нь шинэ API key үүсгэх body (нэмэлт label / дуусах хугацаа).
-type GatewayKeyRequest struct {
-	Label     string     `json:"label" validate:"omitempty,max=80"`
-	ExpiresAt *time.Time `json:"expires_at" validate:"omitempty"`
 }
 
 // GatewayPolicyRequest нь policy (plugin) үүсгэх/шинэчлэх body. route_id хоосон

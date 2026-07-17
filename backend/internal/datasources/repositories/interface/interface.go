@@ -139,19 +139,6 @@ type GatewayRepository interface {
 	UpdateRoute(ctx context.Context, in *domain.GatewayRoute) (domain.GatewayRoute, error)
 	DeleteRoute(ctx context.Context, id string) error
 
-	// Consumers — API client + (тоологдсон) key тоо.
-	ListConsumers(ctx context.Context) ([]domain.GatewayConsumer, error)
-	GetConsumer(ctx context.Context, id string) (domain.GatewayConsumer, error)
-	CreateConsumer(ctx context.Context, in *domain.GatewayConsumer) (domain.GatewayConsumer, error)
-	UpdateConsumer(ctx context.Context, in *domain.GatewayConsumer) (domain.GatewayConsumer, error)
-	DeleteConsumer(ctx context.Context, id string) error
-
-	// API keys — hash нь usecase-д урьдчилан тооцоологдоно.
-	ListKeys(ctx context.Context, consumerID string) ([]domain.GatewayAPIKey, error)
-	CreateKey(ctx context.Context, in *domain.GatewayAPIKey) (domain.GatewayAPIKey, error)
-	RevokeKey(ctx context.Context, id string) error
-	DeleteKey(ctx context.Context, id string) error
-
 	// Policies — route-д (эсвэл global) хавсаргасан plugin.
 	ListPolicies(ctx context.Context) ([]domain.GatewayPolicy, error)
 	GetPolicy(ctx context.Context, id string) (domain.GatewayPolicy, error)
@@ -162,6 +149,22 @@ type GatewayRepository interface {
 	// Telemetry — сүүлийн log-ууд + dashboard-ийн нэгтгэл.
 	ListRequestLogs(ctx context.Context, limit int) ([]domain.GatewayRequestLog, error)
 	Overview(ctx context.Context) (domain.GatewayOverview, error)
+}
+
+// ApplicationRepository нь нэгдсэн Applications (Gateway consumer + SSO RP)
+// overlay-г хадгална: applications мөр + зөвшөөрсөн gateway service-үүд
+// (application_services). Hydra client өөрөө Hydra-д амьдардаг тул энд зөвхөн
+// client_id болон overlay талбарууд. RLS-гүй нийтийн config.
+type ApplicationRepository interface {
+	List(ctx context.Context) ([]domain.Application, error)
+	Get(ctx context.Context, id string) (domain.Application, error)
+	Create(ctx context.Context, a *domain.Application) (domain.Application, error)
+	Update(ctx context.Context, a *domain.Application) (domain.Application, error)
+	Delete(ctx context.Context, id string) error
+	// SetServices нь апп-ын зөвшөөрсөн service-ийн жагсаалтыг бүхэлд нь орлуулна.
+	SetServices(ctx context.Context, appID string, serviceIDs []string) error
+	// ServiceScopes нь өгсөн service id-уудын OAuth scope нэрсийг буцаана (Hydra-д).
+	ServiceScopes(ctx context.Context, serviceIDs []string) ([]string, error)
 }
 
 // OrgRepository нь байгууллага болон гишүүнчлэлийг (organization_memberships)

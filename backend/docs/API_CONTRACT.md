@@ -235,8 +235,10 @@ Mutations take the write limiter.
 
 ## API Gateway (`/api/v1/gateway`) 🛡️ `gateway.manage`
 
-Kong-style gateway admin: services, routes, consumers, API keys, policies, plus
-telemetry. Every endpoint requires 🔒 + 🛡️ `gateway.manage`.
+Kong-style gateway admin: services, routes, policies, plus telemetry. Every
+endpoint requires 🔒 + 🛡️ `gateway.manage`. Gateway **clients** (the former
+"consumers + API keys") now live in the **Applications** group below; each
+service also carries a `scope` (the OAuth scope apps request to reach it).
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -250,18 +252,43 @@ telemetry. Every endpoint requires 🔒 + 🛡️ `gateway.manage`.
 | POST | `/gateway/routes` | Create a route. |
 | PUT | `/gateway/routes/{id}` | Update a route. |
 | DELETE | `/gateway/routes/{id}` | Delete a route. |
-| GET | `/gateway/consumers` | List consumers. |
-| POST | `/gateway/consumers` | Create a consumer. |
-| PUT | `/gateway/consumers/{id}` | Update a consumer. |
-| DELETE | `/gateway/consumers/{id}` | Delete a consumer. |
-| GET | `/gateway/consumers/{id}/keys` | List a consumer's API keys. |
-| POST | `/gateway/consumers/{id}/keys` | Issue an API key. |
-| POST | `/gateway/keys/{keyId}/revoke` | Revoke an API key. |
-| DELETE | `/gateway/keys/{keyId}` | Delete an API key. |
 | GET | `/gateway/policies` | List policies. |
 | POST | `/gateway/policies` | Create a policy. |
 | PUT | `/gateway/policies/{id}` | Update a policy. |
 | DELETE | `/gateway/policies/{id}` | Delete a policy. |
+
+## Applications (`/api/v1/applications`) 🛡️ `gateway.manage`
+
+Unified OAuth2 **client registry** — the merged replacement for the old gateway
+"consumers + API keys" and the separate SSO RP registration. Each application is
+an **Ory Hydra OAuth2 client**; its per-service access is expressed as OAuth
+**scopes** (`application_services` → `gateway_services.scope`). Every endpoint
+requires 🔒 + 🛡️ `gateway.manage`, and the group is **registered only when Hydra
+is configured** (`ProviderConfigured()`).
+
+`app_type` selects the grant + auth method:
+
+| `app_type` | Grant | Client | Use |
+|------------|-------|--------|-----|
+| `web` | `authorization_code` (+ `refresh_token`) | confidential (secret) | RP "Login with DAN" — server-side web app |
+| `spa` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, no secret) | Browser SPA |
+| `native` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, no secret) | Mobile / native app |
+| `m2m` | `client_credentials` | confidential (secret) | Server-to-server |
+
+The OAuth2 **`client_secret`** (confidential types only) is revealed **once** — in
+the create / rotate response — and never again.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/applications` | List applications. |
+| POST | `/applications` | Create; provisions a Hydra OAuth2 client and returns the app incl. the one-time `secret` (confidential types). |
+| GET | `/applications/{id}` | Get one application. |
+| PUT | `/applications/{id}` | Update the overlay + the Hydra client's desired state. |
+| DELETE | `/applications/{id}` | Delete the Hydra client + overlay. |
+| POST | `/applications/{id}/rotate-secret` | Issue a new client secret, returned once (confidential only). |
+| PUT | `/applications/{id}/services` | Replace the allowed gateway services — they become the client's OAuth scopes. |
+
+**Create/update body** — `{ name, app_type (web\|spa\|native\|m2m), redirect_uris[], tags[], service_ids[], enabled }`; **set-services body** — `{ service_ids[] }`.
 
 ## Gerege Core (`/api/v1/core`) 🔒
 

@@ -5,10 +5,6 @@ package gateway
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"strings"
 
@@ -16,9 +12,6 @@ import (
 	"template/internal/business/domain"
 	repointerface "template/internal/datasources/repositories/interface"
 )
-
-// keyPrefix нь үүсгэсэн бүх API key-ийн өмнө залгагдах бренд таних тэмдэг.
-const keyPrefix = "gk_live_"
 
 type usecase struct {
 	repo repointerface.GatewayRepository
@@ -165,99 +158,6 @@ func (in RouteInput) toDomain() (domain.GatewayRoute, error) {
 		ServiceID: in.ServiceID, Name: name, Methods: methods, Paths: paths,
 		StripPath: in.StripPath, PreserveHost: in.PreserveHost, Enabled: in.Enabled,
 	}, nil
-}
-
-// ── Consumers + keys ─────────────────────────────────────────────────────—
-
-func (u *usecase) ListConsumers(ctx context.Context) ([]domain.GatewayConsumer, error) {
-	return u.repo.ListConsumers(ctx)
-}
-
-func (u *usecase) CreateConsumer(ctx context.Context, in ConsumerInput) (domain.GatewayConsumer, error) {
-	c, err := in.toDomain()
-	if err != nil {
-		return domain.GatewayConsumer{}, err
-	}
-	return u.repo.CreateConsumer(ctx, &c)
-}
-
-func (u *usecase) UpdateConsumer(ctx context.Context, id string, in ConsumerInput) (domain.GatewayConsumer, error) {
-	c, err := in.toDomain()
-	if err != nil {
-		return domain.GatewayConsumer{}, err
-	}
-	c.ID = id
-	return u.repo.UpdateConsumer(ctx, &c)
-}
-
-func (u *usecase) DeleteConsumer(ctx context.Context, id string) error {
-	return u.repo.DeleteConsumer(ctx, id)
-}
-
-func (in ConsumerInput) toDomain() (domain.GatewayConsumer, error) {
-	username := strings.TrimSpace(in.Username)
-	if username == "" {
-		return domain.GatewayConsumer{}, apperror.BadRequest("consumer username is required")
-	}
-	return domain.GatewayConsumer{
-		Username: username, CustomID: strings.TrimSpace(in.CustomID),
-		Tags: cleanTags(in.Tags), Enabled: in.Enabled,
-	}, nil
-}
-
-func (u *usecase) ListKeys(ctx context.Context, consumerID string) ([]domain.GatewayAPIKey, error) {
-	return u.repo.ListKeys(ctx, consumerID)
-}
-
-func (u *usecase) CreateKey(ctx context.Context, consumerID string, in KeyInput) (domain.GatewayAPIKey, error) {
-	if strings.TrimSpace(consumerID) == "" {
-		return domain.GatewayAPIKey{}, apperror.BadRequest("consumer is required")
-	}
-	plaintext, prefix, hash, err := generateAPIKey()
-	if err != nil {
-		return domain.GatewayAPIKey{}, apperror.InternalCause(err)
-	}
-	key := domain.GatewayAPIKey{
-		ConsumerID: consumerID,
-		Label:      strings.TrimSpace(in.Label),
-		Prefix:     prefix,
-		Hash:       hash,
-		Plaintext:  plaintext, // зөвхөн энэ хариунд буцна; DB-д hash л үлдэнэ
-		ExpiresAt:  in.ExpiresAt,
-	}
-	return u.repo.CreateKey(ctx, &key)
-}
-
-func (u *usecase) RevokeKey(ctx context.Context, id string) error {
-	return u.repo.RevokeKey(ctx, id)
-}
-
-func (u *usecase) DeleteKey(ctx context.Context, id string) error {
-	return u.repo.DeleteKey(ctx, id)
-}
-
-// generateAPIKey нь криптографийн хувьд найдвартай шинэ API key үүсгэнэ.
-//
-// Загвар: 32 байт энтропийг (crypto/rand) base64url болгож, "gk_live_" угтвар
-// залгана. DB-д зөвхөн SHA-256 hash хадгалагдах тул серверийн өгөгдлийн сан
-// алдагдсан ч жинхэнэ key-г сэргээх боломжгүй (зөвхөн hash харьцуулна). UI-д
-// харуулах prefix нь угтвар + эхний 4 тэмдэгт. Plaintext-ийг үүсгэх агшинд НЭГ
-// удаа л буцаана.
-//
-// Тэмдэглэл (дизайны сонголт): энд эргэлт буцалтгүй SHA-256 ашигласан нь түлхүүр
-// нь өндөр энтропитой санамсаргүй тэмдэгт мөр (нууц үг биш) тул bcrypt/argon2-
-// ийн удаашрал шаардлагагүй — өндөр RPS дээр баталгаажуулалт хямд байх ёстой.
-func generateAPIKey() (plaintext, prefix, hash string, err error) {
-	raw := make([]byte, 32)
-	if _, err = rand.Read(raw); err != nil {
-		return "", "", "", err
-	}
-	secret := base64.RawURLEncoding.EncodeToString(raw)
-	plaintext = keyPrefix + secret
-	sum := sha256.Sum256([]byte(plaintext))
-	hash = hex.EncodeToString(sum[:])
-	prefix = keyPrefix + secret[:4]
-	return plaintext, prefix, hash, nil
 }
 
 // ── Policies ─────────────────────────────────────────────────────────────—

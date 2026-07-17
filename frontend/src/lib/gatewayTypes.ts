@@ -30,29 +30,6 @@ export interface GwRoute {
   updated_at: string | null;
 }
 
-export interface GwConsumer {
-  id: string;
-  username: string;
-  custom_id: string;
-  tags: string[];
-  enabled: boolean;
-  key_count: number;
-  created_at: string;
-  updated_at: string | null;
-}
-
-export interface GwKey {
-  id: string;
-  consumer_id: string;
-  label: string;
-  prefix: string;
-  plaintext?: string;
-  last_used_at: string | null;
-  expires_at: string | null;
-  revoked: boolean;
-  created_at: string;
-}
-
 export type GwPolicyType = 'rate-limit' | 'key-auth' | 'cors' | 'ip-restriction' | 'request-transform';
 
 export interface GwPolicy {

@@ -235,8 +235,10 @@ Dropbox). Токенийг per-user шифрлэн хадгална (RLS).
 
 ## API Gateway (`/api/v1/gateway`) 🛡️ `gateway.manage`
 
-Kong маягийн gateway админ: services, routes, consumers, API keys, policies,
-дээр нь телеметр. Бүх endpoint 🔒 + 🛡️ `gateway.manage` шаардана.
+Kong маягийн gateway админ: services, routes, policies, дээр нь телеметр. Бүх
+endpoint 🔒 + 🛡️ `gateway.manage` шаардана. Gateway **client**-ууд (хуучин
+"consumers + API keys") одоо доорх **Applications** бүлэгт шилжсэн; service бүр
+мөн `scope`-той (апп тухайн service-т хүрэхийн тулд хүсэх OAuth scope).
 
 | Method | Path | Тайлбар |
 |--------|------|-------------|
@@ -250,18 +252,43 @@ Kong маягийн gateway админ: services, routes, consumers, API keys, p
 | POST | `/gateway/routes` | Route үүсгэх. |
 | PUT | `/gateway/routes/{id}` | Route шинэчлэх. |
 | DELETE | `/gateway/routes/{id}` | Route устгах. |
-| GET | `/gateway/consumers` | Consumer жагсаах. |
-| POST | `/gateway/consumers` | Consumer үүсгэх. |
-| PUT | `/gateway/consumers/{id}` | Consumer шинэчлэх. |
-| DELETE | `/gateway/consumers/{id}` | Consumer устгах. |
-| GET | `/gateway/consumers/{id}/keys` | Consumer-ийн API key жагсаах. |
-| POST | `/gateway/consumers/{id}/keys` | API key олгох. |
-| POST | `/gateway/keys/{keyId}/revoke` | API key цуцлах. |
-| DELETE | `/gateway/keys/{keyId}` | API key устгах. |
 | GET | `/gateway/policies` | Policy жагсаах. |
 | POST | `/gateway/policies` | Policy үүсгэх. |
 | PUT | `/gateway/policies/{id}` | Policy шинэчлэх. |
 | DELETE | `/gateway/policies/{id}` | Policy устгах. |
+
+## Applications (`/api/v1/applications`) 🛡️ `gateway.manage`
+
+Нэгдсэн OAuth2 **client бүртгэл** — хуучин gateway "consumers + API keys" болон
+тусдаа SSO RP бүртгэлийг нэгтгэн орлуулсан. Application бүр нь **Ory Hydra OAuth2
+client**; service тус бүрийн хандалтыг OAuth **scope**-оор илэрхийлнэ
+(`application_services` → `gateway_services.scope`). Бүх endpoint 🔒 + 🛡️
+`gateway.manage` шаардах ба энэ бүлэг нь **зөвхөн Hydra тохируулагдсан үед**
+(`ProviderConfigured()`) бүртгэгдэнэ.
+
+`app_type` нь grant + auth-method-ыг сонгоно:
+
+| `app_type` | Grant | Client | Хэрэглээ |
+|------------|-------|--------|-----|
+| `web` | `authorization_code` (+ `refresh_token`) | confidential (secret) | RP "Login with DAN" — сервер талын web апп |
+| `spa` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, secret-гүй) | Браузер SPA |
+| `native` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, secret-гүй) | Мобайл / native апп |
+| `m2m` | `client_credentials` | confidential (secret) | Server-to-server |
+
+OAuth2 **`client_secret`** (зөвхөн confidential төрөл) нь create / rotate-ийн
+хариунд **нэг удаа** харагдана — дахин хэзээ ч биш.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/applications` | Application-уудыг жагсаах. |
+| POST | `/applications` | Үүсгэх; Hydra OAuth2 client үүсгээд апп-ыг нэг удаагийн `secret`-ийн хамт буцаана (confidential төрөл). |
+| GET | `/applications/{id}` | Нэг application авах. |
+| PUT | `/applications/{id}` | Overlay + Hydra client-ийн хүссэн төлөвийг шинэчлэх. |
+| DELETE | `/applications/{id}` | Hydra client + overlay-г устгах. |
+| POST | `/applications/{id}/rotate-secret` | Шинэ client secret гаргаж нэг удаа буцаах (зөвхөн confidential). |
+| PUT | `/applications/{id}/services` | Зөвшөөрсөн gateway service-үүдийг солих — тэдгээр нь client-ийн OAuth scope болно. |
+
+**Create/update body** — `{ name, app_type (web\|spa\|native\|m2m), redirect_uris[], tags[], service_ids[], enabled }`; **set-services body** — `{ service_ids[] }`.
 
 ## Gerege Core (`/api/v1/core`) 🔒
 

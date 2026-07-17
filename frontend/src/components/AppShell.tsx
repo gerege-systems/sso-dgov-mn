@@ -88,7 +88,7 @@ const SYSTEMS: NavSystem[] = [
           { href: '/admin/gateway/overview', labelKey: 'nav.gwOverview', icon: Gauge, perm: 'gateway.manage' },
           { href: '/admin/gateway/services', labelKey: 'nav.gwServices', icon: Server, perm: 'gateway.manage' },
           { href: '/admin/gateway/routes', labelKey: 'nav.gwRoutes', icon: Route, perm: 'gateway.manage' },
-          { href: '/admin/gateway/consumers', labelKey: 'nav.gwConsumers', icon: KeyRound, perm: 'gateway.manage' },
+          { href: '/admin/applications', labelKey: 'nav.applications', icon: KeyRound, perm: 'gateway.manage' },
           { href: '/admin/gateway/policies', labelKey: 'nav.gwPolicies', icon: ShieldAlert, perm: 'gateway.manage' },
           { href: '/admin/gateway/logs', labelKey: 'nav.gwLogs', icon: ScrollText, perm: 'gateway.manage' },
         ],

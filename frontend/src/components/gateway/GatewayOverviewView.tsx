@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, AlertTriangle, Timer, KeyRound, Server, Route as RouteIcon, Inbox } from 'lucide-react';
+import { Activity, AlertTriangle, Timer, KeyRound, Server, Route as RouteIcon, Inbox, AppWindow } from 'lucide-react';
 import { getJSON } from '@/lib/client';
 import type { GwOverview } from '@/lib/gatewayTypes';
+import { useT } from '@/lib/lang';
 import { Loading } from './gwShared';
 
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: React.ReactNode; label: string }) {
@@ -18,6 +19,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: React.
 }
 
 export default function GatewayOverviewView() {
+  const { T } = useT();
   const q = useQuery({ queryKey: ['gw-overview'], queryFn: () => getJSON<GwOverview>('/api/gateway/overview') });
 
   if (q.isPending) return <Loading />;
@@ -33,7 +35,8 @@ export default function GatewayOverviewView() {
         <StatCard icon={<Activity size={18} />} value={o.requests_24h} label="Хүсэлт (24ц)" />
         <StatCard icon={<AlertTriangle size={18} />} value={`${errPct}%`} label={`Алдааны хувь · ${o.errors_24h} ширхэг`} />
         <StatCard icon={<Timer size={18} />} value={`${o.p95_latency_ms}ms`} label={`p95 латент · дунд ${o.avg_latency_ms}ms`} />
-        <StatCard icon={<KeyRound size={18} />} value={o.active_keys} label="Идэвхтэй API key" />
+        <StatCard icon={<AppWindow size={18} />} value={o.consumers} label={T('apps.overview.applications')} />
+        <StatCard icon={<KeyRound size={18} />} value={o.active_keys} label={T('apps.overview.serviceGrants')} />
         <StatCard icon={<Server size={18} />} value={o.services} label="Сервис" />
         <StatCard icon={<RouteIcon size={18} />} value={o.routes} label="Маршрут" />
       </div>
