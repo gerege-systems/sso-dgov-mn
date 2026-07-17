@@ -359,15 +359,19 @@ func NewApp() (*App, error) {
 		bootstrapRPApplications(ctx, applicationsUC)
 	}
 
+	// Гуравдагч талын RP-ийн gateway хүсэлтийг (/rp/sign, /api/v1/provider) API
+	// Gateway-ийн лог руу async бичих middleware (detached ctx тул хоцролтгүй;
+	// best-effort). DAN-ий өөрийн first-party API трафикийг лог-лохгүй —
+	// шүүлтүүр middleware дотор (isRPGatewayPath).
+	gwLogMW := middlewares.GatewayRequestLogMiddleware(func(method, path, ip string, status, latencyMS int) {
+		go gatewayUC.RecordRequest(context.Background(), gateway.RequestLogInput{
+			Method: method, Path: path, ClientIP: ip, Status: status, LatencyMS: latencyMS,
+		})
+	})
+
 	// API Route-ууд
 	r.Route("/api", func(api chi.Router) {
-		// Бодит /api хүсэлт бүрийг API Gateway-ийн хүсэлтийн лог руу async бичнэ
-		// (detached context тул хариуны хоцролт нэмэгдэхгүй; best-effort).
-		api.Use(middlewares.GatewayRequestLogMiddleware(func(method, path, ip string, status, latencyMS int) {
-			go gatewayUC.RecordRequest(context.Background(), gateway.RequestLogInput{
-				Method: method, Path: path, ClientIP: ip, Status: status, LatencyMS: latencyMS,
-			})
-		}))
+		api.Use(gwLogMW)
 
 		api.Get("/", routes.RootHandler)
 		routes.NewAuthRoute(api, authUC, auditUC, authMiddleware, authRateLimiter, pollRateLimiter).Routes()
@@ -420,8 +424,9 @@ func NewApp() (*App, error) {
 		if relay, rerr := signrelay.New(config.AppConfig.EIDBaseURL, config.AppConfig.EIDRPSecret, config.AppConfig.SignRelayToken); rerr != nil {
 			logger.Warn("sign relay init failed", logger.Fields{"error": rerr.Error()})
 		} else {
-			r.Handle("/rp/sign/*", relay)
-			r.Handle("/rp/sign", relay)
+			// RP-ийн gateway хүсэлт тул лог middleware-ээр ороож бичнэ.
+			r.Handle("/rp/sign/*", gwLogMW(relay))
+			r.Handle("/rp/sign", gwLogMW(relay))
 			logger.Info("sign relay mounted at /rp/sign (RP eID signing via dan)", logger.Fields{})
 		}
 	}

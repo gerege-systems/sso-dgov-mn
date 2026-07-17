@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Power, Inbox, X } from 'lucide-react';
+import { Plus, Trash2, Power, Inbox, X, Pencil } from 'lucide-react';
 import { getJSON, sendJSON } from '@/lib/client';
 import type { GwService } from '@/lib/gatewayTypes';
 import { Loading, EnabledChip, Tags, splitList } from './gwShared';
@@ -19,6 +19,7 @@ function upstreamURL(protocol: string, host: string, port: number, path: string)
 export default function GatewayServicesView() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
+  const [editSvc, setEditSvc] = useState<GwService | null>(null);
   const [form, setForm] = useState(empty);
   const [err, setErr] = useState('');
 
@@ -27,14 +28,29 @@ export default function GatewayServicesView() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['gw-services'] });
 
-  const create = async () => {
+  const closeForm = () => { setAdding(false); setEditSvc(null); setForm(empty); };
+
+  const openEdit = (s: GwService) => {
+    setEditSvc(s);
+    setForm({ name: s.name, protocol: s.protocol, host: s.host, port: s.port, path: s.path, tags: s.tags.join(', ') });
+    setAdding(true);
+  };
+
+  // save нь editSvc байвал PUT (засах), эс бөгөөс POST (үүсгэх). retries/timeout-ыг
+  // засварын үед хадгална (формд байхгүй тул анхны утгаас).
+  const save = async () => {
     setErr('');
-    const res = await sendJSON('/api/gateway/services', 'POST', {
+    const body = {
       name: form.name, protocol: form.protocol, host: form.host,
-      port: Number(form.port) || 0, path: form.path, tags: splitList(form.tags), enabled: true,
-    });
-    if (res.ok) { setForm(empty); setAdding(false); await refresh(); }
-    else setErr(res.message || 'Үүсгэхэд алдаа гарлаа.');
+      port: Number(form.port) || 0, path: form.path, tags: splitList(form.tags),
+      retries: editSvc?.retries, connect_timeout_ms: editSvc?.connect_timeout_ms,
+      enabled: editSvc ? editSvc.enabled : true,
+    };
+    const res = editSvc
+      ? await sendJSON(`/api/gateway/services/${editSvc.id}`, 'PUT', body)
+      : await sendJSON('/api/gateway/services', 'POST', body);
+    if (res.ok) { closeForm(); await refresh(); }
+    else setErr(res.message || (editSvc ? 'Шинэчлэхэд алдаа гарлаа.' : 'Үүсгэхэд алдаа гарлаа.'));
   };
 
   const toggle = async (s: GwService) => {
@@ -58,14 +74,14 @@ export default function GatewayServicesView() {
       {err && <div className="alert alert--danger" role="alert">{err}</div>}
 
       <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="btn btn--primary btn--sm" type="button" onClick={() => setAdding((a) => !a)}>
+        <button className="btn btn--primary btn--sm" type="button" onClick={() => (adding ? closeForm() : setAdding(true))}>
           {adding ? <><X size={14} /> Болих</> : <><Plus size={14} /> Сервис нэмэх</>}
         </button>
       </div>
 
       {adding && (
         <section className="card" style={{ padding: 18, marginBottom: 16 }}>
-          <div className="card__head"><div className="card__title"><h2>Шинэ сервис</h2></div></div>
+          <div className="card__head"><div className="card__title"><h2>{editSvc ? 'Сервис засах' : 'Шинэ сервис'}</h2></div></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
             <label>Нэр<input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="payments" /></label>
             <label>Протокол
@@ -79,7 +95,7 @@ export default function GatewayServicesView() {
             <label>Tag (зай/таслалаар)<input className="input" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="billing, core" /></label>
           </div>
           <div style={{ marginTop: 12 }}>
-            <button className="btn btn--primary btn--sm" type="button" onClick={create} disabled={!form.name || !form.host}>Хадгалах</button>
+            <button className="btn btn--primary btn--sm" type="button" onClick={save} disabled={!form.name || !form.host}>Хадгалах</button>
           </div>
         </section>
       )}
@@ -101,6 +117,7 @@ export default function GatewayServicesView() {
                   <td><Tags tags={s.tags} /></td>
                   <td><EnabledChip enabled={s.enabled} /></td>
                   <td className="users-table__actions">
+                    <button className="btn btn--ghost btn--sm" type="button" title="Засах" onClick={() => openEdit(s)}><Pencil size={14} /></button>
                     <button className="btn btn--ghost btn--sm" type="button" title={s.enabled ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'} onClick={() => toggle(s)}><Power size={14} /></button>
                     <button className="btn btn--ghost btn--sm" type="button" title="Устгах" onClick={() => remove(s)}><Trash2 size={14} /></button>
                   </td>

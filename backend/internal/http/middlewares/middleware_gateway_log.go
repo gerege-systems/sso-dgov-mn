@@ -16,19 +16,22 @@ import (
 // хариуны хоцролт нэмэгдэхгүй.
 type GatewayRequestRecorder func(method, path, clientIP string, status, latencyMS int)
 
-// GatewayRequestLogMiddleware нь DAN backend руу ирсэн бодит /api хүсэлт бүрийг
+// isRPGatewayPath нь тухайн зам гуравдагч талын RP-ийн gateway хүсэлт мөн эсэхийг
+// шалгана. Зөвхөн эдгээрийг лог-лоно — DAN-ий ӨӨРИЙН админ/апп-ын дотоод API
+// (rbac/users/themes/gateway/applications г.м.) лог-д ОРОХГҮЙ:
+//   - /rp/sign        — RP-ийн eID цахим гарын үсэг relay
+//   - /api/v1/provider — RP-ийн OIDC (Login with DAN) login/consent
+func isRPGatewayPath(p string) bool {
+	return strings.HasPrefix(p, "/rp/sign") || strings.HasPrefix(p, "/api/v1/provider")
+}
+
+// GatewayRequestLogMiddleware нь гуравдагч талын RP-ийн gateway хүсэлт бүрийг
 // (method/path/status/latency/ip) API Gateway-ийн хүсэлтийн лог руу бичнэ.
-// Зөвхөн "/api/" замуудыг лог-лоно (health/metrics/swagger/static-ыг алгасна).
+// DAN-ий өөрийн first-party API трафикийг лог-лохгүй (isRPGatewayPath).
 func GatewayRequestLogMiddleware(record GatewayRequestRecorder) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Зөвхөн /api хүсэлтийг лог-лоно. Gateway-ийн ӨӨРИЙН телеметр
-			// endpoint-ууд (лог/тойм) нь admin UI-аас байнга poll хийгддэг тул
-			// лог-оо өөрийн polling-оор дүүргэхээс сэргийлж алгасна.
-			p := r.URL.Path
-			if !strings.HasPrefix(p, "/api/") ||
-				strings.HasPrefix(p, "/api/v1/gateway/logs") ||
-				strings.HasPrefix(p, "/api/v1/gateway/overview") {
+			if !isRPGatewayPath(r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}
