@@ -166,7 +166,10 @@ export default function ThemeEditor({ theme, onDone }: Props) {
             <div className="color-grid">
               {THEME_COLOR_FIELDS.map((f) => (
                 <label key={f.key} className="color-field">
-                  <input type="color" className="color-input" value={colorVal(f.key)}
+                  {/* Uncontrolled (defaultValue): controlled `value` нь native OS
+                      color picker-ыг re-render бүрт "буцаадаг" тул өнгө суудаггүй.
+                      onChange нь preview/save-д state-ыг шинэчилсээр байна. */}
+                  <input type="color" className="color-input" defaultValue={colorVal(f.key)}
                     onChange={(e) => setColor(f.key, e.target.value)} aria-label={L(f.labelMn, f.labelEn)} />
                   <span>{L(f.labelMn, f.labelEn)}</span>
                 </label>
