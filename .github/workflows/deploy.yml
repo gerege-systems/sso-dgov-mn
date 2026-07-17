@@ -1,17 +1,16 @@
-# Continuous deployment — push to main rebuilds and restarts the compose stack
-# on the production VPS (dan.dgov.mn). The remote step runs deploy/deploy.sh
-# after the target commit is checked out. Secrets: DEPLOY_HOST / DEPLOY_USER /
+# Continuous deployment — deploys to the production VPS (dan.dgov.mn) ONLY after
+# the CI workflow succeeds on main, so a red build never ships. Triggered via
+# `workflow_run` (chained after CI) instead of `push`, which is why CI and
+# Deploy no longer start in parallel. The remote step rebuilds/restarts the
+# compose stack via deploy/deploy.sh. Secrets: DEPLOY_HOST / DEPLOY_USER /
 # DEPLOY_PORT / DEPLOY_PATH / DEPLOY_SSH_KEY (dedicated non-root `deploy` user,
-# key-only).
+# key-only). Manual re-deploy: workflow_dispatch (deploys origin/main HEAD).
 name: Deploy
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - 'backend/docs/**'
-      - '**/*.md'
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch: {}
 
 # Never run two production deploys at once; let an in-flight deploy finish.
@@ -26,6 +25,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Gate: manual dispatch always runs; the CI-chained run deploys only when CI
+    # passed on the main branch (skips PR CI runs and failed/cancelled builds).
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           github.event.workflow_run.head_branch == 'main') }}
     steps:
       - name: Deploy over SSH
         env:
@@ -34,6 +39,8 @@ jobs:
           USER: ${{ secrets.DEPLOY_USER }}
           PORT: ${{ secrets.DEPLOY_PORT }}
           DPATH: ${{ secrets.DEPLOY_PATH }}
+          # Exact commit that passed CI (empty on manual dispatch → origin/main HEAD).
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -44,8 +51,14 @@ jobs:
             "$USER@$HOST" \
             "set -euo pipefail; \
              cd '${DPATH:-/srv/dan}'; \
-             echo '▶ Fetching origin/main…'; \
              git fetch --prune origin; \
-             git reset --hard origin/main; \
+             TARGET='${TARGET_SHA:-}'; \
+             if [ -n \"\$TARGET\" ]; then \
+               echo \"▶ Deploying CI-passed commit \$TARGET\"; \
+               git reset --hard \"\$TARGET\"; \
+             else \
+               echo '▶ Deploying origin/main HEAD (manual dispatch)'; \
+               git reset --hard origin/main; \
+             fi; \
              echo \"▶ Now at: \$(git rev-parse --short HEAD) — \$(git log -1 --pretty=%s)\"; \
              bash deploy/deploy.sh"
