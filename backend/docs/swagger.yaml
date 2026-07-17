@@ -577,6 +577,18 @@ definitions:
     - password
     - username
     type: object
+  template_internal_http_datatransfers_requests.ThemeUpsertRequest:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      name:
+        maxLength: 80
+        type: string
+    required:
+    - name
+    type: object
   template_internal_http_datatransfers_requests.UpdateMemberRoleRequest:
     properties:
       role:
@@ -1041,6 +1053,23 @@ definitions:
       style:
         type: string
       theme:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  template_internal_http_datatransfers_responses.ThemeResponse:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      created_at:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
         type: string
       updated_at:
         type: string
@@ -2983,6 +3012,164 @@ paths:
       summary: dgov SSO нэвтрэлт эхлүүлэх
       tags:
       - sso
+  /themes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/template_internal_http_datatransfers_responses.ThemeResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Theme-үүдийг жагсаах
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Theme
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ThemeUpsertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.ThemeResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Шинэ theme үүсгэх
+      tags:
+      - admin
+  /themes/{id}:
+    delete:
+      parameters:
+      - description: Theme id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Theme-ийг устгах
+      tags:
+      - admin
+    get:
+      parameters:
+      - description: Theme id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.ThemeResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Нэг theme-ийг унших
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Theme id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Theme
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ThemeUpsertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Theme-ийг шинэчлэх
+      tags:
+      - admin
+  /themes/{id}/active:
+    put:
+      parameters:
+      - description: Theme id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Theme-ийг идэвхтэй (default) болгох
+      tags:
+      - admin
+  /themes/active:
+    get:
+      description: Нэвтрээгүй зочны landing-д хэрэглэх идэвхтэй (default) theme. Нэвтрэлт
+        шаардахгүй.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.ThemeResponse'
+              type: object
+      summary: Идэвхтэй landing theme-ийг унших
+      tags:
+      - site
   /users/me:
     get:
       description: Authorization header дахь JWT-ээс баталгаажуулагдсан хэрэглэгчийг

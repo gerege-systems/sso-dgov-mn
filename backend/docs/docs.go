@@ -2922,6 +2922,277 @@ const docTemplate = `{
                 }
             }
         },
+        "/themes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Theme-үүдийг жагсаах",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/template_internal_http_datatransfers_responses.ThemeResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Шинэ theme үүсгэх",
+                "parameters": [
+                    {
+                        "description": "Theme",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.ThemeUpsertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.ThemeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/themes/active": {
+            "get": {
+                "description": "Нэвтрээгүй зочны landing-д хэрэглэх идэвхтэй (default) theme. Нэвтрэлт шаардахгүй.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "site"
+                ],
+                "summary": "Идэвхтэй landing theme-ийг унших",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.ThemeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/themes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Нэг theme-ийг унших",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Theme id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.ThemeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Theme-ийг шинэчлэх",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Theme id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Theme",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.ThemeUpsertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Theme-ийг устгах",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Theme id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/themes/{id}/active": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Theme-ийг идэвхтэй (default) болгох",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Theme id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/me": {
             "get": {
                 "security": [
@@ -5574,6 +5845,24 @@ const docTemplate = `{
                 }
             }
         },
+        "template_internal_http_datatransfers_requests.ThemeUpsertRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "config": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 80
+                }
+            }
+        },
         "template_internal_http_datatransfers_requests.UpdateMemberRoleRequest": {
             "type": "object",
             "required": [
@@ -6279,6 +6568,32 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "theme": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.ThemeResponse": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
                     "type": "string"
                 },
                 "updated_at": {

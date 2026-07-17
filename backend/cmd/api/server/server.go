@@ -37,6 +37,7 @@ import (
 	siteuc "template/internal/business/usecases/site"
 	"template/internal/business/usecases/sso"
 	"template/internal/business/usecases/superadmin"
+	themeuc "template/internal/business/usecases/theme"
 	"template/internal/business/usecases/users"
 	"template/internal/config"
 	"template/internal/constants"
@@ -53,6 +54,7 @@ import (
 	securitypostgres "template/internal/datasources/repositories/postgres/security"
 	sitepostgres "template/internal/datasources/repositories/postgres/site"
 	ssouserpostgres "template/internal/datasources/repositories/postgres/ssouser"
+	themepostgres "template/internal/datasources/repositories/postgres/theme"
 	userintegrationspostgres "template/internal/datasources/repositories/postgres/userintegrations"
 	userspostgres "template/internal/datasources/repositories/postgres/users"
 	"template/internal/datasources/rls"
@@ -266,6 +268,11 @@ func NewApp() (*App, error) {
 	siteRepo := sitepostgres.NewSiteRepository(pool)
 	siteUC := siteuc.NewUsecase(siteRepo)
 
+	// Landing themes — нэрлэсэн бүрэн загварууд (харагдац + текст/цэс). Идэвхтэйг
+	// нэвтрээгүй зочны landing уншина; админ CRUD/идэвхжүүлнэ. Нийтийн config, RLS-гүй.
+	themeRepo := themepostgres.NewThemeRepository(pool)
+	themeUC := themeuc.NewUsecase(themeRepo)
+
 	// AI pipeline — Gemini REST client + function-calling tools. TTS нь
 	// audio гаргадаг тусдаа model тул өөр client-ээр явна. Repo нь DB-ээс
 	// тохируулдаг prompt давхаргууд + search_knowledge tool-ийн мэдлэгийн сан.
@@ -360,6 +367,7 @@ func NewApp() (*App, error) {
 		routes.NewAuditRoute(api, auditUC, authMiddleware).Routes()
 		routes.NewSecurityRoute(api, securityUC, authMiddleware).Routes()
 		routes.NewSiteRoute(api, siteUC, rbacUC, authMiddleware).Routes()
+		routes.NewThemeRoute(api, themeUC, rbacUC, authMiddleware).Routes()
 		routes.NewSignRoute(api, signUC, usersUC, assetsUC, authMiddleware).Routes()
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
 		if providerUC != nil {

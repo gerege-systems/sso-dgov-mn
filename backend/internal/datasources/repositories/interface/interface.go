@@ -17,6 +17,7 @@ package _interface
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"template/internal/business/domain"
@@ -322,4 +323,23 @@ type SiteRepository interface {
 	GetAppearance(ctx context.Context) (domain.SiteAppearance, error)
 	// SetAppearance нь харагдацын default-ыг шинэчилнэ (UPDATE-only).
 	SetAppearance(ctx context.Context, a domain.SiteAppearance) error
+}
+
+// ThemeRepository нь landing-ийн нэрлэсэн theme-үүдийг (themes хүснэгт) удирдана.
+// Нийтийн config тул RLS-гүй; app бүрэн CRUD хийдэг (админ theme үүсгэж/устгана).
+type ThemeRepository interface {
+	// ListThemes нь бүх theme-ийг (config-той) буцаана.
+	ListThemes(ctx context.Context) ([]domain.Theme, error)
+	// GetTheme нь id-аар нэг theme буцаана; олдохгүй бол apperror.NotFound.
+	GetTheme(ctx context.Context, id string) (domain.Theme, error)
+	// GetActiveTheme нь идэвхтэй theme-ийг буцаана; байхгүй бол apperror.NotFound.
+	GetActiveTheme(ctx context.Context) (domain.Theme, error)
+	// CreateTheme нь шинэ theme үүсгэж, үүсгэсэн мөрийг буцаана.
+	CreateTheme(ctx context.Context, name string, config json.RawMessage) (domain.Theme, error)
+	// UpdateTheme нь theme-ийн нэр/config-ыг шинэчилнэ.
+	UpdateTheme(ctx context.Context, id, name string, config json.RawMessage) error
+	// DeleteTheme нь theme-ийг устгана (идэвхтэйг устгаж болохгүй — usecase шалгана).
+	DeleteTheme(ctx context.Context, id string) error
+	// SetActive нь нэг theme-ийг идэвхтэй болгож бусдыг идэвхгүй болгоно (tx).
+	SetActive(ctx context.Context, id string) error
 }
