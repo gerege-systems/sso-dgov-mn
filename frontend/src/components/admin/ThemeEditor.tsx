@@ -233,10 +233,19 @@ function CopyFields({
   path: (string | number)[];
   onSet: (path: (string | number)[], value: unknown) => void;
 }) {
-  // Массив
+  // Массив — cur-ыг ҮРГЭЛЖ нягт (dense) бүтэн массив болгоно (нүхийг def-ээс
+  // дүүргэж, def-ийн уртаар сунгана) тул зөвхөн нэг мөр засахад бусад нь алга
+  // болохгүй. Засвар/нэмэх/устгах бүр бүтэн массивыг path-д бичнэ.
   if (Array.isArray(def)) {
-    const cur = (Array.isArray(override) ? override : def) as unknown[];
-    const itemTemplate = def[0];
+    const dbase = def as unknown[];
+    const itemTemplate = dbase[0];
+    const ov = Array.isArray(override) ? (override as unknown[]) : null;
+    const len = ov ? Math.max(dbase.length, ov.length) : dbase.length;
+    const cur: unknown[] = Array.from({ length: len }, (_, i) => {
+      const o = ov ? ov[i] : undefined;
+      return o === undefined || o === null ? dbase[i] ?? structuredClone(itemTemplate) : o;
+    });
+    const writeItem = (i: number, newItem: unknown) => onSet(path, cur.map((it, j) => (j === i ? newItem : it)));
     return (
       <div className="copy-array">
         {cur.map((item, i) => (
@@ -248,7 +257,8 @@ function CopyFields({
                 <Trash2 size={14} />
               </button>
             </div>
-            <CopyFields def={itemTemplate} override={item} path={[...path, i]} onSet={onSet} />
+            <CopyFields def={itemTemplate} override={item} path={[]}
+              onSet={(sub, val) => writeItem(i, setPath(item ?? structuredClone(itemTemplate), sub, val))} />
           </div>
         ))}
         <button type="button" className="btn btn--secondary btn--sm"

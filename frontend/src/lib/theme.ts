@@ -95,10 +95,22 @@ export const THEME_COLOR_FIELDS: { key: keyof ThemeColors; labelMn: string; labe
 ];
 
 /** Гүн merge (жижиг, JSON-safe) — override-ыг base дээр давхарлана. Массивыг
- *  override-оор бүхэлд нь солино (nav/stats/items дараалал хадгалагдана). */
+ *  элемент-тус-бүрээр нэгтгэнэ: override[i] байвал давамгайлж, нүх (undefined)
+ *  байвал base[i]-ээс дүүргэнэ. Ингэснээр зөвхөн нэг мөр засагдсан ч бусад нь
+ *  алга болохгүй (override-ийн уртаар — устгасныг хүндэлнэ). */
 export function deepMerge<T>(base: T, override: unknown): T {
   if (override === undefined || override === null) return base;
-  if (Array.isArray(base) || Array.isArray(override)) return (override as T) ?? base;
+  if (Array.isArray(base) && Array.isArray(override)) {
+    const out: unknown[] = [];
+    for (let i = 0; i < override.length; i++) {
+      out[i] = override[i] === undefined ? (base as unknown[])[i] : deepMerge((base as unknown[])[i], override[i]);
+    }
+    return out as T;
+  }
+  // Төрөл зөрвөл (нэг нь массив, нөгөө нь биш): массив base-ыг буруу override-оор
+  // бүү алдагтун — base-ыг хадгална; override массив бол түүнийг ав.
+  if (Array.isArray(base)) return Array.isArray(override) ? (override as T) : base;
+  if (Array.isArray(override)) return override as T;
   if (typeof base !== 'object' || typeof override !== 'object') return (override as T) ?? base;
   const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
   for (const [k, v] of Object.entries(override as Record<string, unknown>)) {
