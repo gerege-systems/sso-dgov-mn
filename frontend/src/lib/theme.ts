@@ -21,8 +21,10 @@ export interface ThemeColors {
   gold?: string;
   success?: string;
   danger?: string;
-  /** Landing (нүүр) hero-ийн navy дэвсгэр (--lp-navy). App-ын --bg-ээс тусдаа. */
+  /** Landing (нүүр) hero/body-ийн navy дэвсгэр (--lp-navy). App-ын --bg-ээс тусдаа. */
   lpNavy?: string;
+  /** Landing-ийн дээд цэс (header/nav)-ийн дэвсгэр (--lp-header) — lpNavy-гаас тусдаа. */
+  lpHeader?: string;
 }
 
 /** ThemeColors-ийн түлхүүр → globals.css CSS хувьсагч. Bootstrap ба preview
@@ -40,6 +42,7 @@ export const THEME_COLOR_VARS: Record<keyof ThemeColors, string> = {
   success: '--success',
   danger: '--danger',
   lpNavy: '--lp-navy',
+  lpHeader: '--lp-header',
 };
 
 export interface ThemeAppearance {
@@ -81,13 +84,15 @@ export const DEFAULT_PALETTE: Required<ThemeColors> = {
   success: '#279a5b',
   danger: '#ce3f3d',
   lpNavy: '#0f1f39',
+  lpHeader: '#0f1f39',
 };
 
 /** Өнгө сонгогчийн эрэмбэ + шошго (mn). */
 export const THEME_COLOR_FIELDS: { key: keyof ThemeColors; labelMn: string; labelEn: string }[] = [
   { key: 'danBlue', labelMn: 'Гол өнгө (brand)', labelEn: 'Primary (brand)' },
   { key: 'gold', labelMn: 'Алт (итгэл)', labelEn: 'Gold (trust)' },
-  { key: 'lpNavy', labelMn: 'Нүүрний дэвсгэр (navy)', labelEn: 'Landing background (navy)' },
+  { key: 'lpHeader', labelMn: 'Нүүр — толгой (header)', labelEn: 'Landing — header' },
+  { key: 'lpNavy', labelMn: 'Нүүр — үлдсэн (body)', labelEn: 'Landing — body' },
   { key: 'bg', labelMn: 'Дэвсгэр', labelEn: 'Background' },
   { key: 'surface', labelMn: 'Гадаргуу', labelEn: 'Surface' },
   { key: 'surface2', labelMn: 'Гадаргуу-2', labelEn: 'Surface 2' },

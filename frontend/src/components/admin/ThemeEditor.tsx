@@ -189,14 +189,20 @@ export default function ThemeEditor({ theme, onDone }: Props) {
           style={{ ...previewVars, fontFamily: previewFont }}>
           <div className="theme-preview__bar">{T('themes.preview')}</div>
           <div className="theme-preview__body">
-            {/* Landing hero-ийн navy дэвсгэрийн preview зурвас (--lp-navy). */}
-            <div style={{
-              background: 'var(--lp-navy)', color: '#f7f9fc', borderRadius: 8,
-              padding: '9px 12px', marginBottom: 12, fontSize: 12, fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
-              <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--gold)' }} />
-              {L('Нүүрний navy дэвсгэр', 'Landing navy background')}
+            {/* Landing толгой (--lp-header) ба үлдсэн (--lp-navy) дэвсгэрийг тусад
+                нь харуулах mini-preview — хоёр өнгийг зэрэгцүүлж шалгах. */}
+            <div style={{ borderRadius: 8, overflow: 'hidden', marginBottom: 12, fontSize: 11, fontWeight: 600 }}>
+              <div style={{
+                background: 'var(--lp-header)', color: '#f7f9fc',
+                padding: '7px 11px', display: 'flex', alignItems: 'center', gap: 7,
+                borderBottom: '1px solid rgba(255,255,255,0.12)',
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} />
+                {L('Толгой (header)', 'Header')}
+              </div>
+              <div style={{ background: 'var(--lp-navy)', color: '#dfe6f2', padding: '11px 11px 14px' }}>
+                {L('Үлдсэн (body)', 'Body')}
+              </div>
             </div>
             <div className="theme-preview__brand">{mergedCopy.brand || 'DAN-Government SSO'}</div>
             <div className="theme-preview__hero">

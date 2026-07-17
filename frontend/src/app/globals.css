@@ -10,6 +10,9 @@
      theme (theme-bootstrap.js) <html>-д --lp-navy-г override хийхэд .lp дотор
      уламжлагдана. Landing light/dark аль алинд ижил (үргэлж гүн navy). */
   --lp-navy:   oklch(24% 0.055 260);
+  /* --lp-header нь landing-ийн ДЭЭД цэс (nav)-ийн дэвсгэр — --lp-navy-гаас
+     ТУСДАА удирдана (admin theme lpHeader). Default нь ижил navy. */
+  --lp-header: oklch(24% 0.055 260);
 
   /* Гадаргуу */
   --bg:        oklch(98.5% 0.003 260);
@@ -1629,7 +1632,7 @@ html[lang="en"] .i18n-banner { display: block; }
 /* ---------- Nav ---------- */
 .lp-nav {
   position: sticky; top: 0; z-index: 50;
-  background: var(--lp-navy);
+  background: var(--lp-header);
   border-bottom: 1px solid var(--lp-navy-line);
 }
 .lp-nav__inner {

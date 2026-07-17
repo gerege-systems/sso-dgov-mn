@@ -50,7 +50,7 @@
       bg: '--bg', surface: '--surface', surface2: '--surface-2', fg: '--fg',
       muted: '--muted', border: '--border', borderStrong: '--border-strong',
       danBlue: '--dan-blue', gold: '--gold', success: '--success', danger: '--danger',
-      lpNavy: '--lp-navy',
+      lpNavy: '--lp-navy', lpHeader: '--lp-header',
     };
     var pick = function (v, list, def) { return list.indexOf(v) !== -1 ? v : def; };
 

@@ -44,9 +44,10 @@ var ThemeColorKeys = map[string]bool{
 	"bg": true, "surface": true, "surface2": true, "fg": true, "muted": true,
 	"border": true, "borderStrong": true, "danBlue": true, "gold": true,
 	"success": true, "danger": true,
-	// lpNavy — landing (нүүр) hero-ийн navy дэвсгэр (--lp-navy). Бусад токен
-	// нь app-ын --bg г.м.-д ноогддог бол энэ нь landing-д тусгайлан ноогдоно.
-	"lpNavy": true,
+	// lpNavy — landing hero/body-ийн navy дэвсгэр (--lp-navy); lpHeader — landing
+	// дээд цэс (header/nav)-ийн дэвсгэр (--lp-header). Бусад токен app-ын --bg
+	// г.м.-д ноогддог бол эдгээр landing-д тусгайлан ноогдоно.
+	"lpNavy": true, "lpHeader": true,
 }
 
 // config JSONB-ийн дээд хэмжээ (нийт текст/цэс хоёр хэлээр) — DoS-оос хамгаална.
