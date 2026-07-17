@@ -72,6 +72,20 @@ func (f *fakeInvites) GetByEmail(_ context.Context, _ string) (domain.Superadmin
 func (f *fakeInvites) Delete(_ context.Context, _ string) error       { return nil }
 func (f *fakeInvites) MarkAccepted(_ context.Context, _ string) error { return nil }
 
+// fakeSuperadminAccts нь SuperadminAccountRepository-ийн тест fake. found=false бол
+// NotFound (account алга → fail-closed) — иймээс MFA урсгал зөвхөн тохируулсан үед амжина.
+type fakeSuperadminAccts struct {
+	acct  domain.SuperadminAccount
+	found bool
+}
+
+func (f *fakeSuperadminAccts) Get(_ context.Context, _ string) (domain.SuperadminAccount, error) {
+	if !f.found {
+		return domain.SuperadminAccount{}, apperror.NotFound("superadmin account not found")
+	}
+	return f.acct, nil
+}
+
 // requireDomainType нь алдаа apperror.DomainError бөгөөд хүлээгдсэн төрөлтэй
 // гэдгийг батална.
 func requireDomainType(t *testing.T, err error, want apperror.ErrorType) {
@@ -88,6 +102,7 @@ type fixture struct {
 	redis    *mocks.RedisCache
 	jwt      *mocks.JWTService
 	recovery *fakeRecovery
+	accts    *fakeSuperadminAccts
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -96,17 +111,18 @@ func newFixture(t *testing.T) *fixture {
 	redis := mocks.NewRedisCache(t)
 	jwtSvc := mocks.NewJWTService(t)
 	rec := &fakeRecovery{}
+	accts := &fakeSuperadminAccts{}
 
 	// eID / verify client-ууд MFA урсгалд хэрэглэгддэггүй тул nil.
 	uc, err := onboarding.NewUsecase(
 		nil, nil, nil,
-		usersRepo, rec, &fakeInvites{},
+		usersRepo, rec, accts, &fakeInvites{},
 		jwtSvc, redis, testEncKey,
 		onboarding.Config{MFAMaxAttempts: 5, Issuer: "DAN-Test"},
 	)
 	require.NoError(t, err)
 
-	return &fixture{usecase: uc, users: usersRepo, redis: redis, jwt: jwtSvc, recovery: rec}
+	return &fixture{usecase: uc, users: usersRepo, redis: redis, jwt: jwtSvc, recovery: rec, accts: accts}
 }
 
 func samplePair() jwt.TokenPair {
@@ -148,6 +164,9 @@ func expectTokenLookup(f *fixture, user domain.User) {
 	f.redis.On("Expire", mock.Anything, "superadmin_mfa_attempts:tok-1", mock.AnythingOfType("time.Duration")).
 		Return(nil).Once()
 	f.users.On("GetByID", mock.Anything, user.ID).Return(user, nil).Once()
+	// MFA бүртгэл (TOTP secret) нь satellite-д — user-ийн MFA талбараас fake-д тохируулна.
+	f.accts.found = true
+	f.accts.acct = domain.SuperadminAccount{UserID: user.ID, MFAEnabled: user.MFAEnabled, TOTPSecret: user.TOTPSecret}
 }
 
 func TestSuperadminMFA(t *testing.T) {

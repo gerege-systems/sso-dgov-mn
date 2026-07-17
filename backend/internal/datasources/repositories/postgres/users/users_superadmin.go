@@ -32,7 +32,7 @@ import (
 // UpsertFromEID-ийн адил COALESCE-оор нэг л удаа авна (хэрэглэгчийн гар
 // засварыг дарж бичихгүй). Нууц үг NULL — super admin нь Google + TOTP-оор л
 // нэвтэрнэ.
-func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *domain.User) (domain.User, error) {
+func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *domain.User, account *domain.SuperadminAccount) (domain.User, error) {
 	const (
 		repositoryName = "users"
 		funcName       = "UpsertSuperAdmin"
@@ -43,17 +43,19 @@ func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *dom
 
 	var stored records.Users
 	err := r.withRLS(ctx, func(tx pgx.Tx) error {
+		// 1) users мөр — google_sub-аар түлхүүрлэсэн (civil_id/MFA users-д ТАВИХГҮЙ).
+		//    Ингэснээр нэг хүн eID-ээр admin, Google-оор super admin байж чадна.
 		rows, qErr := tx.Query(ctx, `
 			INSERT INTO users(
 				id, username, first_name, last_name, first_name_en, last_name_en,
-				email, password, active, role_id, national_id, civil_id, kyc_level,
+				email, password, active, role_id, kyc_level,
 				google_sub, google_email, google_email_verified, google_name, google_picture, google_linked_at,
-				email_verified, mfa_enabled, totp_secret, created_at)
+				created_at)
 			VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5,
-				$6, NULL, true, $7, $8, $9, $10,
-				$11, $12, $13, $14, $15, now(),
-				true, true, $16, $17)
-			ON CONFLICT (lower(civil_id)) WHERE civil_id IS NOT NULL
+				$6, NULL, true, $7, $8,
+				$9, $10, $11, $12, $13, now(),
+				$14)
+			ON CONFLICT (google_sub) WHERE deleted_at IS NULL
 			DO UPDATE SET
 				first_name            = EXCLUDED.first_name,
 				last_name             = EXCLUDED.last_name,
@@ -61,13 +63,8 @@ func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *dom
 				-- гараар засварласан утгыг дарж бичихгүй (UpsertFromEID-ийн адил).
 				first_name_en         = COALESCE(users.first_name_en, EXCLUDED.first_name_en),
 				last_name_en          = COALESCE(users.last_name_en, EXCLUDED.last_name_en),
-				national_id           = EXCLUDED.national_id,
 				kyc_level             = EXCLUDED.kyc_level,
 				email                 = EXCLUDED.email,
-				email_verified        = true,
-				mfa_enabled           = true,
-				totp_secret           = EXCLUDED.totp_secret,
-				google_sub            = EXCLUDED.google_sub,
 				google_email          = EXCLUDED.google_email,
 				google_email_verified = EXCLUDED.google_email_verified,
 				google_name           = EXCLUDED.google_name,
@@ -79,15 +76,37 @@ func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *dom
 			RETURNING `+records.UserColumns+`
 		`,
 			rec.Username, rec.FirstName, rec.LastName, rec.FirstNameEn, rec.LastNameEn,
-			rec.Email, rec.RoleId, rec.NationalID, rec.CivilID, rec.KYCLevel,
+			rec.Email, rec.RoleId, rec.KYCLevel,
 			rec.GoogleSub, rec.GoogleEmail, rec.GoogleEmailVerified, rec.GoogleName, rec.GooglePicture,
-			rec.TOTPSecret, rec.CreatedAt)
+			rec.CreatedAt)
 		if qErr != nil {
 			return qErr
 		}
 		var scanErr error
 		stored, scanErr = pgx.CollectExactlyOneRow(rows, pgx.RowToStructByName[records.Users])
-		return scanErr
+		if scanErr != nil {
+			return scanErr
+		}
+		// 2) superadmin_accounts satellite мөр — ижил транзакцид (атом).
+		if _, aErr := tx.Exec(ctx, `
+			INSERT INTO superadmin_accounts(
+				user_id, civil_id, national_id, email_verified, mfa_enabled, totp_secret, invited_by, onboarded_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+			ON CONFLICT (user_id) DO UPDATE SET
+				civil_id       = EXCLUDED.civil_id,
+				national_id    = EXCLUDED.national_id,
+				email_verified = EXCLUDED.email_verified,
+				mfa_enabled    = EXCLUDED.mfa_enabled,
+				totp_secret    = EXCLUDED.totp_secret,
+				invited_by     = COALESCE(NULLIF(EXCLUDED.invited_by, ''), superadmin_accounts.invited_by),
+				onboarded_at   = COALESCE(superadmin_accounts.onboarded_at, now()),
+				updated_at     = now()
+		`,
+			stored.Id, nullStr(account.CivilID), nullStr(account.NationalID),
+			account.EmailVerified, account.MFAEnabled, nullStr(account.TOTPSecret), account.InvitedBy); aErr != nil {
+			return aErr
+		}
+		return nil
 	})
 	if err == nil {
 		if stored.Id == "" {
@@ -98,7 +117,13 @@ func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *dom
 			})
 			return domain.User{}, apperror.InternalCause(e)
 		}
-		return stored.ToV1Domain(), nil
+		// Буцаах user-ыг satellite account-ийн MFA утгуудаар hydrate хийнэ (users
+		// хүснэгтэд эдгээр багана байхгүй; дуудагч mintSession/response-д ашиглана).
+		dom := stored.ToV1Domain()
+		dom.EmailVerified = account.EmailVerified
+		dom.MFAEnabled = account.MFAEnabled
+		dom.TOTPSecret = account.TOTPSecret
+		return dom, nil
 	}
 
 	// Урьсан и-мэйл / Google account өөр бүртгэлд аль хэдийн эзэмшигдсэн бол

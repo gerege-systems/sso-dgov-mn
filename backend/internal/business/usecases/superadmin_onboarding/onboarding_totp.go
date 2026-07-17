@@ -88,29 +88,37 @@ func (uc *usecase) TOTPVerify(ctx context.Context, req TOTPVerifyRequest) (Final
 		return FinalizeResponse{}, apperror.InternalCause(fmt.Errorf("encrypt totp secret: %w", encErr))
 	}
 
-	// eID identity-аас (civil_id түлхүүр, "eid_<civil_id>" username) super admin
-	// угсарна — NewEIDUser нь нэр/түлхүүрийн нормчлолыг дахин ашиглана.
-	newUser, buildErr := domain.NewEIDUser(
-		sess.CivilID, sess.FirstName, sess.LastName, sess.FirstNameEn, sess.LastNameEn,
-		sess.NationalID, sess.KYCLevel,
-	)
-	if buildErr != nil {
-		return FinalizeResponse{}, apperror.InternalCause(fmt.Errorf("build superadmin user: %w", buildErr))
+	// Super admin-ы users мөр — Google/email-ээр түлхүүрлэнэ, civil_id-г users-д
+	// ТАВИХГҮЙ (нэг хүн eID-ээр admin, Google-оор super admin байж чадахын тулд).
+	// eID баталгаа (civil_id/national_id) болон MFA нь superadmin_accounts-д очно.
+	// username нь "sa_<civil_id>" — админы "eid_<civil_id>" мөрөөс ялгаатай, давхардахгүй.
+	newUser := &domain.User{
+		Username:            "sa_" + sess.CivilID,
+		FirstName:           sess.FirstName,
+		LastName:            sess.LastName,
+		FirstNameEn:         sess.FirstNameEn,
+		LastNameEn:          sess.LastNameEn,
+		Email:               sess.Email,
+		Active:              true,
+		RoleID:              domain.RoleSuperAdmin,
+		KYCLevel:            sess.KYCLevel,
+		GoogleSub:           sess.GoogleSub,
+		GoogleEmail:         sess.Email,
+		GoogleEmailVerified: sess.GoogleEmailVerified,
+		GoogleName:          sess.Name,
+		GooglePicture:       sess.Picture,
 	}
-	newUser.Email = sess.Email
-	newUser.EmailVerified = true
-	newUser.MFAEnabled = true
-	newUser.TOTPSecret = encSecret
-	newUser.RoleID = domain.RoleSuperAdmin
-	newUser.GoogleSub = sess.GoogleSub
-	newUser.GoogleEmail = sess.Email
-	newUser.GoogleEmailVerified = sess.GoogleEmailVerified
-	newUser.GoogleName = sess.Name
-	newUser.GooglePicture = sess.Picture
+	account := &domain.SuperadminAccount{
+		CivilID:       sess.CivilID,
+		NationalID:    sess.NationalID,
+		EmailVerified: true,
+		MFAEnabled:    true,
+		TOTPSecret:    encSecret,
+	}
 
 	// Хэрэглэгч хараахан нэвтрээгүй тул бичилт нь service RLS дор явна.
 	sctx := rls.WithService(ctx)
-	user, upsertErr := uc.users.UpsertSuperAdmin(sctx, newUser)
+	user, upsertErr := uc.users.UpsertSuperAdmin(sctx, newUser, account)
 	if upsertErr != nil {
 		logger.ErrorWithContext(ctx, "superadmin onboarding: upsert амжилтгүй", logger.Fields{
 			"usecase": usecaseName, "method": funcName, "file": fileName, "error": upsertErr.Error(),

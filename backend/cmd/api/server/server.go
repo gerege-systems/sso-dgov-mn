@@ -58,6 +58,7 @@ import (
 	securitypostgres "template/internal/datasources/repositories/postgres/security"
 	sitepostgres "template/internal/datasources/repositories/postgres/site"
 	ssouserpostgres "template/internal/datasources/repositories/postgres/ssouser"
+	superadminaccountpostgres "template/internal/datasources/repositories/postgres/superadminaccount"
 	superadmininvitepostgres "template/internal/datasources/repositories/postgres/superadmininvite"
 	themepostgres "template/internal/datasources/repositories/postgres/theme"
 	userintegrationspostgres "template/internal/datasources/repositories/postgres/userintegrations"
@@ -293,9 +294,10 @@ func NewApp() (*App, error) {
 	var onboardingUC onboarding.Usecase
 	{
 		recoveryRepo := recoverypostgres.NewRecoveryCodeRepository(pool)
+		superadminAcctRepo := superadminaccountpostgres.NewSuperadminAccountRepository(pool)
 		uc, ucErr := onboarding.NewUsecase(
 			googleClient, eidClient, verifier,
-			userRepo, recoveryRepo, superadminInviteRepo,
+			userRepo, recoveryRepo, superadminAcctRepo, superadminInviteRepo,
 			jwtService, redisCache, totpEncKey,
 			onboarding.Config{
 				Issuer:         config.AppConfig.JWTIssuer,

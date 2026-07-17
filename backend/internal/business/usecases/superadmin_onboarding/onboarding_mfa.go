@@ -78,16 +78,20 @@ func (uc *usecase) SuperadminMFA(ctx context.Context, req MFARequest) (MFARespon
 	if userErr != nil {
 		return MFAResponse{}, userErr
 	}
-	// Токен олгогдсоноос хойш эрх/MFA нь өөрчлөгдсөн байж болзошгүй — дахин шалгана.
-	if !user.IsSuperAdmin() || !user.MFAEnabled {
+	// Super admin-ы MFA бүртгэл (TOTP secret) нь superadmin_accounts satellite-д —
+	// эндээс уншина. Токен олгогдсоноос хойш эрх/MFA өөрчлөгдсөн байж болзошгүй тул
+	// super admin эсэх + MFA идэвхтэй эсэхийг дахин шалгана (account алга бол fail-closed).
+	account, acctErr := uc.superadminAccts.Get(sctx, userID)
+	if !user.IsSuperAdmin() || acctErr != nil || !account.MFAEnabled {
 		logger.WarnWithContext(ctx, "superadmin MFA: хэрэглэгч super admin биш эсвэл MFA идэвхгүй", logger.Fields{
 			"usecase": usecaseName, "method": funcName, "file": fileName, "user_id": user.ID,
+			"has_acct_error": acctErr != nil,
 		})
 		_ = uc.redisCache.Del(ctx, mfaKey)
 		return MFAResponse{}, apperror.Forbidden("Энэ нэвтрэлт боломжгүй байна")
 	}
 
-	usedRecovery, verifyErr := uc.verifyMFACode(sctx, user, req.Code)
+	usedRecovery, verifyErr := uc.verifyMFACode(sctx, user, account.TOTPSecret, req.Code)
 	if verifyErr != nil {
 		return MFAResponse{}, verifyErr
 	}
@@ -125,9 +129,9 @@ func (uc *usecase) SuperadminMFA(ctx context.Context, req MFARequest) (MFARespon
 // verifyMFACode нь кодыг эхлээд TOTP-ээр (хадгалсан шифрлэгдсэн secret-ийг
 // тайлж), тэр нь таарахгүй бол нөөц кодоор (SHA-256 тулгалт, нэг удаагийн)
 // шалгана. usedRecovery нь нөөц код хэрэглэгдсэн эсэхийг илэрхийлнэ.
-func (uc *usecase) verifyMFACode(ctx context.Context, user domain.User, code string) (usedRecovery bool, err error) {
-	if user.TOTPSecret != "" {
-		secret, decErr := uc.cipher.Decrypt(user.TOTPSecret)
+func (uc *usecase) verifyMFACode(ctx context.Context, user domain.User, totpSecretEnc, code string) (usedRecovery bool, err error) {
+	if totpSecretEnc != "" {
+		secret, decErr := uc.cipher.Decrypt(totpSecretEnc)
 		if decErr != nil {
 			// Шифр тайлагдахгүй бол түлхүүр солигдсон/өгөгдөл эвдэрсэн —
 			// нөөц кодоор нэвтрэх боломж үлдэнэ тул энд зогсохгүй.

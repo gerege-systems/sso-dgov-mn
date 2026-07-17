@@ -1,9 +1,10 @@
 // Government Template Platform V3.0
 // Gerege Systems Development Team болон Claude AI хамтран бүтээв, 2026.
 
-// MFA хаалтын (gate) unit тест: MFA идэвхтэй super admin нь Google/eID
-// нэвтрэлтээр session АВАХГҮЙ, зөвхөн mfa_token авна; энгийн хэрэглэгч болон
-// MFA-гүй super admin-ий нэвтрэлт огт өөрчлөгдөхгүй.
+// MFA хаалтын (gate) unit тест: super admin БҮР Google/eID нэвтрэлтээр session
+// АВАХГҮЙ, зөвхөн mfa_token авна (MFA бүртгэл нь superadmin_accounts satellite-д
+// тул requiresMFA нь users дээрх флаг уншихгүй — super admin гэдгээр л шийднэ,
+// fail-closed). Энгийн хэрэглэгч/админы нэвтрэлт огт өөрчлөгдөхгүй.
 //
 // Тэмдэглэл: mockery-ийн mock-ууд нь тохируулаагүй дуудлагад унадаг тул
 // "jwt.GenerateTokenPair дуудагдаагүй" гэдэг нь mock-ийг тохируулаагүйгээр
@@ -58,22 +59,23 @@ func TestGoogleLoginSuperadminMFAGate(t *testing.T) {
 		assert.Empty(t, res.Login.RefreshToken)
 	})
 
-	t.Run("MFA-гүй super admin → хэвийн нэвтрэлт (session олгоно)", func(t *testing.T) {
+	t.Run("super admin → MFAEnabled флагаас үл хамааран үргэлж MFA gate (fail-closed)", func(t *testing.T) {
 		f := newFixture(t)
 		user := superadminMFAUser()
-		user.MFAEnabled = false
+		user.MFAEnabled = false // хуучин users-флаг — шинэ загварт requiresMFA үүнийг үл харгалзана
 		f.google.user = &google.User{Sub: "g-sa", Email: user.Email}
 		f.users.On("GetByGoogleSub", mock.Anything, "g-sa").Return(user, nil).Once()
 		f.users.On("LinkGoogleAccount", mock.Anything, user.ID, mock.Anything).Return(nil).Once()
-		f.jwt.On("GenerateTokenPair", user.ID, true, user.RoleID, user.Email).Return(samplePair(), nil).Once()
-		f.redis.On("Set", mock.Anything, "refresh:refresh-jti", "refresh-jti").Return(nil).Once()
-		f.redis.On("Expire", mock.Anything, "refresh:refresh-jti", mock.AnythingOfType("time.Duration")).
+		// Session БИШ — super admin гэдгээр л MFA gate дамжина.
+		f.redis.On("Set", mock.Anything, mock.MatchedBy(isMFAKey), user.ID).Return(nil).Once()
+		f.redis.On("Expire", mock.Anything, mock.MatchedBy(isMFAKey), mock.AnythingOfType("time.Duration")).
 			Return(nil).Once()
 
 		res, err := f.usecase.GoogleLogin(context.Background(), "code", "https://app/cb")
 		require.NoError(t, err)
-		assert.False(t, res.MFARequired)
-		assert.Equal(t, "access-tok", res.Login.AccessToken)
+		assert.True(t, res.MFARequired)
+		assert.NotEmpty(t, res.MFAToken)
+		assert.Empty(t, res.Login.AccessToken)
 	})
 
 	t.Run("Redis алдаа → fail-closed (нэвтрүүлэхгүй)", func(t *testing.T) {

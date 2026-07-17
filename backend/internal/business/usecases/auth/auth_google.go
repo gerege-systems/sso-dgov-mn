@@ -58,9 +58,11 @@ func (uc *usecase) startSuperadminMFA(ctx context.Context, userID string) (strin
 	return token, nil
 }
 
-// requiresMFA нь тухайн хэрэглэгчид MFA gate хэрэгтэй эсэхийг шийднэ: зөвхөн
-// MFA идэвхжүүлсэн super admin. Энгийн хэрэглэгч/админы нэвтрэлт огт өөрчлөгдөхгүй.
-func requiresMFA(user domain.User) bool { return user.IsSuperAdmin() && user.MFAEnabled }
+// requiresMFA нь тухайн хэрэглэгчид MFA gate хэрэгтэй эсэхийг шийднэ: super admin
+// БҮР MFA дамжина (тэдний MFA бүртгэл superadmin_accounts satellite-д байдаг тул
+// users.mfa_enabled уншихгүй; account байхгүй/эвдэрсэн бол challenge унаж fail-closed
+// болно). Энгийн хэрэглэгч/админы нэвтрэлт огт өөрчлөгдөхгүй.
+func requiresMFA(user domain.User) bool { return user.IsSuperAdmin() }
 
 // mintSession нь хэрэглэгчид access+refresh токен хос үүсгэж, refresh-ийг
 // Redis-д тэмдэглэнэ (Login/EIDPoll/Google хуваалцдаг).
