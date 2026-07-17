@@ -5,6 +5,7 @@ package applications
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"template/internal/business/domain"
@@ -13,11 +14,12 @@ import (
 
 // fakeRepo нь ApplicationRepository-ийн санах-ой хувилбар (тест).
 type fakeRepo struct {
-	created domain.Application
-	scopes  []string
+	created  domain.Application
+	scopes   []string
+	listApps []domain.Application
 }
 
-func (f *fakeRepo) List(context.Context) ([]domain.Application, error) { return nil, nil }
+func (f *fakeRepo) List(context.Context) ([]domain.Application, error) { return f.listApps, nil }
 func (f *fakeRepo) Get(_ context.Context, id string) (domain.Application, error) {
 	a := f.created
 	a.ID = id
@@ -40,12 +42,16 @@ func (f *fakeRepo) ServiceScopes(context.Context, []string) ([]string, error) {
 
 // fakeHydra нь hydraClients-ийн тест хувилбар — сүүлд илгээсэн body-г хадгална.
 type fakeHydra struct {
-	lastCreate hydra.ClientCreate
-	getErr     error
+	lastCreate  hydra.ClientCreate
+	getErr      error
+	createCount int
+	createdIDs  []string
 }
 
 func (h *fakeHydra) CreateClient(_ context.Context, b hydra.ClientCreate) (*hydra.ClientCreate, error) {
 	h.lastCreate = b
+	h.createCount++
+	h.createdIDs = append(h.createdIDs, b.ClientID)
 	out := b
 	out.ClientSecret = "s3cr3t-echoed"
 	return &out, nil
@@ -109,6 +115,55 @@ func TestCreateWebRequiresRedirectAndBaseScopes(t *testing.T) {
 	}
 	if len(fh.lastCreate.RedirectURIs) != 1 {
 		t.Fatalf("web app should carry its redirect_uri, got %v", fh.lastCreate.RedirectURIs)
+	}
+}
+
+func TestReconcileClientsProvisionsSeedRPsOnly(t *testing.T) {
+	repo := &fakeRepo{
+		scopes: []string{"svc:eid-sign"},
+		listApps: []domain.Application{
+			{ClientID: "template-dgov-mn", Name: "template.dgov.mn", AppType: "web", CreatedBy: "seed-rp",
+				RedirectURIs: []string{"https://template.dgov.mn/auth/callback"}, ServiceIDs: []string{"svc-1"}},
+			{ClientID: "developer-dgov-mn", Name: "developer.dgov.mn", AppType: "web", CreatedBy: "seed-rp",
+				RedirectURIs: []string{"https://developer.dgov.mn/auth/callback"}},
+			{ClientID: "app-user-made", Name: "user app", AppType: "m2m", CreatedBy: ""}, // UI-аар үүссэн — алгасна
+		},
+	}
+	// GetClient нь 404 → Hydra client дутуу (тул reconcile үүсгэнэ).
+	fh := &fakeHydra{getErr: errors.New("hydra admin GET /admin/clients/x: 404 Not Found")}
+	uc := NewUsecase(repo, fh)
+
+	n, err := uc.ReconcileClients(context.Background())
+	if err != nil {
+		t.Fatalf("ReconcileClients: %v", err)
+	}
+	if n != 2 {
+		t.Fatalf("expected 2 seed-rp clients provisioned, got %d", n)
+	}
+	if len(fh.createdIDs) != 2 || fh.createdIDs[0] != "template-dgov-mn" {
+		t.Fatalf("should provision the two seeded RPs by their stable client_ids, got %v", fh.createdIDs)
+	}
+	// UI-аар үүссэн (created_by='') апп-д хүрэхгүй.
+	for _, id := range fh.createdIDs {
+		if id == "app-user-made" {
+			t.Fatal("must not re-provision non-seed applications")
+		}
+	}
+}
+
+func TestReconcileClientsIdempotentWhenClientExists(t *testing.T) {
+	repo := &fakeRepo{listApps: []domain.Application{
+		{ClientID: "template-dgov-mn", Name: "template.dgov.mn", AppType: "web", CreatedBy: "seed-rp",
+			RedirectURIs: []string{"https://template.dgov.mn/auth/callback"}},
+	}}
+	// getErr == nil → GetClient амжилттай → client бий → алгасна.
+	fh := &fakeHydra{}
+	n, err := NewUsecase(repo, fh).ReconcileClients(context.Background())
+	if err != nil {
+		t.Fatalf("ReconcileClients: %v", err)
+	}
+	if n != 0 || fh.createCount != 0 {
+		t.Fatalf("existing client must be skipped, got n=%d createCount=%d", n, fh.createCount)
 	}
 }
 

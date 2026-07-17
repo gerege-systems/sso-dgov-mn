@@ -353,6 +353,10 @@ func NewApp() (*App, error) {
 	var applicationsUC applicationsuc.Usecase
 	if hydraAdmin != nil {
 		applicationsUC = applicationsuc.NewUsecase(applicationspostgres.NewApplicationRepository(pool), hydraAdmin)
+		// Bootstrap: seed хийсэн RP overlay мөрүүдэд (template.dgov.mn,
+		// developer.dgov.mn) Hydra OAuth2 client дутуу байвал үүсгэнэ — RP-ууд
+		// функциональ болно. Idempotent; Hydra түр бэлэн бус бол warn-лоод үргэлжилнэ.
+		bootstrapRPApplications(ctx, applicationsUC)
 	}
 
 	// API Route-ууд
@@ -505,6 +509,21 @@ func (a *App) Run() (err error) {
 // дор ажиллана (users_service бодлого бүх мөрд хандана). Best-effort: хэрэглэгч
 // байхгүй/аль хэдийн super admin/алдаа гарвал boot-ийг эвдэлгүй warning бичнэ.
 // migration ажиллаагүй (roles(4) байхгүй) орчинд ч boot зогсохгүй.
+// bootstrapRPApplications нь seed хийсэн RP overlay мөрүүдэд Hydra OAuth2 client
+// дутуу байвал үүсгэж, RP-ууд (template.dgov.mn, developer.dgov.mn)-ыг функциональ
+// болгоно. Idempotent (байгааг алгасна) ба non-fatal (Hydra бэлэн бус бол warn).
+func bootstrapRPApplications(ctx context.Context, uc applicationsuc.Usecase) {
+	log := logger.WithFields(logger.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
+	n, err := uc.ReconcileClients(ctx)
+	if err != nil {
+		log.Warnf("RP bootstrap: OAuth client-уудыг тулгаж чадсангүй (Hydra бэлэн бус байж болзошгүй; дараагийн эхлүүлэлтэд дахин оролдоно): %v", err)
+		return
+	}
+	if n > 0 {
+		log.Infof("RP bootstrap: %d RP-д OAuth2 client үүсгэлээ (secret-ыг UI-аас rotate-оор авна)", n)
+	}
+}
+
 func bootstrapSuperAdmin(ctx context.Context, repo repointerface.UserRepository, email string) {
 	email = domain.NormalizeEmail(email)
 	if email == "" {

@@ -158,6 +158,45 @@ func (u *usecase) SetServices(ctx context.Context, id string, serviceIDs []strin
 	return u.repo.Get(ctx, id)
 }
 
+// seedRPMarker нь migration-аар seed хийсэн RP overlay мөрийг тэмдэглэнэ
+// (32_real_gateway_services). Bootstrap ЗӨВХӨН эдгээрт Hydra client үүсгэнэ.
+const seedRPMarker = "seed-rp"
+
+// ReconcileClients нь seed хийсэн RP overlay мөрүүдийн Hydra client дутуу байвал
+// үүсгэнэ (startup дээр нэг удаа). Байгаа client-ыг алгасна (idempotent); UI-аас
+// устгасан RP-д мөр байхгүй тул дахин үүсэхгүй. Гарын үсэг зурах secret нь Hydra-д
+// үүснэ; админ UI-аас "rotate secret"-ээр авна.
+func (u *usecase) ReconcileClients(ctx context.Context) (int, error) {
+	apps, err := u.repo.List(ctx)
+	if err != nil {
+		return 0, err
+	}
+	created := 0
+	for _, app := range apps {
+		if app.CreatedBy != seedRPMarker {
+			continue
+		}
+		if _, err := u.hydra.GetClient(ctx, app.ClientID); err == nil {
+			continue // Hydra client аль хэдийн бий
+		} else if !isNotFound(err) {
+			return created, apperror.InternalCause(err)
+		}
+		scopes, err := u.scopesFor(ctx, app.AppType, app.ServiceIDs)
+		if err != nil {
+			return created, err
+		}
+		secret := ""
+		if !domain.AppIsPublic(app.AppType) {
+			secret = randomToken(40)
+		}
+		if _, err := u.hydra.CreateClient(ctx, buildClient(app, scopes, secret)); err != nil {
+			return created, apperror.InternalCause(fmt.Errorf("reconcile client %s: %w", app.ClientID, err))
+		}
+		created++
+	}
+	return created, nil
+}
+
 // syncClient нь апп-ын desired state-ыг Hydra client руу бичнэ. Hydra client
 // байхгүй (demo/seed апп) бол чимээгүй алгасна — overlay-only.
 func (u *usecase) syncClient(ctx context.Context, app domain.Application, scopes []string, secret string) error {
