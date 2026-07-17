@@ -313,3 +313,13 @@ type SecurityEventRepository interface {
 	// List нь event-үүдийг received_at буурахаар хуудаслан буцаана (admin).
 	List(ctx context.Context, limit, offset int) ([]SecurityEventRecord, error)
 }
+
+// SiteRepository нь сайтын нийтийн харагдацын default (site_appearance) ганц
+// мөрийг унших/шинэчлэхийг хариуцна. Per-user биш нийтийн config тул RLS-гүй;
+// app зөвхөн UPDATE хийдэг (мөр migration-д seed хийгддэг).
+type SiteRepository interface {
+	// GetAppearance нь одоогийн харагдацын default-ыг буцаана.
+	GetAppearance(ctx context.Context) (domain.SiteAppearance, error)
+	// SetAppearance нь харагдацын default-ыг шинэчилнэ (UPDATE-only).
+	SetAppearance(ctx context.Context, a domain.SiteAppearance) error
+}

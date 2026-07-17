@@ -34,6 +34,7 @@ import (
 	"template/internal/business/usecases/rbac"
 	"template/internal/business/usecases/security"
 	"template/internal/business/usecases/sign"
+	siteuc "template/internal/business/usecases/site"
 	"template/internal/business/usecases/sso"
 	"template/internal/business/usecases/superadmin"
 	"template/internal/business/usecases/users"
@@ -50,6 +51,7 @@ import (
 	orgstamppostgres "template/internal/datasources/repositories/postgres/orgstamp"
 	rbacpostgres "template/internal/datasources/repositories/postgres/rbac"
 	securitypostgres "template/internal/datasources/repositories/postgres/security"
+	sitepostgres "template/internal/datasources/repositories/postgres/site"
 	ssouserpostgres "template/internal/datasources/repositories/postgres/ssouser"
 	userintegrationspostgres "template/internal/datasources/repositories/postgres/userintegrations"
 	userspostgres "template/internal/datasources/repositories/postgres/users"
@@ -259,6 +261,11 @@ func NewApp() (*App, error) {
 	securityRepo := securitypostgres.NewSecurityEventRepository(pool)
 	securityUC := security.NewUsecase(securityRepo)
 
+	// Site appearance — сайтын нийтийн харагдацын default (landing уншина,
+	// admin 'settings.manage'-ээр өөрчилнө). Нийтийн config тул RLS-гүй plain pool.
+	siteRepo := sitepostgres.NewSiteRepository(pool)
+	siteUC := siteuc.NewUsecase(siteRepo)
+
 	// AI pipeline — Gemini REST client + function-calling tools. TTS нь
 	// audio гаргадаг тусдаа model тул өөр client-ээр явна. Repo нь DB-ээс
 	// тохируулдаг prompt давхаргууд + search_knowledge tool-ийн мэдлэгийн сан.
@@ -352,6 +359,7 @@ func NewApp() (*App, error) {
 		routes.NewAIRoute(api, aiUC, authMiddleware, aiRateLimiter).Routes()
 		routes.NewAuditRoute(api, auditUC, authMiddleware).Routes()
 		routes.NewSecurityRoute(api, securityUC, authMiddleware).Routes()
+		routes.NewSiteRoute(api, siteUC, rbacUC, authMiddleware).Routes()
 		routes.NewSignRoute(api, signUC, usersUC, assetsUC, authMiddleware).Routes()
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
 		if providerUC != nil {

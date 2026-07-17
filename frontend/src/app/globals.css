@@ -152,6 +152,24 @@ html[data-theme="dark"][data-accent="amber"] {
   --dan-blue-text:   oklch(80% 0.13 72);
 }
 
+/* Custom accent — админы сонгосон дурын brand hex (--dan-blue-base-г <html>-д
+   inline тавина). hover/active/soft/text хувилбаруудыг color-mix-ээр гаргана
+   (oklab — ойлголтын хувьд жигд). --on-dan-blue цагаан хэвээр. */
+html[data-accent="custom"] {
+  --dan-blue:        var(--dan-blue-base);
+  --dan-blue-hover:  color-mix(in oklab, var(--dan-blue-base), black 12%);
+  --dan-blue-active: color-mix(in oklab, var(--dan-blue-base), black 22%);
+  --dan-blue-soft:   color-mix(in oklab, var(--dan-blue-base), white 88%);
+  --dan-blue-text:   color-mix(in oklab, var(--dan-blue-base), black 10%);
+}
+html[data-theme="dark"][data-accent="custom"] {
+  --dan-blue:        color-mix(in oklab, var(--dan-blue-base), white 18%);
+  --dan-blue-hover:  color-mix(in oklab, var(--dan-blue-base), white 28%);
+  --dan-blue-active: color-mix(in oklab, var(--dan-blue-base), white 38%);
+  --dan-blue-soft:   color-mix(in oklab, var(--dan-blue-base), black 62%);
+  --dan-blue-text:   color-mix(in oklab, var(--dan-blue-base), white 30%);
+}
+
 /* ============================================================================
    Фонт — data-font нь эцсийн --font-display / --font-body-г бүхэлд нь дарж
    бичнэ. Гэр бүлүүд next/font-оор self-host (layout.tsx). Mono тогтмол.
@@ -1863,6 +1881,25 @@ html[lang="en"] .i18n-banner { display: block; }
 .accent-swatch[data-swatch="violet"]  { background: oklch(52% 0.20 292); }
 .accent-swatch[data-swatch="emerald"] { background: oklch(56% 0.14 158); }
 .accent-swatch[data-swatch="amber"]   { background: oklch(58% 0.15 62); }
+/* Custom swatch — сонгоогүй үед солонго conic, сонгосон үед inline hex өнгө. */
+.accent-swatch--custom {
+  background: conic-gradient(from 0deg,
+    oklch(60% 0.2 20), oklch(70% 0.18 90), oklch(65% 0.15 160),
+    oklch(60% 0.2 260), oklch(55% 0.22 320), oklch(60% 0.2 20));
+}
+
+/* Админы харагдац тохиргооны өнгө сонгогч (input[type=color]). */
+.color-input {
+  width: 44px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  cursor: pointer;
+}
+.color-input::-webkit-color-swatch-wrapper { padding: 0; }
+.color-input::-webkit-color-swatch { border: none; border-radius: 4px; }
 
 /* Нэвтрэхээс өмнөх topbar — харагдац цэс + загвар солигчийг зэрэгцүүлнэ */
 .signin-shell__actions { display: flex; align-items: center; gap: 8px; }

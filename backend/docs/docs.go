@@ -145,6 +145,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/site/appearance": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Админ (settings.manage) сайтын нийтийн харагдацыг өөрчилнө. accent нь preset нэр эсвэл '#rrggbb' hex.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Сайтын харагдацын default-ыг шинэчлэх",
+                "parameters": [
+                    {
+                        "description": "Харагдацын шинэ утга",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Буруу утга",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "settings.manage эрх дутуу",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/ai/chat": {
             "post": {
                 "security": [
@@ -2724,6 +2775,38 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/site/appearance": {
+            "get": {
+                "description": "Landing болон нийтийн хуудсанд хэрэглэх нийтийн харагдац (accent · font · style · theme). Нэвтрэлт шаардахгүй.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "site"
+                ],
+                "summary": "Сайтын харагдацын default-ыг унших",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/template_internal_http_datatransfers_responses.SiteAppearanceResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -5427,6 +5510,33 @@ const docTemplate = `{
                 }
             }
         },
+        "template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest": {
+            "type": "object",
+            "required": [
+                "accent",
+                "font",
+                "style",
+                "theme"
+            ],
+            "properties": {
+                "accent": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "font": {
+                    "type": "string",
+                    "maxLength": 16
+                },
+                "style": {
+                    "type": "string",
+                    "maxLength": 16
+                },
+                "theme": {
+                    "type": "string",
+                    "maxLength": 16
+                }
+            }
+        },
         "template_internal_http_datatransfers_requests.SuperadminCreateAdminRequest": {
             "type": "object",
             "required": [
@@ -6154,6 +6264,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "template_internal_http_datatransfers_responses.SiteAppearanceResponse": {
+            "type": "object",
+            "properties": {
+                "accent": {
+                    "type": "string"
+                },
+                "font": {
+                    "type": "string"
+                },
+                "style": {
+                    "type": "string"
+                },
+                "theme": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

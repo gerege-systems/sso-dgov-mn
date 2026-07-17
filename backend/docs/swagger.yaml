@@ -528,6 +528,26 @@ definitions:
     required:
     - email
     type: object
+  template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest:
+    properties:
+      accent:
+        maxLength: 32
+        type: string
+      font:
+        maxLength: 16
+        type: string
+      style:
+        maxLength: 16
+        type: string
+      theme:
+        maxLength: 16
+        type: string
+    required:
+    - accent
+    - font
+    - style
+    - theme
+    type: object
   template_internal_http_datatransfers_requests.SuperadminCreateAdminRequest:
     properties:
       email:
@@ -1012,6 +1032,19 @@ definitions:
       user_id:
         type: string
     type: object
+  template_internal_http_datatransfers_responses.SiteAppearanceResponse:
+    properties:
+      accent:
+        type: string
+      font:
+        type: string
+      style:
+        type: string
+      theme:
+        type: string
+      updated_at:
+        type: string
+    type: object
   template_internal_http_datatransfers_responses.UserResponse:
     properties:
       created_at:
@@ -1157,6 +1190,39 @@ paths:
       security:
       - BearerAuth: []
       summary: AI prompt давхаргыг шинэчлэх
+      tags:
+      - admin
+  /admin/site/appearance:
+    put:
+      consumes:
+      - application/json
+      description: Админ (settings.manage) сайтын нийтийн харагдацыг өөрчилнө. accent
+        нь preset нэр эсвэл '#rrggbb' hex.
+      parameters:
+      - description: Харагдацын шинэ утга
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.SiteAppearanceUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "400":
+          description: Буруу утга
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "403":
+          description: settings.manage эрх дутуу
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Сайтын харагдацын default-ыг шинэчлэх
       tags:
       - admin
   /ai/chat:
@@ -2820,6 +2886,25 @@ paths:
       summary: Гарын үсэг (eID) хадгалах
       tags:
       - users
+  /site/appearance:
+    get:
+      description: Landing болон нийтийн хуудсанд хэрэглэх нийтийн харагдац (accent
+        · font · style · theme). Нэвтрэлт шаардахгүй.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/template_internal_http_datatransfers_responses.SiteAppearanceResponse'
+              type: object
+      summary: Сайтын харагдацын default-ыг унших
+      tags:
+      - site
   /sso/callback:
     post:
       consumes:

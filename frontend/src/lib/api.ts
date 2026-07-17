@@ -171,3 +171,34 @@ export async function fetchMyPermissions(): Promise<string[]> {
   const r = await authedFetch<string[]>('/rbac/me', { method: 'GET' });
   return r.ok && Array.isArray(r.data) ? r.data : [];
 }
+
+/** Сайтын нийтийн харагдацын default (админ тохируулдаг). accent нь preset нэр
+ *  эсвэл '#rrggbb' custom hex. preferences.ts дахь VALID/DEFAULTS-тэй нийцнэ. */
+export interface SiteAppearance {
+  accent: string;
+  font: 'inter' | 'serif' | 'system';
+  style: 'comfortable' | 'compact';
+  theme: 'light' | 'dark' | 'system';
+}
+
+export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
+  accent: 'cobalt',
+  font: 'inter',
+  style: 'comfortable',
+  theme: 'light',
+};
+
+/** GET /site/appearance — нийтийн (auth-гүй) харагдацын default. Landing SSR-д
+ *  <html>-ийн эхний data-* болон bootstrap fallback-д ашиглана. Backend унтарсан
+ *  эсвэл алдаа гарвал template default-ыг буцаана (хуудас хэзээ ч унахгүй). */
+export async function fetchSiteAppearance(): Promise<SiteAppearance> {
+  const r = await backendFetch<Partial<SiteAppearance>>('/site/appearance', { method: 'GET' });
+  if (!r.ok || !r.data) return DEFAULT_SITE_APPEARANCE;
+  const d = r.data;
+  return {
+    accent: typeof d.accent === 'string' ? d.accent : DEFAULT_SITE_APPEARANCE.accent,
+    font: d.font ?? DEFAULT_SITE_APPEARANCE.font,
+    style: d.style ?? DEFAULT_SITE_APPEARANCE.style,
+    theme: d.theme ?? DEFAULT_SITE_APPEARANCE.theme,
+  };
+}
