@@ -73,6 +73,7 @@ const SYSTEMS: NavSystem[] = [
         labelKey: 'group.superadmin',
         items: [
           { href: '/admin/superadmin', labelKey: 'nav.superadminAdmins', icon: Crown, superAdminOnly: true },
+          { href: '/admin/themes', labelKey: 'themes.title', icon: Palette, superAdminOnly: true },
         ],
       },
     ],
@@ -97,7 +98,6 @@ const SYSTEMS: NavSystem[] = [
           { href: '/admin/core', labelKey: 'nav.coreSearch', icon: Search, perm: 'users.manage' },
           { href: '/admin/roles', labelKey: 'nav.roles', icon: ShieldHalf, perm: 'roles.manage' },
           { href: '/admin/settings', labelKey: 'nav.settings', icon: ShieldCheck, perm: 'settings.manage' },
-          { href: '/admin/themes', labelKey: 'themes.title', icon: Palette, perm: 'settings.manage' },
         ],
       },
       {
