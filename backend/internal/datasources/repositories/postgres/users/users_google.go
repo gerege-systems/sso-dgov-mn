@@ -50,6 +50,9 @@ func (r *postgreUserRepository) LinkGoogleAccount(ctx context.Context, userID st
 			       google_email_verified = $4,
 			       google_name = $5,
 			       google_picture = $6,
+			       -- Google холбоход хэрэглэгчийн email хоосон бол gmail хаягаар
+			       -- дүүргэнэ (аль хэдийн email-тэй бол дарж бичихгүй).
+			       email = COALESCE(NULLIF(email, ''), $3),
 			       google_linked_at = COALESCE(google_linked_at, now()),
 			       updated_at = now()
 			 WHERE id = $1 AND deleted_at IS NULL`,
