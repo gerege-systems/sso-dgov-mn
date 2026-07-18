@@ -7,7 +7,7 @@
 [![pgx](https://img.shields.io/badge/pgx-v5-336791.svg)](https://github.com/jackc/pgx)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-The Go backend for **DAN-Government SSO** ([dan.dgov.mn](https://dan.dgov.mn)), an
+The Go backend for **DAN-Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)), an
 eID-based national Single Sign-On built on the **Government Template Platform V3.0**
 stack (Clean Architecture principles). Based on **chi (net/http)** for HTTP,
 **pgx (pgxpool) + PostgreSQL** for data, **Redis + Ristretto** for cache, and
@@ -170,7 +170,7 @@ SSO_NATIVE_CLIENT_ID=            # mobile PKCE public client_id
 
 # OIDC PROVIDER side (DAN as issuer, via Ory Hydra) — provider flows are inert unless set
 HYDRA_ADMIN_URL=http://hydra:4445
-HYDRA_PUBLIC_URL=                # issuer, e.g. https://dan.dgov.mn (empty = provider off)
+HYDRA_PUBLIC_URL=                # issuer, e.g. https://sso.dgov.mn (empty = provider off)
 SSO_STATE_KEY=                   # >= 32 bytes; login/consent state cookie HMAC
 SSO_FIRSTPARTY_CLIENTS=          # CSV client_ids that skip the consent screen
 SSO_ADMIN_API_KEYS=              # CSV bootstrap keys for the /admin surface

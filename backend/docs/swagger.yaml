@@ -467,22 +467,6 @@ definitions:
     - email
     - new_password
     type: object
-  template_internal_http_datatransfers_requests.SSONativeRequest:
-    properties:
-      code:
-        type: string
-      code_verifier:
-        type: string
-      redirect_uri:
-        description: |-
-          RedirectURI нь native client-д бүртгэгдсэн (жишээ
-          geregetemp://oauth2/callback) байх ёстой — code exchange-д яг тааруулна.
-        type: string
-    required:
-    - code
-    - code_verifier
-    - redirect_uri
-    type: object
   template_internal_http_datatransfers_requests.SendOTPRequest:
     properties:
       email:
@@ -2980,85 +2964,6 @@ paths:
       summary: Сайтын харагдацын default-ыг шинэчлэх
       tags:
       - admin
-  /sso/callback:
-    post:
-      consumes:
-      - application/json
-      description: authorize callback-ийн state+code-ийг шалгаж, code-ийг токен болгож
-        солин, иргэнийг sso_sub-ээр upsert хийж, JWT хос олгоно.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: dgov SSO callback
-      tags:
-      - sso
-  /sso/logout:
-    post:
-      consumes:
-      - application/json
-      description: logout ref-ээр (callback-д олгосон) SSO (Hydra) end_session_endpoint
-        URL-ийг байгуулна. BFF browser-ийг тийш чиглүүлж SSO дээрх session-ийг дуусгана.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: dgov SSO logout URL
-      tags:
-      - sso
-  /sso/native:
-    post:
-      consumes:
-      - application/json
-      description: Mobile app (iOS/Android) ASWebAuthenticationSession-ийн PKCE code-ийг
-        public client-ээр (client_secret-гүй, code_verifier-тэй) солин, иргэнийг upsert
-        хийж JWT хос олгоно. State шалгалтгүй (PKCE хамгаална). BFF нь token/refresh_token-ийг
-        httpOnly cookie-д суулгана.
-      parameters:
-      - description: Native PKCE code exchange
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/template_internal_http_datatransfers_requests.SSONativeRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-        "400":
-          description: Missing code/code_verifier
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-        "422":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: dgov SSO native (mobile PKCE) нэвтрэлт
-      tags:
-      - sso
-  /sso/start:
-    post:
-      description: sso.dgov.mn (OIDC) authorize URL-ийг state-тэй буцаана. BFF browser-ийг
-        тийш чиглүүлнэ.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
-      summary: dgov SSO нэвтрэлт эхлүүлэх
-      tags:
-      - sso
   /themes:
     get:
       produces:

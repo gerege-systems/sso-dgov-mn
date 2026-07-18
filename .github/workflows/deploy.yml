@@ -1,4 +1,4 @@
-# Continuous deployment — deploys to the production VPS (dan.dgov.mn) ONLY after
+# Continuous deployment — deploys to the production VPS (sso.dgov.mn) ONLY after
 # the CI workflow succeeds on main, so a red build never ships. Triggered via
 # `workflow_run` (chained after CI) instead of `push`, which is why CI and
 # Deploy no longer start in parallel. The remote step rebuilds/restarts the

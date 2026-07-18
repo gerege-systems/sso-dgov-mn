@@ -35,7 +35,7 @@ export default function OAuthLogoutClient({ challenge }: { challenge: string }) 
       <div>
         <h1 id="logout-title">Та үнэхээр гарах уу?</h1>
         <p className="signin-card__lede" style={{ marginTop: 6, fontSize: 14 }}>
-          Энэ нь таныг dan.dgov.mn-аас гаргаж, холбогдсон үйлчилгээ рүү single-logout сигнал
+          Энэ нь таныг sso.dgov.mn-аас гаргаж, холбогдсон үйлчилгээ рүү single-logout сигнал
           явуулна. Дахин нэвтрэхдээ eID Mongolia аппаараа дахин баталгаажуулна.
         </p>
       </div>

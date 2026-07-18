@@ -2,7 +2,7 @@
 
 > 🌐 [English](ARCHITECTURE.md) · **Монгол**
 
-Энэ баримт нь **DAN-Government SSO** (**dan.dgov.mn** дээр байрлуулсан) — **eID-д
+Энэ баримт нь **DAN-Government SSO** (**sso.dgov.mn** дээр байрлуулсан) — **eID-д
 суурилсан улсын Single Sign-On**-ийн ерөнхий архитектурыг тайлбарлана. Уг систем
 нь **Government Template Platform V3.0** стек дээр бүтээгдсэн. Backend модуль нь
 `template`; стек нь **chi (net/http) + pgx (pgxpool) + PostgreSQL + Redis + Gemini
@@ -524,7 +524,7 @@ go build ./...                 # build
 docker compose up -d --build   # db + redis + migrate (one-off) + api + web
 ```
 
-Health check: `curl http://localhost:8080/health`. dan.dgov.mn топологийг
+Health check: `curl http://localhost:8080/health`. sso.dgov.mn топологийг
 `docs/DEPLOYMENT.md`-ээс үз.
 
 ## Credits & License

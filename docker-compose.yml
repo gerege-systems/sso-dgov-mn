@@ -144,7 +144,7 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  # --- OIDC provider (dan.dgov.mn нь Ory Hydra-г урдаа тавьж SSO болно) ---
+  # --- OIDC provider (sso.dgov.mn нь Ory Hydra-г урдаа тавьж SSO болно) ---
   # Hydra нь жинхэнэ OAuth2/OIDC серверийн үүрэг гүйцэтгэнэ; dan-ийн backend
   # (api) нь login/consent/logout challenge-уудыг зохицуулж, eID-ээр иргэнийг
   # баталгаажуулаад Hydra-д subject-ыг өгнө. Hydra нь тусдаа `hydra` DB

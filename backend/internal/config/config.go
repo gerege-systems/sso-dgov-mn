@@ -79,7 +79,7 @@ type Config struct {
 	// гарын үсэг зурахад ашиглах shared token. dan нь /rp/sign/* дор eidmongolia-
 	// ий signature API-г урдаа тавьж, өөрийн EID_RP_SECRET-ыг нэмж дамжуулна.
 	// Хоосон бол relay идэвхгүй. RP нь энэ token-ыг EID_RP_SECRET болгож,
-	// EID_BASE_URL-аа https://dan.dgov.mn/rp/sign/v3 руу заана (RPUUID нь dan-ийх).
+	// EID_BASE_URL-аа https://sso.dgov.mn/rp/sign/v3 руу заана (RPUUID нь dan-ийх).
 	SignRelayToken string `mapstructure:"SIGN_RELAY_TOKEN"`
 
 	// PDF гарын үсгийн (PAdES) серверийн БАЙНГЫН Document-Signer гэрчилгээ +
@@ -152,27 +152,13 @@ type Config struct {
 	// томилно (API-аар үүсгэдэггүй). Хэрэглэгч эхлээд бүртгүүлсэн байх ёстой.
 	SuperAdminEmail string `mapstructure:"SUPERADMIN_EMAIL"`
 
-	// dgov SSO (sso.dgov.mn, OIDC) — eID-ийн зэрэгцээ 2 дахь нэвтрэлт.
-	// ClientID/Secret хоосон бол SSO урсгал inert (Landing дээр товч харагдахгүй).
-	// RedirectURI нь SSO client-д бүртгэгдсэн callback (жишээ
-	// https://template.dgov.mn/sso/callback) байх ёстой.
-	SSOIssuer       string `mapstructure:"SSO_ISSUER"`
-	SSOClientID     string `mapstructure:"SSO_CLIENT_ID"`
-	SSOClientSecret string `mapstructure:"SSO_CLIENT_SECRET"`
-	SSORedirectURI  string `mapstructure:"SSO_REDIRECT_URI"`
-	SSOScope        string `mapstructure:"SSO_SCOPE"`
-	// SSONativeClientID нь mobile (PKCE, public) урсгалын Hydra client_id —
-	// iOS/Android ASWebAuthenticationSession-ийн code-ийг public client-ээр
-	// солиход хэрэглэгдэнэ (хоосон бол default template-dgov-mn-ios).
-	SSONativeClientID string `mapstructure:"SSO_NATIVE_CLIENT_ID"`
-
-	// --- OIDC PROVIDER тал (dan.dgov.mn нь Ory Hydra-г урдаа тавьж SSO provider
+	// --- OIDC PROVIDER тал (sso.dgov.mn нь Ory Hydra-г урдаа тавьж SSO provider
 	// болно). Дээрх SSO_* нь RP (нэвтрэгч) тал; доорхи HYDRA_*/SSO_ADMIN_* нь
 	// PROVIDER (issuer) тал. ---
 	// HydraAdminURL нь Hydra admin API (client CRUD + login/consent/logout
 	// challenge). Compose дотор http://hydra:4445. Public-д ХЭЗЭЭ Ч гаргаж болохгүй.
 	HydraAdminURL string `mapstructure:"HYDRA_ADMIN_URL"`
-	// HydraPublicURL нь issuer (жишээ https://dan.dgov.mn) — login/consent redirect
+	// HydraPublicURL нь issuer (жишээ https://sso.dgov.mn) — login/consent redirect
 	// байгуулахад ашиглана. Хоосон бол provider урсгал inert.
 	HydraPublicURL string `mapstructure:"HYDRA_PUBLIC_URL"`
 	// SSOStateKey нь login/consent урсгалын transient state cookie HMAC түлхүүр
@@ -277,7 +263,7 @@ func InitializeAppConfig() error {
 	_ = viper.BindEnv("GSPACE_BASE_PATH")
 	_ = viper.BindEnv("GSPACE_QUOTA_BYTES")
 	_ = viper.BindEnv("GSPACE_HOST_KEY")
-	// OIDC PROVIDER тал (dan.dgov.mn нь Hydra-г урдаа тавьж SSO болно) — нууц/
+	// OIDC PROVIDER тал (sso.dgov.mn нь Hydra-г урдаа тавьж SSO болно) — нууц/
 	// орчин-тусгай тул ил bind хийнэ.
 	_ = viper.BindEnv("HYDRA_ADMIN_URL")
 	_ = viper.BindEnv("HYDRA_PUBLIC_URL")
@@ -450,15 +436,6 @@ func applyDefaults() {
 	}
 	if AppConfig.GSpaceQuota == 0 {
 		AppConfig.GSpaceQuota = 2 << 20 // 2 MB
-	}
-	if AppConfig.SSOIssuer == "" {
-		AppConfig.SSOIssuer = "https://sso.dgov.mn"
-	}
-	if AppConfig.SSOScope == "" {
-		AppConfig.SSOScope = "openid profile email"
-	}
-	if AppConfig.SSONativeClientID == "" {
-		AppConfig.SSONativeClientID = "template-dgov-mn-ios"
 	}
 	// OIDC provider тал: Hydra admin URL default нь compose доторх hydra:4445.
 	if AppConfig.HydraAdminURL == "" {

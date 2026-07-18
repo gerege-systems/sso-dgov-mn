@@ -1,7 +1,7 @@
 // eID based AI enabled Government Template Platform V3.0
 // Gerege Systems Development Team болон Claude AI хамтран бүтээв, 2026.
 
-// Package hydra нь dan.dgov.mn-ийг OIDC provider болгож ажиллуулах Ory Hydra-ийн
+// Package hydra нь sso.dgov.mn-ийг OIDC provider болгож ажиллуулах Ory Hydra-ийн
 // admin REST API-ийн ашигладаг хэсгийг stdlib-only байдлаар багцалдаг. Login/
 // consent/logout challenge-уудыг accept/reject хийх, OAuth2 client-уудыг CRUD
 // хийх (developer.dgov.mn апп удирдлага), consent session-уудыг жагсаах/цуцлах,

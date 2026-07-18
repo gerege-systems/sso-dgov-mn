@@ -9,7 +9,7 @@
 
 ## Архитектур
 
-- Апп → `https://dan.dgov.mn/api/*` (BFF) — backend-тэй шууд харьцахгүй.
+- Апп → `https://sso.dgov.mn/api/*` (BFF) — backend-тэй шууд харьцахгүй.
 - Session нь httpOnly cookie (`dgov_access`/`refresh`)-д. `URLSession` +
   `HTTPCookieStorage.shared` нь cookie-г автоматаар хадгалж/илгээнэ.
 - BFF-ийн mutating route `x-dgov-csrf: 1` header шаарддаг (Origin header
@@ -59,5 +59,5 @@ Xcode дотор:
 
 ## Тохиргоо
 
-- Backend хаяг: `APIClient.baseURL` (default `https://dan.dgov.mn`).
+- Backend хаяг: `APIClient.baseURL` (default `https://sso.dgov.mn`).
   Локал BFF-д туршихад `http://localhost:3000` болгож, ATS exception нэмнэ.

@@ -36,7 +36,6 @@ import (
 	"template/internal/business/usecases/security"
 	"template/internal/business/usecases/sign"
 	siteuc "template/internal/business/usecases/site"
-	"template/internal/business/usecases/sso"
 	"template/internal/business/usecases/superadmin"
 	onboarding "template/internal/business/usecases/superadmin_onboarding"
 	themeuc "template/internal/business/usecases/theme"
@@ -57,7 +56,6 @@ import (
 	recoverypostgres "template/internal/datasources/repositories/postgres/recovery"
 	securitypostgres "template/internal/datasources/repositories/postgres/security"
 	sitepostgres "template/internal/datasources/repositories/postgres/site"
-	ssouserpostgres "template/internal/datasources/repositories/postgres/ssouser"
 	superadminaccountpostgres "template/internal/datasources/repositories/postgres/superadminaccount"
 	superadmininvitepostgres "template/internal/datasources/repositories/postgres/superadmininvite"
 	themepostgres "template/internal/datasources/repositories/postgres/theme"
@@ -79,7 +77,6 @@ import (
 	"template/pkg/jwt"
 	"template/pkg/logger"
 	"template/pkg/observability"
-	"template/pkg/oidc"
 	"template/pkg/verify"
 	"template/pkg/xyp"
 
@@ -231,11 +228,6 @@ func NewApp() (*App, error) {
 
 	// Gerege Core (core.dgov.mn) — USER FIND / ORG FIND хайлтын wrap.
 	coreUC := core.NewUsecase(config.AppConfig.CoreAPIBase, config.AppConfig.CoreAPIToken)
-
-	// dgov SSO (sso.dgov.mn, OIDC) — eID-ийн зэрэгцээ 2 дахь нэвтрэлт.
-	ssoClient := oidc.NewClient(config.AppConfig.SSOIssuer, config.AppConfig.SSOClientID, config.AppConfig.SSOClientSecret, config.AppConfig.SSORedirectURI, config.AppConfig.SSOScope)
-	ssoRepo := ssouserpostgres.NewSSOUserRepository(pool)
-	ssoUC := sso.NewUsecase(ssoClient, ssoRepo, jwtService, redisCache, config.AppConfig.SSONativeClientID)
 
 	// Хэрэглэгчийн гуравдагч этгээдийн интеграци (Google Drive/Meet, Dropbox) —
 	// OAuth токеныг шифрлэн хадгална (RLS-тэй per-user хүснэгт).
@@ -391,7 +383,7 @@ func NewApp() (*App, error) {
 	// Уншилтад хамаарахгүй; ~30/мин (burst 15) нь энгийн хэрэглээнд элбэг зайтай.
 	govWriteRateLimiter := middlewares.NewRateLimiter(rate.Limit(30.0/60.0), 15)
 
-	// OIDC provider (dan.dgov.mn = SSO) — Hydra урдаа тавьсан login/consent/logout
+	// OIDC provider (sso.dgov.mn = SSO) — Hydra урдаа тавьсан login/consent/logout
 	// цөм. Зөвхөн Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс
 	// бөгөөс providerUC == nil тул route бүртгэгдэхгүй (inert).
 	var providerUC provideruc.Usecase
@@ -460,7 +452,6 @@ func NewApp() (*App, error) {
 			routes.NewApplicationsRoute(api, applicationsUC, rbacUC, authMiddleware).Routes()
 		}
 		routes.NewCoreRoute(api, coreUC, rbacUC, authMiddleware).Routes()
-		routes.NewSSORoute(api, ssoUC).Routes()
 		routes.NewAdminRoute(api, usersUC, rbacUC, aiUC, authMiddleware).Routes()
 		routes.NewSuperAdminRoute(api, superadminUC, authMiddleware).Routes()
 		// Super admin бүртгэл + MFA — нэвтрээгүй гадаргуу (rate limit + service RLS).
@@ -481,7 +472,7 @@ func NewApp() (*App, error) {
 	})
 
 	// OIDC provider — /admin оператор гадаргуу (RP OAuth2 client бүртгэл/удирдлага
-	// + admin API key). dan.dgov.mn нь Ory Hydra-г урдаа тавьж SSO болно. Зөвхөн
+	// + admin API key). sso.dgov.mn нь Ory Hydra-г урдаа тавьж SSO болно. Зөвхөн
 	// Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс бөгөөс inert.
 	if config.AppConfig.ProviderConfigured() {
 		devAppsStore := devapps.New(pool)
