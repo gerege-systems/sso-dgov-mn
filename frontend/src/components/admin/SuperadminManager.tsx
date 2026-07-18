@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trash2, Loader2, Plus, Save, X, ShieldPlus, Search, IdCard, Mail, Link2, Check } from 'lucide-react';
 import { useT } from '@/lib/lang';
@@ -76,7 +76,12 @@ export default function SuperadminManager({ currentUserId }: Props) {
   const error = actionError || loadError;
 
   const invites = invitesQuery.data ?? null;
-  const onboardLink = typeof window !== 'undefined' ? `${window.location.origin}/superadmin/onboard` : '/superadmin/onboard';
+  // origin-ыг mount-ийн ДАРАА тавина: SSR болон client-ийн эхний render хоёул
+  // relative зам гаргаж hydration зөрүү (React #418)-аас сэргийлнэ; дараа нь
+  // useEffect бүтэн URL-ыг тавьна.
+  const [origin, setOrigin] = useState('');
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+  const onboardLink = `${origin}/superadmin/onboard`;
 
   const reload = async () => {
     await queryClient.invalidateQueries({ queryKey: ['superadmin-admins'] });

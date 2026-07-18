@@ -54,7 +54,7 @@ func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *dom
 			VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5,
 				$6, NULL, true, $7, $8,
 				$9, $10, $11, $12, $13, now(),
-				$14)
+				now())
 			ON CONFLICT (google_sub) WHERE google_sub IS NOT NULL AND deleted_at IS NULL
 			DO UPDATE SET
 				first_name            = EXCLUDED.first_name,
@@ -77,8 +77,7 @@ func (r *postgreUserRepository) UpsertSuperAdmin(ctx context.Context, inDom *dom
 		`,
 			rec.Username, rec.FirstName, rec.LastName, rec.FirstNameEn, rec.LastNameEn,
 			rec.Email, rec.RoleId, rec.KYCLevel,
-			rec.GoogleSub, rec.GoogleEmail, rec.GoogleEmailVerified, rec.GoogleName, rec.GooglePicture,
-			rec.CreatedAt)
+			rec.GoogleSub, rec.GoogleEmail, rec.GoogleEmailVerified, rec.GoogleName, rec.GooglePicture)
 		if qErr != nil {
 			return qErr
 		}
