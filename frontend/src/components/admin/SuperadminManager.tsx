@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash2, Loader2, Plus, Save, X, ShieldPlus, Search, IdCard, Mail, Link2, Check } from 'lucide-react';
+import { Trash2, Loader2, ShieldPlus, Search, IdCard, Mail, Link2, Check } from 'lucide-react';
 import { useT } from '@/lib/lang';
 import { getJSON, sendJSON } from '@/lib/client';
 import { ROLE_SUPERADMIN, roleLabel } from '@/lib/types';
@@ -30,20 +30,16 @@ interface Props {
   currentUserId: string;
 }
 
-const emptyForm = { username: '', email: '', password: '', first_name: '', last_name: '' };
-
 export default function SuperadminManager({ currentUserId }: Props) {
   const { T, lang } = useT();
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState('');
-  const [adding, setAdding] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(emptyForm);
-  const [grantId, setGrantId] = useState('');
 
-  // Register-ээр админ болгох (DAN-д бүртгэлтэй байгаа хэрэглэгч) — Core preview.
+  // Register-ээр админ болгох (DAN-д бүртгэлтэй байгаа хэрэглэгч).
   const [register, setRegister] = useState('');
   const [preview, setPreview] = useState<{ name: string } | null>(null);
+  // registerNote — олдоогүй үеийн НАЙРСАГ мэдэгдэл (улаан алдаа биш).
+  const [registerNote, setRegisterNote] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [promoting, setPromoting] = useState(false);
 
@@ -62,16 +58,8 @@ export default function SuperadminManager({ currentUserId }: Props) {
     queryKey: ['superadmin-invites'],
     queryFn: () => getJSON<Invite[]>('/api/superadmin/invites'),
   });
-  // Эрх олгох боломжтой (админ биш) хэрэглэгчид — /admin/users-ийн эхний хуудас.
-  const usersQuery = useQuery({
-    queryKey: ['superadmin-grantable'],
-    queryFn: () => getJSON<AdminUser[]>('/api/admin/users?limit=200'),
-  });
 
   const admins = adminsQuery.data ?? null;
-  const grantable = (usersQuery.data ?? []).filter(
-    (u) => u.role_id !== ROLE_SUPERADMIN && !(admins ?? []).some((a) => a.id === u.id),
-  );
   const loadError = adminsQuery.isError ? (adminsQuery.error as Error).message || T('superadmin.loadError') : '';
   const error = actionError || loadError;
 
@@ -85,7 +73,6 @@ export default function SuperadminManager({ currentUserId }: Props) {
 
   const reload = async () => {
     await queryClient.invalidateQueries({ queryKey: ['superadmin-admins'] });
-    await queryClient.invalidateQueries({ queryKey: ['superadmin-grantable'] });
   };
 
   // Register-ээр DAN-д БАЙГАА хэрэглэгчийг (eID-ээр нэвтэрсэн) урьдчилан харуулна.
@@ -94,6 +81,7 @@ export default function SuperadminManager({ currentUserId }: Props) {
     const reg = register.trim();
     if (!reg) return;
     setPreview(null);
+    setRegisterNote('');
     setActionError('');
     setPreviewLoading(true);
     try {
@@ -102,9 +90,10 @@ export default function SuperadminManager({ currentUserId }: Props) {
       );
       const name = (rec?.full_name || `${rec?.last_name ?? ''} ${rec?.first_name ?? ''}`).trim();
       if (rec && rec.id) setPreview({ name: name || rec.id });
-      else setActionError(T('superadmin.registerNotFound'));
-    } catch (e) {
-      setActionError((e as Error).message || T('superadmin.registerNotFound'));
+      else setRegisterNote(T('superadmin.registerNotFound'));
+    } catch {
+      // Олдсонгүй (404) эсвэл түр саатал — АЛДАА биш, найрсаг мэдэгдэл харуулна.
+      setRegisterNote(T('superadmin.registerNotFound'));
     } finally {
       setPreviewLoading(false);
     }
@@ -161,32 +150,6 @@ export default function SuperadminManager({ currentUserId }: Props) {
     } catch { /* clipboard байхгүй */ }
   };
 
-  const createAdmin = async () => {
-    setActionError('');
-    setSaving(true);
-    const res = await sendJSON('/api/superadmin/admins', 'POST', form);
-    setSaving(false);
-    if (res.ok) {
-      setForm(emptyForm);
-      setAdding(false);
-      await reload();
-    } else {
-      setActionError(res.message || T('superadmin.actionError'));
-    }
-  };
-
-  const grantAdmin = async () => {
-    if (!grantId) return;
-    setActionError('');
-    const res = await sendJSON(`/api/superadmin/admins/${grantId}/grant`, 'PUT');
-    if (res.ok) {
-      setGrantId('');
-      await reload();
-    } else {
-      setActionError(res.message || T('superadmin.actionError'));
-    }
-  };
-
   const revokeAdmin = async (u: AdminUser) => {
     if (!window.confirm(T('superadmin.revokeConfirm'))) return;
     setActionError('');
@@ -217,7 +180,7 @@ export default function SuperadminManager({ currentUserId }: Props) {
           <input
             className="input mono"
             value={register}
-            onChange={(e) => { setRegister(e.target.value); setPreview(null); }}
+            onChange={(e) => { setRegister(e.target.value); setPreview(null); setRegisterNote(''); }}
             onKeyDown={(e) => { if (e.key === 'Enter') lookupRegister(); }}
             placeholder={T('superadmin.registerPlaceholder')}
             style={{ minWidth: 220, flex: 1 }}
@@ -238,64 +201,10 @@ export default function SuperadminManager({ currentUserId }: Props) {
             </button>
           </div>
         )}
-        <p className="muted" style={{ fontSize: 12, margin: 0 }}>{T('superadmin.byRegisterHint')}</p>
-      </div>
-
-      {/* Шинэ админ үүсгэх + байгаа хэрэглэгчид эрх олгох */}
-      <div className="card" style={{ padding: 16, marginBottom: 16, display: 'grid', gap: 16 }}>
-        {/* Байгаа хэрэглэгчид админ эрх олгох */}
-        <div className="field">
-          <label className="field__label">{T('superadmin.promoteTitle')}</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select className="input" value={grantId} onChange={(e) => setGrantId(e.target.value)} style={{ minWidth: 260 }}>
-              <option value="">{grantable.length ? T('superadmin.promoteSelect') : T('superadmin.noUsers')}</option>
-              {grantable.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {(lang === 'en' ? u.full_name_en : u.full_name)?.trim() || u.username} — {u.email}
-                </option>
-              ))}
-            </select>
-            <button className="btn btn--primary" type="button" onClick={grantAdmin} disabled={!grantId}>
-              <ShieldPlus size={16} strokeWidth={2} />
-              <span>{T('superadmin.promote')}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Шинэ админ бүртгэл үүсгэх */}
-        {!adding ? (
-          <button className="btn btn--secondary" type="button" onClick={() => setAdding(true)} style={{ justifySelf: 'start' }}>
-            <Plus size={16} strokeWidth={2} />
-            <span>{T('superadmin.addAdmin')}</span>
-          </button>
-        ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            <label className="field__label">{T('superadmin.createTitle')}</label>
-            <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-              <input className="input" placeholder={T('superadmin.username')} value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })} />
-              <input className="input" type="email" placeholder={T('superadmin.email')} value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              <input className="input" type="password" placeholder={T('superadmin.password')} value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} />
-              <input className="input" placeholder={T('superadmin.lastName')} value={form.last_name}
-                onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
-              <input className="input" placeholder={T('superadmin.firstName')} value={form.first_name}
-                onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn--primary" type="button" onClick={createAdmin}
-                disabled={saving || !form.username || !form.email || form.password.length < 8}>
-                {saving ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <Save size={16} strokeWidth={2} />}
-                <span>{T('common.create')}</span>
-              </button>
-              <button className="btn btn--ghost" type="button" onClick={() => { setAdding(false); setForm(emptyForm); }}>
-                <X size={16} strokeWidth={2} />
-                <span>{T('common.cancel')}</span>
-              </button>
-            </div>
-          </div>
+        {registerNote && (
+          <p className="muted" style={{ fontSize: 13, margin: 0 }} role="status">{registerNote}</p>
         )}
+        <p className="muted" style={{ fontSize: 12, margin: 0 }}>{T('superadmin.byRegisterHint')}</p>
       </div>
 
       {adminsQuery.isPending && (

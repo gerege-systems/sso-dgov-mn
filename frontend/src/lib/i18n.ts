@@ -129,7 +129,7 @@ export const dict = {
     'superadmin.byRegisterTitle': 'Регистрээр админ болгох',
     'superadmin.registerPlaceholder': 'Регистрийн дугаар (ж: УБ99123456)',
     'superadmin.lookup': 'Хайх',
-    'superadmin.registerNotFound': 'Энэ регистрээр хэрэглэгч олдсонгүй.',
+    'superadmin.registerNotFound': 'Энэ регистрийн дугаараар DAN-д бүртгэлтэй хэрэглэгч алга. Тухайн хүн эхлээд eID-ээр нэвтэрсэн байх шаардлагатай.',
     'superadmin.makeAdmin': 'Админ болгох',
     'superadmin.byRegisterHint': 'DAN-д бүртгэлтэй байгаа хэрэглэгчийг регистрээр нь админ эрхтэй болгоно.',
     // Superadmin онбординг урилга
@@ -743,7 +743,7 @@ export const dict = {
     'superadmin.byRegisterTitle': 'Make admin by register number',
     'superadmin.registerPlaceholder': 'Register number (e.g. UB99123456)',
     'superadmin.lookup': 'Look up',
-    'superadmin.registerNotFound': 'No user found for this register number.',
+    'superadmin.registerNotFound': 'No DAN-registered user for this register number. The person must sign in via eID first.',
     'superadmin.makeAdmin': 'Make admin',
     'superadmin.byRegisterHint': 'Grant admin rights to an existing DAN-registered user by their register number.',
     // Superadmin onboarding invites
