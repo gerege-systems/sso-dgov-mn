@@ -110,6 +110,24 @@ func (h Handler) AddAdminByRegister(w http.ResponseWriter, r *http.Request) erro
 	return v1.NewSuccessResponse(w, r, http.StatusOK, "admin added successfully", responses.FromAdminUser(res.User))
 }
 
+// LookupByRegister godoc
+// @Summary      Регистрээр хэрэглэгч харах (preview)
+// @Description  Регистрийн дугаараар DAN-д БАЙГАА хэрэглэгчийг олж буцаана (эрх олгохгүй, зөвхөн нэр/эрхийг урьдчилан харах). Зөвхөн super admin.
+// @Tags         superadmin
+// @Produce      json
+// @Security     BearerAuth
+// @Param        register  query  string  true  "Регистрийн дугаар"
+// @Success      200  {object}  v1.BaseResponse  "User found"
+// @Failure      404  {object}  v1.BaseResponse  "Register not registered in DAN"
+// @Router       /v1/superadmin/admins/by-register [get]
+func (h Handler) LookupByRegister(w http.ResponseWriter, r *http.Request) error {
+	res, err := h.usecase.LookupByRegister(r.Context(), r.URL.Query().Get("register"))
+	if err != nil {
+		return v1.RespondWithError(w, r, err)
+	}
+	return v1.NewSuccessResponse(w, r, http.StatusOK, "user found", responses.FromAdminUser(res.User))
+}
+
 // GrantAdmin godoc
 // @Summary      Хэрэглэгчид админ эрх олгох
 // @Description  Байгаа хэрэглэгчийг admin болгоно. Зөвхөн super admin хандана.

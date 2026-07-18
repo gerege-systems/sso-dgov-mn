@@ -35,6 +35,10 @@ type Usecase interface {
 	// хэрэглэгч байхгүй бол apperror.NotFound ("эхлээд eID-ээр нэвтэрсэн байх
 	// шаардлагатай") — шинэ хэрэглэгч ҮҮСГЭХГҮЙ. Промоушн хийсэн хэрэглэгчийг буцаана.
 	AddAdminByRegister(ctx context.Context, req AddAdminByRegisterRequest) (CreateAdminResponse, error)
+	// LookupByRegister нь регистрийн дугаараар DAN-д БАЙГАА хэрэглэгчийг олж
+	// буцаана (эрх олгохоос ӨМНӨХ preview — нэр/эрхийг харуулна). Промоушн хийхгүй.
+	// Байхгүй бол apperror.NotFound.
+	LookupByRegister(ctx context.Context, register string) (CreateAdminResponse, error)
 	// RevokeAdmin нь admin-ийн эрхийг хасч, энгийн хэрэглэгч (RoleUser) болгоно.
 	// Зорилтот нь яг RoleAdmin байх ёстой (super admin-г хасахгүй) бөгөөд
 	// дуудагч өөрийгөө хасаж болохгүй.

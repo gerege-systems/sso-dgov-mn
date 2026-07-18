@@ -38,6 +38,7 @@ func (rt *superadminRoute) Routes() {
 		r.Use(middlewares.RequireSuperAdmin())
 		r.Get("/admins", v1.Wrap(rt.handler.ListAdmins))
 		r.Post("/admins", v1.Wrap(rt.handler.CreateAdmin))
+		r.Get("/admins/by-register", v1.Wrap(rt.handler.LookupByRegister))
 		r.Post("/admins/by-register", v1.Wrap(rt.handler.AddAdminByRegister))
 		r.Put("/admins/{id}/grant", v1.Wrap(rt.handler.GrantAdmin))
 		r.Delete("/admins/{id}", v1.Wrap(rt.handler.RevokeAdmin))
