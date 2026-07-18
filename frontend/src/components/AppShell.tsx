@@ -199,6 +199,10 @@ export default function AppShell({ user, children }: Props) {
       .filter((g) => g.items.length > 0);
   const systems = SYSTEMS.filter((s) => {
     if (s.superAdminOnly && !isSuper) return false;
+    // Super admin нэвтэрсэн бол ЗӨВХӨН Super Admin системийг харуулна — бусад бүх
+    // системийг (Admin/Manager/Хэрэглэгч) нууна. (Профайл/гарах нь баруун дээд
+    // UserMenu-д хэвээр байна.)
+    if (isSuper && !s.superAdminOnly) return false;
     if (s.adminOnly && !isAdmin) return false;
     return visibleGroups(s).length > 0;
   });
