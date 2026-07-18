@@ -5,24 +5,53 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileSignature, LogIn } from 'lucide-react';
+import { FileSignature, LogIn, ListChecks, ChevronDown, ChevronRight } from 'lucide-react';
 import { useT } from '@/lib/lang';
 import { formatTS } from '@/lib/format';
 import { pkiGet, type PkiActItem } from '@/lib/pki';
 
 // Иргэний eID үйл ажиллагааны (нэвтрэлт + гарын үсэг) лог. Backend
-// /api/me/eid/activity (limit/offset дэмждэг). Шүүлтүүр: бүгд/нэвтрэлт/гарын үсэг.
+// /api/me/eid/activity (limit/offset + бодит нийт тоо counts + activity
+// service-ийн нэмэлт талбарууд extra дэмждэг). Нэгдсэн тоо (tiles) + шүүлтүүр +
+// олон баганат хүснэгт; мөр бүрийг задлан ирсэн БҮХ талбарыг харуулна.
 type Filter = 'all' | 'AUTHENTICATION' | 'SIGNATURE';
+type ActResponse = {
+  sessions: PkiActItem[];
+  total: number;
+  counts?: { authentication: number; signature: number };
+};
 const PAGE = 20;
+const isSign = (f: string) => f === 'SIGNATURE';
+
+// camelCase / snake_case түлхүүрийг уншимжтай шошго болгоно (clientIp → Client ip).
+function humanizeKey(k: string): string {
+  const s = k
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Динамик утгыг эмхэтгэн харуулна (объект/массив → JSON, огноо → formatTS).
+function renderVal(k: string, v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—';
+  if (typeof v === 'boolean') return v ? '✓' : '✗';
+  if (typeof v === 'object') return JSON.stringify(v);
+  const s = String(v);
+  // ISO огноо төстэй бол хүн уншихаар форматлана.
+  if (/(at|time|date|timestamp)$/i.test(k) && /^\d{4}-\d{2}-\d{2}T/.test(s)) return formatTS(s);
+  return s;
+}
 
 export default function EidLogsView({ show }: { show: boolean }) {
-  const { T, lang } = useT();
+  const { T } = useT();
   const [filter, setFilter] = useState<Filter>('all');
   const [limit, setLimit] = useState(PAGE);
+  const [open, setOpen] = useState<Set<string>>(new Set());
 
   const q = useQuery({
     queryKey: ['eid-pki-logs', limit],
-    queryFn: () => pkiGet<{ sessions: PkiActItem[]; total: number }>(`/api/me/eid/activity?limit=${limit}&offset=0`),
+    queryFn: () => pkiGet<ActResponse>(`/api/me/eid/activity?limit=${limit}&offset=0`),
     enabled: show,
   });
 
@@ -30,21 +59,21 @@ export default function EidLogsView({ show }: { show: boolean }) {
   const forbidden = q.data?.status === 403;
   const all = q.data?.data?.sessions ?? [];
   const total = q.data?.data?.total ?? all.length;
+  // Бодит нийт тоо backend-ээс (counts); байхгүй бол ачаалагдсан мөрөөс тооцно.
+  const counts = q.data?.data?.counts;
+  const authCount = counts?.authentication ?? all.filter((a) => !isSign(a.flow)).length;
+  const signCount = counts?.signature ?? all.filter((a) => isSign(a.flow)).length;
   const rows = all.filter((a) => (filter === 'all' ? true : a.flow === filter));
 
-  // Төрлөөр (Нэвтрэлт / Гарын үсэг) бүлэглэнэ. filter='all' үед хоёулаа, эс бөгөөс
-  // сонгосон нэг бүлэг. Хоосон бүлгийг харуулахгүй.
-  const groups: { flow: 'AUTHENTICATION' | 'SIGNATURE'; items: PkiActItem[] }[] =
-    filter === 'all'
-      ? (['AUTHENTICATION', 'SIGNATURE'] as const)
-          .map((f) => ({ flow: f, items: rows.filter((a) => a.flow === f) }))
-          .filter((g) => g.items.length > 0)
-      : [{ flow: filter as 'AUTHENTICATION' | 'SIGNATURE', items: rows }];
-
-  const isSign = (f: string) => f === 'SIGNATURE';
   const flowLabel = (f: string) => (isSign(f) ? T('eid.logs.sign') : T('eid.logs.auth'));
   // Нэвтрэлт — cobalt/цэнхэр, Гарын үсэг — ногоон; icon-оор ялгана.
   const flowColor = (f: string) => (isSign(f) ? 'var(--success, #16a34a)' : 'var(--accent, #6366f1)');
+  const toggle = (k: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
 
   if (forbidden) {
     return <section className="card"><p className="muted" style={{ padding: '4px 2px' }}>{T('me.pki.pending')}</p></section>;
@@ -52,6 +81,24 @@ export default function EidLogsView({ show }: { show: boolean }) {
 
   return (
     <>
+      <div className="pki-tiles" style={{ marginBottom: 16 }}>
+        <div className="pki-tile">
+          <div className="pki-tile__icon"><ListChecks size={18} /></div>
+          <div className="pki-tile__value">{total}</div>
+          <div className="pki-tile__label">{T('eid.logs.total')}</div>
+        </div>
+        <div className="pki-tile">
+          <div className="pki-tile__icon" style={{ color: 'var(--accent, #6366f1)' }}><LogIn size={18} /></div>
+          <div className="pki-tile__value">{authCount}</div>
+          <div className="pki-tile__label">{T('eid.logs.auth')}</div>
+        </div>
+        <div className="pki-tile pki-tile--success">
+          <div className="pki-tile__icon"><FileSignature size={18} /></div>
+          <div className="pki-tile__value">{signCount}</div>
+          <div className="pki-tile__label">{T('eid.logs.sign')}</div>
+        </div>
+      </div>
+
       <div className="segmented segmented--tall" role="tablist" style={{ display: 'flex', marginBottom: 16 }}>
         {(['all', 'AUTHENTICATION', 'SIGNATURE'] as Filter[]).map((f) => (
           <button key={f} type="button" role="tab" aria-selected={filter === f}
@@ -62,60 +109,101 @@ export default function EidLogsView({ show }: { show: boolean }) {
         ))}
       </div>
 
-      <section className="card" aria-label={T('eid.logs.title')}>
-        <div className="card__head card__head--with-sub">
-          <div className="card__title"><h2>{T('eid.logs.title')}</h2></div>
-          <span className="card__sub">{total} {T('eid.logs.records')}</span>
-        </div>
-        {rows.length === 0 ? (
-          <p className="muted" style={{ padding: '4px 2px' }}>{T('me.pki.none')}</p>
-        ) : (
-          <div style={{ display: 'grid', gap: 18 }}>
-            {groups.map((g) => {
-              const Icon = isSign(g.flow) ? FileSignature : LogIn;
-              const color = flowColor(g.flow);
+      <div className="card" style={{ padding: 0, overflowX: 'auto' }} aria-label={T('eid.logs.title')}>
+        <table className="dtable">
+          <thead>
+            <tr>
+              <th style={{ width: 32 }}></th>
+              <th>{T('eid.logs.col.type')}</th>
+              <th>{T('eid.logs.col.detail')}</th>
+              <th>{T('eid.logs.col.session')}</th>
+              <th>{T('eid.logs.col.outcome')}</th>
+              <th>{T('eid.logs.col.time')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((a, i) => {
+              const Icon = isSign(a.flow) ? FileSignature : LogIn;
+              const color = flowColor(a.flow);
+              const rowKey = a.session_id || `row-${i}`;
+              const expanded = open.has(rowKey);
+              // Мөрийн БҮХ талбар: танигдсан + activity service-ийн нэмэлт (extra).
+              const fields: [string, unknown][] = [
+                [T('eid.logs.col.type'), flowLabel(a.flow)],
+                [T('eid.logs.col.detail'), a.doc_text],
+                [T('eid.logs.col.session'), a.session_id],
+                [T('eid.logs.col.outcome'), a.outcome],
+                [T('eid.logs.col.time'), a.timestamp],
+                ...Object.entries(a.extra ?? {}).map(([k, v]) => [humanizeKey(k), v] as [string, unknown]),
+              ];
               return (
-                <div key={g.flow} style={{ display: 'grid', gap: 6 }}>
-                  {/* Бүлгийн толгой — төрөл + icon + тоо */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 2px 6px' }}>
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      width: 26, height: 26, borderRadius: 8, color, background: 'color-mix(in oklab, currentColor 14%, transparent)',
-                    }}>
-                      <Icon size={15} />
-                    </span>
-                    <span style={{ fontWeight: 600 }}>{flowLabel(g.flow)}</span>
-                    <span className="badge badge--neutral" style={{ marginLeft: 2 }}>{g.items.length}</span>
-                  </div>
-                  <div className="pki-list">
-                    {g.items.map((a, i) => (
-                      <div key={a.session_id || i} className="pki-row" style={{ alignItems: 'flex-start' }}>
-                        <Icon size={15} style={{ color, marginTop: 2, flexShrink: 0 }} />
-                        <div className="pki-row__main" style={{ display: 'grid', gap: 2, minWidth: 0 }}>
-                          <span style={{ fontWeight: 500 }}>
-                            {a.doc_text || (lang === 'en' ? flowLabel(g.flow) : flowLabel(g.flow))}
-                          </span>
-                          <span className="muted mono" style={{ fontSize: 11 }}>
-                            {flowLabel(g.flow)}{a.session_id ? ` · ${a.session_id.slice(0, 8)}` : ''}
-                          </span>
+                <React.Fragment key={rowKey}>
+                  <tr onClick={() => toggle(rowKey)} style={{ cursor: 'pointer' }}>
+                    <td style={{ paddingRight: 0, color: 'var(--muted)' }}>
+                      <button type="button" className="icon-btn" aria-label={T('eid.logs.expand')}
+                        aria-expanded={expanded}
+                        onClick={(e) => { e.stopPropagation(); toggle(rowKey); }}
+                        style={{ background: 'none', border: 0, padding: 2, cursor: 'pointer', color: 'inherit', display: 'inline-flex' }}>
+                        {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      </button>
+                    </td>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 26, height: 26, borderRadius: 8, color,
+                          background: 'color-mix(in oklab, currentColor 14%, transparent)', flexShrink: 0,
+                        }}>
+                          <Icon size={15} />
+                        </span>
+                        <span style={{ fontWeight: 500 }}>{flowLabel(a.flow)}</span>
+                      </span>
+                    </td>
+                    <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      title={a.doc_text || flowLabel(a.flow)}>
+                      {a.doc_text || flowLabel(a.flow)}
+                    </td>
+                    <td className="mono" style={{ fontSize: 12 }}>{a.session_id ? a.session_id.slice(0, 8) : '—'}</td>
+                    <td><span className={`badge badge--${a.outcome === 'OK' ? 'success' : 'warning'}`}>{a.outcome}</span></td>
+                    <td className="mono" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{a.timestamp ? formatTS(a.timestamp) : '—'}</td>
+                  </tr>
+                  {expanded && (
+                    <tr>
+                      <td colSpan={6} style={{ background: 'var(--surface-2)', padding: '12px 16px' }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 8 }}>
+                          {T('eid.logs.details')}
                         </div>
-                        <span className={`badge badge--${a.outcome === 'OK' ? 'success' : 'warning'}`}>{a.outcome}</span>
-                        {a.timestamp && <span className="pki-row__meta mono">{formatTS(a.timestamp)}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                        <dl style={{
+                          display: 'grid', gridTemplateColumns: 'minmax(120px, max-content) 1fr',
+                          gap: '6px 16px', margin: 0, fontSize: 13,
+                        }}>
+                          {fields.map(([label, val], j) => (
+                            <React.Fragment key={j}>
+                              <dt className="muted" style={{ fontWeight: 500 }}>{label}</dt>
+                              <dd className="mono" style={{ margin: 0, wordBreak: 'break-word' }}>{renderVal(String(label), val)}</dd>
+                            </React.Fragment>
+                          ))}
+                        </dl>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
+            {rows.length === 0 && (
+              <tr><td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 20 }}>{T('me.pki.none')}</td></tr>
+            )}
+          </tbody>
+        </table>
+        {all.length < total && (
+          <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
+            <button className="btn btn--secondary btn--block" type="button"
+              onClick={() => setLimit((l) => l + PAGE)} disabled={q.isFetching}>
+              {q.isFetching ? T('users.loading') : T('common.next')}
+            </button>
           </div>
         )}
-        {all.length < total && (
-          <button className="btn btn--secondary btn--block" type="button" style={{ marginTop: 12 }}
-            onClick={() => setLimit((l) => l + PAGE)} disabled={q.isFetching}>
-            {q.isFetching ? T('users.loading') : T('common.next')}
-          </button>
-        )}
-      </section>
+      </div>
     </>
   );
 }

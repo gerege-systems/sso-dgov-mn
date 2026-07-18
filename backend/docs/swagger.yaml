@@ -739,6 +739,10 @@ definitions:
     properties:
       doc_text:
         type: string
+      extra:
+        additionalProperties: {}
+        description: activity service-ийн нэмэлт талбарууд
+        type: object
       flow:
         type: string
       outcome:
