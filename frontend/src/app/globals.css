@@ -1246,6 +1246,14 @@ html[lang="en"] .i18n-banner { display: block; }
 .topbar2__toggle:hover { background: var(--surface-2); color: var(--fg); }
 .topbar2__spacer { flex: 1; }
 .topbar2__actions { display: flex; align-items: center; gap: 10px; }
+.topbar2__docs {
+  display: flex; align-items: center; gap: 7px;
+  height: 38px; padding: 0 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+.topbar2__docs:hover { background: var(--surface-2); color: var(--fg); }
+@media (max-width: 720px) { .topbar2__docs span { display: none; } }
 .topbar2__search {
   display: flex; align-items: center; gap: 8px;
   flex: 0 1 360px; min-width: 0;
