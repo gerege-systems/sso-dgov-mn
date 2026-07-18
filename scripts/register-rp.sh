@@ -29,7 +29,7 @@ docker exec "$HYDRA_CONTAINER" hydra create oauth2-client \
   --name "$NAME" \
   --grant-type authorization_code,refresh_token \
   --response-type code \
-  --scope openid,profile,email \
+  --scope openid,profile,email,eid \
   --redirect-uri "${BASE}${CB_PATH}" \
   --post-logout-callback "${BASE}/" \
   --token-endpoint-auth-method client_secret_basic \
