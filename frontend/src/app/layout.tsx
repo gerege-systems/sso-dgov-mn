@@ -38,9 +38,9 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata = {
-  title: 'DAN-Government SSO',
+  title: 'Government SSO — Төрийн нэгдсэн нэвтрэлт',
   description:
-    'eID based, AI enabled. DAN-Government SSO — chi (net/http) + pgx дээр суурилсан төрийн нэгдсэн нэвтрэлт (SSO): eID-ээр нэвтрэх, профайл болон аюулгүй байдлын тохиргоог нэг дороос.',
+    'eID based, AI enabled. chi (net/http) + pgx дээр суурилсан төрийн нэгдсэн нэвтрэлт (SSO): eID-ээр нэвтрэх, профайл болон аюулгүй байдлын тохиргоог нэг дороос.',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

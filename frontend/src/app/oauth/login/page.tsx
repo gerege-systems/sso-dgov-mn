@@ -42,7 +42,7 @@ export default async function OAuthLoginPage(props: {
             {rpName}
           </div>
           <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 3 }}>
-            DAN — нэгдсэн нэвтрэлтээр нэвтрэх гэж байна
+            Government SSO — нэгдсэн нэвтрэлтээр нэвтрэх гэж байна
           </div>
         </div>
       )}

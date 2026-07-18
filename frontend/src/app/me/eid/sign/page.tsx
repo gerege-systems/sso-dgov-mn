@@ -5,7 +5,7 @@ import EidSignView from '@/components/me/eid/EidSignView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Гарын үсэг зурах — DAN-Government SSO' };
+export const metadata = { title: 'Гарын үсэг зурах — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function EidSignPage() {
   const me = await fetchMe();

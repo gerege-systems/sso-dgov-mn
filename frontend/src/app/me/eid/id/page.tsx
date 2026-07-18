@@ -5,7 +5,7 @@ import EidIdView from '@/components/me/eid/EidIdView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'eID үнэмлэх — DAN-Government SSO' };
+export const metadata = { title: 'eID үнэмлэх — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function EidIdPage() {
   const me = await fetchMe();

@@ -1,4 +1,4 @@
-# Security Posture — DAN-Government SSO
+# Security Posture — Government SSO
 
 > 🌐 **English** · Монгол тайлбарыг кодын комментуудаас үзнэ үү. Эмзэг байдлыг
 > мэдээлэх журмыг [`/SECURITY.md`](../../SECURITY.md)-аас үз.

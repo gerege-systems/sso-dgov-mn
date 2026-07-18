@@ -5,7 +5,7 @@ import GovReferencesView from '@/components/gov/GovReferencesView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Лавлагаа — DAN-Government SSO' };
+export const metadata = { title: 'Лавлагаа — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function MeReferencesPage() {
   const me = await fetchMe();

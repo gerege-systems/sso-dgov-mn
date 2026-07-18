@@ -1,4 +1,4 @@
-# DAN-Government SSO — Backend (Go)
+# Government SSO — Backend (Go)
 
 > 🌐 **English** · [Монгол](README_MN.md)
 
@@ -7,7 +7,7 @@
 [![pgx](https://img.shields.io/badge/pgx-v5-336791.svg)](https://github.com/jackc/pgx)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-The Go backend for **DAN-Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)), an
+The Go backend for **Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)), an
 eID-based national Single Sign-On built on the **Government Template Platform V3.0**
 stack (Clean Architecture principles). Based on **chi (net/http)** for HTTP,
 **pgx (pgxpool) + PostgreSQL** for data, **Redis + Ristretto** for cache, and

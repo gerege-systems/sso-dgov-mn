@@ -5,7 +5,7 @@ import EidSecurityView from '@/components/me/eid/EidSecurityView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'eID аюулгүй байдал — DAN-Government SSO' };
+export const metadata = { title: 'eID аюулгүй байдал — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function EidSecurityPage() {
   const me = await fetchMe();

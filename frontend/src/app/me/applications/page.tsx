@@ -5,7 +5,7 @@ import GovApplicationsView from '@/components/gov/GovApplicationsView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Миний хүсэлт — DAN-Government SSO' };
+export const metadata = { title: 'Миний хүсэлт — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function MeApplicationsPage() {
   const me = await fetchMe();

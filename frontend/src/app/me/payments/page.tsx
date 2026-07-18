@@ -5,7 +5,7 @@ import GovPaymentsView from '@/components/gov/GovPaymentsView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Төлбөр — DAN-Government SSO' };
+export const metadata = { title: 'Төлбөр — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function MePaymentsPage() {
   const me = await fetchMe();

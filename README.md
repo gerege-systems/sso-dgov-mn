@@ -1,10 +1,10 @@
-# DAN-Government SSO
+# Government SSO
 
 > **eID based · AI enabled** — Засгийн газрын үйлчилгээний нэгдсэн нэвтрэлт (Single Sign-On)
 
 Built on the **Government Template Platform V3.0** stack (Clean-Architecture Go
 backend + Next.js BFF frontend + Gemini AI pipeline), branded and deployed as
-**DAN-Government SSO** at [sso.dgov.mn](https://sso.dgov.mn).
+**Government SSO** at [sso.dgov.mn](https://sso.dgov.mn).
 
 > 🌐 **English** · [Монгол](docs/README_MN.md)
 
@@ -51,8 +51,8 @@ dan-dgov-mn/
 - **Organizations & membership** — create/lookup organizations (state-registry lookup via Gerege Verify/XYP) and manage members/roles, RLS-scoped per user.
 - **Government services portal** — the citizen-facing `Төрийн үйлчилгээ` surface: service catalogue, applications, references, notifications, payments, appointments.
 - **API gateway** — admin-managed services / routes / consumers / API keys / policies with request telemetry (overview + logs).
-- **OIDC provider (SSO)** — DAN itself acts as an identity provider: an [Ory Hydra](https://www.ory.sh/hydra/) front-end drives the login/consent/logout flows so relying parties can `Sign in with DAN`. Enabled only when Hydra is configured.
-- **Document signing (PAdES)** — server-side PDF signing through eID Mongolia `/v3`, with a persistent Document-Signer certificate; a sign-relay lets third-party RPs sign through DAN's eID credentials.
+- **OIDC provider (SSO)** — Government SSO itself acts as an identity provider: an [Ory Hydra](https://www.ory.sh/hydra/) front-end drives the login/consent/logout flows so relying parties can `Sign in with Government SSO`. Enabled only when Hydra is configured.
+- **Document signing (PAdES)** — server-side PDF signing through eID Mongolia `/v3`, with a persistent Document-Signer certificate; a sign-relay lets third-party RPs sign through Government SSO's eID credentials.
 - **Third-party integrations** — per-user OAuth links (Google Drive/Meet, Dropbox) with tokens encrypted at rest (AES-256-GCM), plus **Gerege Space** app-native SFTP storage.
 - **AI pipeline (Gemini)** — SDK-free REST client with function calling: text/voice chat, speech-to-text, text-to-speech, live translation. Layered system prompt (hardcoded guardrails + admin-configurable scope/instructions in the DB) keeps the assistant inside its configured domain; a `search_knowledge` tool grounds answers in the `ai_knowledge` table.
 - **Audit log** — hash-chained, append-only audit trail (admin-only read + integrity verify).

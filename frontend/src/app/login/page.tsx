@@ -5,7 +5,7 @@ import LoginForm from './LoginForm';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Нэвтрэх — DAN-Government SSO' };
+export const metadata = { title: 'Нэвтрэх — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function LoginPage(
   props: {

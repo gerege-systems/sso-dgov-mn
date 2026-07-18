@@ -5,7 +5,7 @@ import EidDevicesView from '@/components/me/eid/EidDevicesView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Төхөөрөмж — DAN-Government SSO' };
+export const metadata = { title: 'Төхөөрөмж — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function EidDevicesPage() {
   const me = await fetchMe();

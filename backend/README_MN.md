@@ -1,4 +1,4 @@
-# DAN-Government SSO — Backend (Go)
+# Government SSO — Backend (Go)
 
 > 🌐 [English](README.md) · **Монгол**
 
@@ -7,7 +7,7 @@
 [![pgx](https://img.shields.io/badge/pgx-v5-336791.svg)](https://github.com/jackc/pgx)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**DAN-Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)) — eID-д суурилсан улсын
+**Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)) — eID-д суурилсан улсын
 нэгдсэн нэвтрэлт (Single Sign-On)-ийн Go backend. **Government Template Platform
 V3.0** стек (Clean Architecture зарчим) дээр бүтээгдсэн. **chi (net/http)** (HTTP),
 **pgx (pgxpool) + PostgreSQL** (өгөгдөл), **Redis + Ristretto** (кэш), **eID

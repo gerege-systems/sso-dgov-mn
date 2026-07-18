@@ -129,9 +129,9 @@ export const dict = {
     'superadmin.byRegisterTitle': 'Регистрээр админ болгох',
     'superadmin.registerPlaceholder': 'Регистрийн дугаар (ж: УБ99123456)',
     'superadmin.lookup': 'Хайх',
-    'superadmin.registerNotFound': 'Энэ регистрийн дугаараар DAN-д бүртгэлтэй хэрэглэгч алга. Тухайн хүн эхлээд eID-ээр нэвтэрсэн байх шаардлагатай.',
+    'superadmin.registerNotFound': 'Энэ регистрийн дугаараар Government SSO-д бүртгэлтэй хэрэглэгч алга. Тухайн хүн эхлээд eID-ээр нэвтэрсэн байх шаардлагатай.',
     'superadmin.makeAdmin': 'Админ болгох',
-    'superadmin.byRegisterHint': 'DAN-д бүртгэлтэй байгаа хэрэглэгчийг регистрээр нь админ эрхтэй болгоно.',
+    'superadmin.byRegisterHint': 'Government SSO-д бүртгэлтэй байгаа хэрэглэгчийг регистрээр нь админ эрхтэй болгоно.',
     // Superadmin онбординг урилга
     'superadmin.inviteTitle': 'Супер админ урих',
     'superadmin.inviteSub': 'Уригдсан и-мэйл эзэмшигч онбординг холбоосоор өөрийгөө Google + eID + 2FA-аар бүртгэнэ.',
@@ -743,9 +743,9 @@ export const dict = {
     'superadmin.byRegisterTitle': 'Make admin by register number',
     'superadmin.registerPlaceholder': 'Register number (e.g. UB99123456)',
     'superadmin.lookup': 'Look up',
-    'superadmin.registerNotFound': 'No DAN-registered user for this register number. The person must sign in via eID first.',
+    'superadmin.registerNotFound': 'No Government SSO-registered user for this register number. The person must sign in via eID first.',
     'superadmin.makeAdmin': 'Make admin',
-    'superadmin.byRegisterHint': 'Grant admin rights to an existing DAN-registered user by their register number.',
+    'superadmin.byRegisterHint': 'Grant admin rights to an existing Government SSO-registered user by their register number.',
     // Superadmin onboarding invites
     'superadmin.inviteTitle': 'Invite super admin',
     'superadmin.inviteSub': 'Invited email holders self-register via the onboarding link using Google + eID + 2FA.',

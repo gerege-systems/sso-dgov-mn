@@ -1,9 +1,9 @@
-# DAN-Government SSO
+# Government SSO
 
 > **eID-д суурилсан · AI-аар хүчирхэгжсэн** — Засгийн газрын үйлчилгээний нэгдсэн нэвтрэлт (Single Sign-On)
 
 **Government Template Platform V3.0** стек (Clean-Architecture Go backend + Next.js
-BFF frontend + Gemini AI pipeline) дээр бүтээгдэж, **DAN-Government SSO** нэрээр
+BFF frontend + Gemini AI pipeline) дээр бүтээгдэж, **Government SSO** нэрээр
 [sso.dgov.mn](https://sso.dgov.mn)-д байршуулагдсан.
 
 > 🌐 [English](../README.md) · **Монгол**
@@ -51,8 +51,8 @@ dan-dgov-mn/
 - **Байгууллага ба гишүүнчлэл** — байгууллага үүсгэх/хайх (улсын бүртгэлээс Gerege Verify/XYP-ээр лавлах) + гишүүд/эрх удирдах, хэрэглэгч тус бүрт RLS-ээр хамгаалагдсан.
 - **Төрийн үйлчилгээний портал** — иргэн рүү харсан `Төрийн үйлчилгээ` гадаргуу: үйлчилгээний каталог, хүсэлт, лавлагаа, мэдэгдэл, төлбөр, цаг захиалга.
 - **API gateway** — админ удирддаг services / routes / consumers / API key / policy + хүсэлтийн телеметр (overview + logs).
-- **OIDC provider (SSO)** — DAN өөрөө identity provider болно: [Ory Hydra](https://www.ory.sh/hydra/) урдаа тавьж login/consent/logout урсгалыг жолоодох тул relying party-ууд `Sign in with DAN` хийж чадна. Зөвхөн Hydra тохируулагдсан үед идэвхжинэ.
-- **Баримт бичгийн гарын үсэг (PAdES)** — eID Mongolia `/v3`-ээр PDF-д server талаас гарын үсэг зурна, байнгын Document-Signer гэрчилгээтэй; sign-relay нь 3 дагч RP-уудыг DAN-ий eID креденшлээр дамжуулан гарын үсэг зурах боломж олгоно.
+- **OIDC provider (SSO)** — Government SSO өөрөө identity provider болно: [Ory Hydra](https://www.ory.sh/hydra/) урдаа тавьж login/consent/logout урсгалыг жолоодох тул relying party-ууд `Sign in with Government SSO` хийж чадна. Зөвхөн Hydra тохируулагдсан үед идэвхжинэ.
+- **Баримт бичгийн гарын үсэг (PAdES)** — eID Mongolia `/v3`-ээр PDF-д server талаас гарын үсэг зурна, байнгын Document-Signer гэрчилгээтэй; sign-relay нь 3 дагч RP-уудыг Government SSO-ийн eID креденшлээр дамжуулан гарын үсэг зурах боломж олгоно.
 - **Гуравдагч этгээдийн интеграци** — хэрэглэгч тус бүрийн OAuth холболт (Google Drive/Meet, Dropbox), токеныг шифрлэн (AES-256-GCM) хадгална; мөн **Gerege Space** апп-ын өөрийн SFTP хадгалалт.
 - **AI pipeline (Gemini)** — SDK-гүй REST client + function calling: текст/дуут чат, яриа→текст (STT), текст→яриа (TTS), шууд орчуулга. Давхаргат system prompt (кодод хатуу суурь дүрэм + админ DB-ээс тохируулдаг хамрах хүрээ/заавар) туслахыг зөвхөн заасан хүрээнд барина; `search_knowledge` tool нь хариултыг `ai_knowledge` хүснэгтийн өгөгдөлд тулгуурлуулна.
 - **Audit log** — hash-chain холбоост, зөвхөн-нэмэх audit бүртгэл (админ-л унших + бүрэн бүтэн байдлыг шалгах).

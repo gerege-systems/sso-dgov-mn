@@ -2,7 +2,7 @@
 
 > 🌐 **English** · [Монгол](DEPLOYMENT_MN.md)
 
-How to deploy **DAN-Government SSO** (sso.dgov.mn) to a single VPS with Docker
+How to deploy **Government SSO** (sso.dgov.mn) to a single VPS with Docker
 Compose behind nginx. The stack is Postgres + Redis + Go API + Next.js BFF web
 + **Ory Hydra** (the OIDC issuer that turns dan into an SSO provider). This is
 the runbook used for the reference deployment.

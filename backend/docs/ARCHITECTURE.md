@@ -2,13 +2,13 @@
 
 > 🌐 **English** · [Монгол](ARCHITECTURE_MN.md)
 
-This document describes the high-level architecture of **DAN-Government SSO**
+This document describes the high-level architecture of **Government SSO**
 (deployed at **sso.dgov.mn**) — an **eID-based national Single Sign-On** built on
 the **Government Template Platform V3.0** stack. The backend module is `template`;
 the stack is **chi (net/http) + pgx (pgxpool) + PostgreSQL + Redis + Gemini AI**,
 organized along Clean Architecture lines and fronted by a Next.js BFF.
 
-DAN-Government SSO is both an **eID Relying Party** (users log in with eID) and an
+Government SSO is both an **eID Relying Party** (users log in with eID) and an
 **OIDC Identity Provider** (other government apps log in *through* dan via Ory
 Hydra). Row-Level Security in PostgreSQL is the load-bearing per-user isolation
 boundary — see [Row-Level Security](#row-level-security-rls).
@@ -226,7 +226,7 @@ See [Authorization](#authorization) for the role constants.
 
 ## Authentication
 
-DAN-Government SSO issues **JWT access + refresh tokens** (`pkg/jwt`) but has **no
+Government SSO issues **JWT access + refresh tokens** (`pkg/jwt`) but has **no
 password login, no email/OTP registration, and no password reset**. Identity comes
 only from external providers. Endpoint shapes are documented in
 [API_CONTRACT.md](API_CONTRACT.md); routes are registered in
@@ -360,14 +360,14 @@ connecting role at startup:
 
 ## OIDC Provider (Ory Hydra)
 
-DAN-Government SSO is itself an **Identity Provider**: other government apps
+Government SSO is itself an **Identity Provider**: other government apps
 delegate login to dan via **Ory Hydra**. This surface activates only when
 `ProviderConfigured()` is true (`HYDRA_ADMIN_URL` + `HYDRA_PUBLIC_URL` +
 `SSO_STATE_KEY ≥ 32 bytes`); otherwise it is inert and its routes are never
 registered.
 
 - **Login / consent / logout core** — `usecases/provider` + `pkg/hydra` handle Hydra's challenges; first-party clients (`SSO_FIRSTPARTY_CLIENTS`) skip the consent UI. Mounted under `/api/v1/provider`.
-- **Applications (unified client registry)** — `usecases/applications` (mounted at `/api/v1/applications`, guarded by `gateway.manage`) is the current way to register OAuth2 clients: RP "Login with DAN" apps (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` are public, PKCE, no secret) and m2m clients (`client_credentials`). Each is a Hydra OAuth2 client whose scopes are the allowed gateway services (`application_services` → `gateway_services.scope`); the confidential `client_secret` is revealed once on create/rotate.
+- **Applications (unified client registry)** — `usecases/applications` (mounted at `/api/v1/applications`, guarded by `gateway.manage`) is the current way to register OAuth2 clients: RP "Login with Government SSO" apps (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` are public, PKCE, no secret) and m2m clients (`client_credentials`). Each is a Hydra OAuth2 client whose scopes are the allowed gateway services (`application_services` → `gateway_services.scope`); the confidential `client_secret` is revealed once on create/rotate.
 - **Operator surface (legacy)** — `internal/provider/adminapi` is mounted at **`/admin`** (via `http.StripPrefix`) for RP OAuth2-client registration/management, backed by the `devapps` (`developer_apps`) store and `adminkeys` (bootstrap keys from `SSO_ADMIN_API_KEYS`, SHA-256 matched). This admin-API-key operator surface and the `developer_apps` overlay still exist but are **superseded by the unified Applications model for new work**.
 - **Sign relay** — `internal/provider/signrelay` is mounted at **`/rp/sign/*`**, a reverse proxy that lets downstream RPs perform eID PDF signing *through* dan using dan's eidmongolia RP credentials (enabled by `SIGN_RELAY_TOKEN` + `EID_RP_SECRET`).
 

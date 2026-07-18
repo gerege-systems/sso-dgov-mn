@@ -17,10 +17,10 @@ import (
 type GatewayRequestRecorder func(method, path, clientIP string, status, latencyMS int)
 
 // isRPGatewayPath нь тухайн зам гуравдагч талын RP-ийн gateway хүсэлт мөн эсэхийг
-// шалгана. Зөвхөн эдгээрийг лог-лоно — DAN-ий ӨӨРИЙН админ/апп-ын дотоод API
+// шалгана. Зөвхөн эдгээрийг лог-лоно — Government SSO-ийн ӨӨРИЙН админ/апп-ын дотоод API
 // (rbac/users/themes/gateway/applications г.м.) лог-д ОРОХГҮЙ:
 //   - /rp/sign        — RP-ийн eID цахим гарын үсэг relay
-//   - /api/v1/provider — RP-ийн OIDC (Login with DAN) login/consent
+//   - /api/v1/provider — RP-ийн OIDC (Login with Government SSO) login/consent
 func isRPGatewayPath(p string) bool {
 	return strings.HasPrefix(p, "/rp/sign") || strings.HasPrefix(p, "/api/v1/provider")
 }
