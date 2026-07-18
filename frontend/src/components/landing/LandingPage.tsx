@@ -12,6 +12,7 @@ import { useLang } from '@/lib/lang';
 import LoginForm from '@/app/login/LoginForm';
 import { landingCopy, type LandingCopy } from './copy';
 import { deepMerge } from '@/lib/theme';
+import { DOCS_URL } from '@/lib/links';
 
 // «Бүх боломж» хэсгийн жижиг картуудын icon-ууд (copy.ts-ийн items дараалалтай нэг эрэмбэ).
 const EVERYTHING_ICONS = [Fingerprint, Globe, KeyRound, ScrollText, CheckCircle2, Languages, Gauge, ShieldAlert];
@@ -54,6 +55,7 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
             <a href="#features">{t.nav.features}</a>
             <a href="#security">{t.nav.security}</a>
             <a href="#tech">{t.nav.tech}</a>
+            <a href={DOCS_URL} target="_blank" rel="noreferrer">{t.nav.docs}</a>
           </nav>
 
           <div className="lp-nav__actions">
