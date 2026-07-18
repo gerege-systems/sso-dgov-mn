@@ -88,7 +88,8 @@ export default function SuperadminManager({ currentUserId }: Props) {
     await queryClient.invalidateQueries({ queryKey: ['superadmin-grantable'] });
   };
 
-  // Register-ээр Core-оос хэрэглэгч хайж нэрийг урьдчилан харуулна.
+  // Register-ээр DAN-д БАЙГАА хэрэглэгчийг (eID-ээр нэвтэрсэн) урьдчилан харуулна.
+  // Core (үндэсний бүртгэл) БИШ — эрх олгох нь local DAN хэрэглэгч дээр ажилладаг тул.
   const lookupRegister = async () => {
     const reg = register.trim();
     if (!reg) return;
@@ -96,11 +97,11 @@ export default function SuperadminManager({ currentUserId }: Props) {
     setActionError('');
     setPreviewLoading(true);
     try {
-      const rec = await getJSON<Record<string, unknown>>(`/api/core/users?search_text=${encodeURIComponent(reg)}`);
-      const last = (rec?.last_name as string) ?? '';
-      const first = (rec?.first_name as string) ?? '';
-      const name = `${last} ${first}`.trim();
-      if (rec && rec.id != null) setPreview({ name: name || String(rec.id) });
+      const rec = await getJSON<{ id?: string; first_name?: string; last_name?: string; full_name?: string }>(
+        `/api/superadmin/admins/by-register?register=${encodeURIComponent(reg)}`,
+      );
+      const name = (rec?.full_name || `${rec?.last_name ?? ''} ${rec?.first_name ?? ''}`).trim();
+      if (rec && rec.id) setPreview({ name: name || rec.id });
       else setActionError(T('superadmin.registerNotFound'));
     } catch (e) {
       setActionError((e as Error).message || T('superadmin.registerNotFound'));

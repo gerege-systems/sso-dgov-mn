@@ -4687,6 +4687,31 @@ paths:
       tags:
       - superadmin
   /v1/superadmin/admins/by-register:
+    get:
+      description: Регистрийн дугаараар DAN-д БАЙГАА хэрэглэгчийг олж буцаана (эрх
+        олгохгүй, зөвхөн нэр/эрхийг урьдчилан харах). Зөвхөн super admin.
+      parameters:
+      - description: Регистрийн дугаар
+        in: query
+        name: register
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User found
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+        "404":
+          description: Register not registered in DAN
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      security:
+      - BearerAuth: []
+      summary: Регистрээр хэрэглэгч харах (preview)
+      tags:
+      - superadmin
     post:
       consumes:
       - application/json

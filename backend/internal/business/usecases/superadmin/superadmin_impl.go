@@ -129,6 +129,24 @@ func (uc *usecase) AddAdminByRegister(ctx context.Context, req AddAdminByRegiste
 	return CreateAdminResponse{User: found.User}, nil
 }
 
+// LookupByRegister нь регистрийн дугаараар DAN-д БАЙГАА хэрэглэгчийг олж буцаана
+// (preview — эрх олгохгүй). Байхгүй бол NotFound.
+func (uc *usecase) LookupByRegister(ctx context.Context, register string) (CreateAdminResponse, error) {
+	register = strings.ToUpper(strings.TrimSpace(register))
+	if register == "" {
+		return CreateAdminResponse{}, apperror.BadRequest("register is required")
+	}
+	found, err := uc.usersUC.GetByNationalID(ctx, users.GetByNationalIDRequest{NationalID: register})
+	if err != nil {
+		var domErr *apperror.DomainError
+		if errors.As(err, &domErr) && domErr.Type == apperror.ErrTypeNotFound {
+			return CreateAdminResponse{}, apperror.NotFound("this register is not registered in DAN — the person must sign in via eID first")
+		}
+		return CreateAdminResponse{}, err
+	}
+	return CreateAdminResponse{User: found.User}, nil
+}
+
 // RevokeAdmin нь admin эрхийг хасч, энгийн хэрэглэгч болгоно.
 func (uc *usecase) RevokeAdmin(ctx context.Context, req RevokeAdminRequest) error {
 	// Lockout-аас сэргийлэх: super admin өөрийгөө хасаж болохгүй.

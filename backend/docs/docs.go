@@ -5192,6 +5192,44 @@ const docTemplate = `{
             }
         },
         "/v1/superadmin/admins/by-register": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Регистрийн дугаараар DAN-д БАЙГАА хэрэглэгчийг олж буцаана (эрх олгохгүй, зөвхөн нэр/эрхийг урьдчилан харах). Зөвхөн super admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "superadmin"
+                ],
+                "summary": "Регистрээр хэрэглэгч харах (preview)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Регистрийн дугаар",
+                        "name": "register",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User found",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Register not registered in DAN",
+                        "schema": {
+                            "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
