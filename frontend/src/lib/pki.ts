@@ -1,6 +1,8 @@
 // Government Template Platform V3.0
 // Gerege Systems Development Team болон Claude AI хамтран бүтээв, 2026.
 
+import { formatTS } from '@/lib/format';
+
 // eID PKI самбарын client-side туслахууд. getJSON нь HTTP статус алддаг тул
 // PKI_READ эрхгүй (403)-ыг "эрх хүлээгдэж байна" төлөв болгон ялгахын тулд
 // статусыг буцаадаг pkiGet-ийг эндээс хуваалцна (Dashboard + Profile хоёулаа).
@@ -30,6 +32,8 @@ export interface PkiDeviceItem {
   active: boolean;
   enrolled_at?: string;
   deactivated_at?: string;
+  // upstream өргөжихөд буцаах нэмэлт (динамик) талбарууд.
+  extra?: Record<string, unknown>;
 }
 
 export interface PkiActItem {
@@ -40,6 +44,26 @@ export interface PkiActItem {
   timestamp?: string;
   // activity service өргөжихөд буцаах нэмэлт (динамик) талбарууд.
   extra?: Record<string, unknown>;
+}
+
+// camelCase / snake_case түлхүүрийг уншимжтай шошго болгоно (clientIp → Client ip).
+export function humanizeKey(k: string): string {
+  const s = k
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Динамик утгыг эмхэтгэн харуулна (объект/массив → JSON, огноо → formatTS).
+export function renderVal(k: string, v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—';
+  if (typeof v === 'boolean') return v ? '✓' : '✗';
+  if (typeof v === 'object') return JSON.stringify(v);
+  const s = String(v);
+  // ISO огноо төстэй бол хүн уншихаар форматлана.
+  if (/(at|time|date|timestamp)$/i.test(k) && /^\d{4}-\d{2}-\d{2}T/.test(s)) return formatTS(s);
+  return s;
 }
 
 /** pkiGet нь backend PKI endpoint-ыг дуудаж {status, data}-г бүрэн буцаана. */

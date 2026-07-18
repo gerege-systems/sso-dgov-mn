@@ -853,6 +853,10 @@ definitions:
         type: string
       enrolled_at:
         type: string
+      extra:
+        additionalProperties: {}
+        description: upstream-ийн нэмэлт талбарууд
+        type: object
       platform:
         type: string
     type: object

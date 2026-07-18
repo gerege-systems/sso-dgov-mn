@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FileSignature, LogIn, ListChecks, ChevronDown, ChevronRight } from 'lucide-react';
 import { useT } from '@/lib/lang';
 import { formatTS } from '@/lib/format';
-import { pkiGet, type PkiActItem } from '@/lib/pki';
+import { pkiGet, humanizeKey, renderVal, type PkiActItem } from '@/lib/pki';
 
 // Иргэний eID үйл ажиллагааны (нэвтрэлт + гарын үсэг) лог. Backend
 // /api/me/eid/activity (limit/offset + бодит нийт тоо counts + activity
@@ -22,26 +22,6 @@ type ActResponse = {
 };
 const PAGE = 20;
 const isSign = (f: string) => f === 'SIGNATURE';
-
-// camelCase / snake_case түлхүүрийг уншимжтай шошго болгоно (clientIp → Client ip).
-function humanizeKey(k: string): string {
-  const s = k
-    .replace(/[_-]+/g, ' ')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .trim();
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-// Динамик утгыг эмхэтгэн харуулна (объект/массив → JSON, огноо → formatTS).
-function renderVal(k: string, v: unknown): string {
-  if (v === null || v === undefined || v === '') return '—';
-  if (typeof v === 'boolean') return v ? '✓' : '✗';
-  if (typeof v === 'object') return JSON.stringify(v);
-  const s = String(v);
-  // ISO огноо төстэй бол хүн уншихаар форматлана.
-  if (/(at|time|date|timestamp)$/i.test(k) && /^\d{4}-\d{2}-\d{2}T/.test(s)) return formatTS(s);
-  return s;
-}
 
 export default function EidLogsView({ show }: { show: boolean }) {
   const { T } = useT();
@@ -133,7 +113,7 @@ export default function EidLogsView({ show }: { show: boolean }) {
                 [T('eid.logs.col.detail'), a.doc_text],
                 [T('eid.logs.col.session'), a.session_id],
                 [T('eid.logs.col.outcome'), a.outcome],
-                [T('eid.logs.col.time'), a.timestamp],
+                [T('eid.logs.col.time'), a.timestamp ? formatTS(a.timestamp) : undefined],
                 ...Object.entries(a.extra ?? {}).map(([k, v]) => [humanizeKey(k), v] as [string, unknown]),
               ];
               return (
