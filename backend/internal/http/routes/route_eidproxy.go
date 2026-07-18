@@ -31,18 +31,22 @@ const (
 //   - /v1/eid/*      (eid-proxy)      — хувь хүний eID
 //   - /v1/eid-org/*  (eid-org-proxy)  — байгууллагатай холбоотой eID
 type eidProxyRoute struct {
-	handler         eidprofilehandler.Handler
-	router          chi.Router
-	gatewayUC       gatewayuc.Usecase
-	oauthMiddleware func(http.Handler) http.Handler
+	handler   eidprofilehandler.Handler
+	router    chi.Router
+	gatewayUC gatewayuc.Usecase
+	// service тус бүрийн OAuth middleware — token active + subject + тухайн
+	// service-т client олгогдсон эсэхийг (svc:<name> allowed scope) шалгана.
+	eidMW    func(http.Handler) http.Handler
+	eidOrgMW func(http.Handler) http.Handler
 }
 
-func NewEIDProxyRoute(router chi.Router, authUC authuc.Usecase, gatewayUC gatewayuc.Usecase, oauthMiddleware func(http.Handler) http.Handler) *eidProxyRoute {
+func NewEIDProxyRoute(router chi.Router, authUC authuc.Usecase, gatewayUC gatewayuc.Usecase, eidMW, eidOrgMW func(http.Handler) http.Handler) *eidProxyRoute {
 	return &eidProxyRoute{
-		handler:         eidprofilehandler.NewHandler(authUC),
-		router:          router,
-		gatewayUC:       gatewayUC,
-		oauthMiddleware: oauthMiddleware,
+		handler:   eidprofilehandler.NewHandler(authUC),
+		router:    router,
+		gatewayUC: gatewayUC,
+		eidMW:     eidMW,
+		eidOrgMW:  eidOrgMW,
 	}
 }
 
@@ -62,20 +66,20 @@ func (rt *eidProxyRoute) gate(serviceName string) func(http.Handler) http.Handle
 }
 
 func (rt *eidProxyRoute) Routes() {
-	// Хувь хүний eID (eid-proxy)
+	// Хувь хүний eID (eid-proxy) — service enabled + client-д "svc:eid-proxy" олгогдсон
 	rt.router.Route("/v1/eid", func(r chi.Router) {
 		r.Use(rt.gate(EIDProxyServiceName))
-		r.Use(rt.oauthMiddleware)
+		r.Use(rt.eidMW)
 		r.Get("/summary", v1.Wrap(rt.handler.Summary))
 		r.Get("/certificates", v1.Wrap(rt.handler.Certificates))
 		r.Get("/devices", v1.Wrap(rt.handler.Devices))
 		r.Get("/activity", v1.Wrap(rt.handler.Activity))
 	})
 
-	// Байгууллагатай холбоотой eID (eid-org-proxy) — тусад нь бүлэглэсэн service
+	// Байгууллагатай холбоотой eID (eid-org-proxy) — тусад нь; "svc:eid-org-proxy" олгогдсон
 	rt.router.Route("/v1/eid-org", func(r chi.Router) {
 		r.Use(rt.gate(EIDOrgProxyServiceName))
-		r.Use(rt.oauthMiddleware)
+		r.Use(rt.eidOrgMW)
 		r.Get("/organizations", v1.Wrap(rt.handler.Organizations))
 		r.Get("/organizations/{regNo}/signers", v1.Wrap(rt.handler.OrgSigners))
 	})
