@@ -4,7 +4,7 @@
 
 **Government Template Platform V3.0** стек (Clean-Architecture Go backend + Next.js
 BFF frontend + Gemini AI pipeline) дээр бүтээгдэж, **DAN-Government SSO** нэрээр
-[dan.dgov.mn](https://dan.dgov.mn)-д байршуулагдсан.
+[sso.dgov.mn](https://sso.dgov.mn)-д байршуулагдсан.
 
 > 🌐 [English](../README.md) · **Монгол**
 

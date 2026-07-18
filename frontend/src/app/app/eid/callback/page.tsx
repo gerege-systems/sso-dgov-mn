@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 
 // eID App2App буцах "bridge" хуудас. eID платформ callback-ийг заавал https +
-// allowlist host (dan.dgov.mn) байхыг шаарддаг тул native апп custom
+// allowlist host (sso.dgov.mn) байхыг шаарддаг тул native апп custom
 // scheme-ээ шууд өгч чадахгүй. Энэ хуудас руу буцаад, эндээс native апп
 // (geregetemp://eid/callback) руу үсэрч TemplateApp-ыг нээнэ.
 export const dynamic = 'force-dynamic';

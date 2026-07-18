@@ -3,7 +3,7 @@
 > 🌐 **English** · [Монгол](ARCHITECTURE_MN.md)
 
 This document describes the high-level architecture of **DAN-Government SSO**
-(deployed at **dan.dgov.mn**) — an **eID-based national Single Sign-On** built on
+(deployed at **sso.dgov.mn**) — an **eID-based national Single Sign-On** built on
 the **Government Template Platform V3.0** stack. The backend module is `template`;
 the stack is **chi (net/http) + pgx (pgxpool) + PostgreSQL + Redis + Gemini AI**,
 organized along Clean Architecture lines and fronted by a Next.js BFF.
@@ -526,7 +526,7 @@ docker compose up -d --build   # db + redis + migrate (one-off) + api + web
 ```
 
 Health check: `curl http://localhost:8080/health`. See `docs/DEPLOYMENT.md` for
-the dan.dgov.mn topology.
+the sso.dgov.mn topology.
 
 ## Credits & License
 

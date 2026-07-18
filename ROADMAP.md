@@ -1,6 +1,6 @@
 # ROADMAP — DAN-Government SSO
 
-> **DAN-Government SSO** ([dan.dgov.mn](https://dan.dgov.mn)) — eID-д суурилсан
+> **DAN-Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)) — eID-д суурилсан
 > улсын нэгдсэн нэвтрэлт (Single Sign-On), **Government Template Platform V3.0**
 > стек дээр бүтээгдсэн. Энэ файл нь хийгдсэн ажил ба урагшлах төлөвлөгөөг
 > харуулна. Дэлгэрэнгүй баримт: [README.md](README.md#documentation).
@@ -8,7 +8,7 @@
 **Одоогийн байдал:** eID нэвтрэлт, Google холболт, dgov SSO consumer, DAN-ий
 өөрийн OIDC provider (Hydra), байгууллага/гишүүнчлэл, төрийн үйлчилгээ, API
 gateway, PAdES гарын үсэг, интеграци, audit, RBAC/superadmin, сайтын харагдац —
-бүгд production-д ([dan.dgov.mn](https://dan.dgov.mn)) ажиллаж байгаа (CI ногоон).
+бүгд production-д ([sso.dgov.mn](https://sso.dgov.mn)) ажиллаж байгаа (CI ногоон).
 
 ---
 
@@ -77,7 +77,7 @@ gateway, PAdES гарын үсэг, интеграци, audit, RBAC/superadmin, 
 - Admin (нийтийн хуудас) ба per-user (апп) scope-ыг тусгаарласан
 
 ### Deploy
-- [dan.dgov.mn](https://dan.dgov.mn) дээр production deploy (docker compose: db + redis + migrate + api + web + Hydra)
+- [sso.dgov.mn](https://sso.dgov.mn) дээр production deploy (docker compose: db + redis + migrate + api + web + Hydra)
 - Бүх док EN/MN хосоор шинэчлэгдсэн; DEPLOYMENT(_MN).md, AI_PIPELINE(_MN).md, CLAUDE.md
 
 ---

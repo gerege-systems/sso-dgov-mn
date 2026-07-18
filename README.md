@@ -4,7 +4,7 @@
 
 Built on the **Government Template Platform V3.0** stack (Clean-Architecture Go
 backend + Next.js BFF frontend + Gemini AI pipeline), branded and deployed as
-**DAN-Government SSO** at [dan.dgov.mn](https://dan.dgov.mn).
+**DAN-Government SSO** at [sso.dgov.mn](https://sso.dgov.mn).
 
 > 🌐 **English** · [Монгол](docs/README_MN.md)
 

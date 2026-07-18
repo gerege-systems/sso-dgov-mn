@@ -74,8 +74,8 @@ ON CONFLICT (key) DO NOTHING;
 -- админ UI-аас secret эргүүлж/дахин үүсгэнэ.
 INSERT INTO gateway_services (name, protocol, host, port, path, tags, scope)
 SELECT * FROM (VALUES
-    ('dan-sso',  'https', 'dan.dgov.mn', 443, '/oauth2',  ARRAY['sso', 'oidc']::text[], 'svc:dan-sso'),
-    ('eid-sign', 'https', 'dan.dgov.mn', 443, '/rp/sign', ARRAY['eid', 'sign']::text[], 'svc:eid-sign')
+    ('dan-sso',  'https', 'sso.dgov.mn', 443, '/oauth2',  ARRAY['sso', 'oidc']::text[], 'svc:dan-sso'),
+    ('eid-sign', 'https', 'sso.dgov.mn', 443, '/rp/sign', ARRAY['eid', 'sign']::text[], 'svc:eid-sign')
 ) AS v(name, protocol, host, port, path, tags, scope)
 WHERE NOT EXISTS (SELECT 1 FROM gateway_services);
 

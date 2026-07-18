@@ -2,7 +2,7 @@
 
 > 🌐 **English** · [Монгол](API_CONTRACT_MN.md)
 
-REST API reference for **DAN-Government SSO** (dan.dgov.mn) — the eID-based
+REST API reference for **DAN-Government SSO** (sso.dgov.mn) — the eID-based
 national Single Sign-On built on the **Government Template Platform V3.0** stack
 (Clean-Architecture Go backend + Next.js BFF + Gemini AI). The live,
 auto-generated spec is served at `GET /swagger/` (source: `docs/swagger.json`).
@@ -313,7 +313,7 @@ service RLS identity (the callback upserts into `users`).
 ## OIDC provider — login/consent/logout (`/api/v1/provider`)
 
 Active **only when Hydra is configured** (`ProviderConfigured()`). This is
-dan.dgov.mn acting as an OIDC **provider** with Ory Hydra in front; the Next.js
+sso.dgov.mn acting as an OIDC **provider** with Ory Hydra in front; the Next.js
 BFF `/login`, `/consent`, `/logout` pages call these. Body-capped (4 KiB). The
 `get`/`reject`/`logout-accept` endpoints are challenge-authenticated (no
 bearer); the `accept` endpoints require a logged-in citizen (subject = dan user

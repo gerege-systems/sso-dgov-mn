@@ -1,7 +1,7 @@
 // eID based AI enabled Government Template Platform V3.0
 // Gerege Systems Development Team болон Claude AI хамтран бүтээв, 2026.
 
-// Package provider нь dan.dgov.mn-ийг OIDC provider болгосон login/consent/
+// Package provider нь sso.dgov.mn-ийг OIDC provider болгосон login/consent/
 // logout цөм. Ory Hydra нь /oauth2/auth дээр browser-ыг энд (dan-ийн login/
 // consent хуудас) чиглүүлж challenge өгдөг; энэ usecase нь challenge-ыг Hydra-
 // аас авч, иргэнийг dan-ийн ЕОДОО БАЙГАА eID нэвтрэлтээр (session) баталгаажуулж,

@@ -7,7 +7,7 @@
 [![pgx](https://img.shields.io/badge/pgx-v5-336791.svg)](https://github.com/jackc/pgx)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**DAN-Government SSO** ([dan.dgov.mn](https://dan.dgov.mn)) — eID-д суурилсан улсын
+**DAN-Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)) — eID-д суурилсан улсын
 нэгдсэн нэвтрэлт (Single Sign-On)-ийн Go backend. **Government Template Platform
 V3.0** стек (Clean Architecture зарчим) дээр бүтээгдсэн. **chi (net/http)** (HTTP),
 **pgx (pgxpool) + PostgreSQL** (өгөгдөл), **Redis + Ristretto** (кэш), **eID
@@ -170,7 +170,7 @@ SSO_NATIVE_CLIENT_ID=            # мобайл PKCE public client_id
 
 # OIDC PROVIDER тал (DAN нь issuer, Ory Hydra-аар) — тохируулаагүй бол урсгал inert
 HYDRA_ADMIN_URL=http://hydra:4445
-HYDRA_PUBLIC_URL=                # issuer, жишээ https://dan.dgov.mn (хоосон = provider унтарна)
+HYDRA_PUBLIC_URL=                # issuer, жишээ https://sso.dgov.mn (хоосон = provider унтарна)
 SSO_STATE_KEY=                   # >= 32 байт; login/consent state cookie HMAC
 SSO_FIRSTPARTY_CLIENTS=          # consent дэлгэцийг алгасах client_id-уудын CSV
 SSO_ADMIN_API_KEYS=              # /admin гадаргуугийн bootstrap key-үүдийн CSV

@@ -9,7 +9,7 @@ import LandingPage from '@/components/landing/LandingPage';
 
 export const dynamic = 'force-dynamic';
 
-// dan.dgov.mn нь өөрөө SSO үйлчилгээ. Нүүр хуудас нь DAN-ий чадваруудыг харуулсан
+// sso.dgov.mn нь өөрөө SSO үйлчилгээ. Нүүр хуудас нь DAN-ий чадваруудыг харуулсан
 // landing бөгөөд нэвтрэх картыг (LoginForm) hero дотроо шигтгэсэн. Нэвтэрсэн
 // хэрэглэгчийг /me домэйн руу шилжүүлнэ.
 export default async function Home(props: {
