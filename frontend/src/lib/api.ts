@@ -46,7 +46,7 @@ export async function backendFetch<T>(path: string, init?: RequestInit): Promise
     return {
       ok: false,
       status: 503,
-      message: 'Backend-тэй холбогдож чадсангүй. DAN сервер ажиллаж байгаа эсэхийг шалгана уу.',
+      message: 'Backend-тэй холбогдож чадсангүй. Government SSO сервер ажиллаж байгаа эсэхийг шалгана уу.',
     };
   }
 

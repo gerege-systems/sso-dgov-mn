@@ -27,17 +27,17 @@ interface Props {
 }
 
 /**
- * DAN-Government SSO нүүр (landing) — нэвтрээгүй зочдод харагдах маркетингийн
- * нүүр. DAN-ий бүх чадварыг харуулж, hero-ийн баруун талд ОДОО БАЙГАА нэвтрэх
+ * Government SSO нүүр (landing) — нэвтрээгүй зочдод харагдах маркетингийн
+ * нүүр. Government SSO-ийн бүх чадварыг харуулж, hero-ийн баруун талд ОДОО БАЙГАА нэвтрэх
  * картыг (SigninShell доторх `.signin-card` + LoginForm) шигтгэв. Брэнд токен
- * (DAN blue + gold, light/dark) дээр найруулав.
+ * (blue + gold, light/dark) дээр найруулав.
  */
 export default function LandingPage({ next, notice, googleLink, googleError, themeLanding }: Props) {
   const { lang, setLang } = useLang();
   // Идэвхтэй theme-ийн текст байвал copy.ts default дээр гүн merge хийнэ.
   const override = themeLanding?.[lang];
   const t = override ? deepMerge(landingCopy[lang], override) : landingCopy[lang];
-  const brand = t.brand || 'DAN-Government SSO';
+  const brand = t.brand || 'Government SSO';
 
   return (
     <div className="lp">

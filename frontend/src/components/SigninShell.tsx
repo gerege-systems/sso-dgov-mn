@@ -19,9 +19,9 @@ export default function SigninShell({ rightNav, hideFooter, children }: Props) {
       <header className="signin-shell__nav">
         <Link className="topbar__brand" href="/">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="topbar__brand-mark" src="/brand.webp" alt="DAN-Government SSO" />
+          <img className="topbar__brand-mark" src="/brand.webp" alt="Төрийн нэгдсэн нэвтрэлт" />
           <div className="topbar__brand-text">
-            <span className="topbar__brand-name">DAN-Government SSO</span>
+            <span className="topbar__brand-name">Төрийн нэгдсэн нэвтрэлт</span>
           </div>
         </Link>
         {rightNav}
@@ -31,7 +31,7 @@ export default function SigninShell({ rightNav, hideFooter, children }: Props) {
 
       {!hideFooter && (
         <footer className="signin-footer" style={{ justifyContent: 'center', textAlign: 'center' }}>
-          <span>© 2026 Gerege Systems · <span className="mono">DAN-Government SSO</span></span>
+          <span>© 2026 Gerege Systems · <span className="mono">Government SSO</span></span>
         </footer>
       )}
     </div>

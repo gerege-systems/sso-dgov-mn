@@ -33,7 +33,7 @@ type GoogleClient interface {
 
 // Config нь onboarding usecase-ийн тохиргоо.
 type Config struct {
-	// Issuer нь authenticator app-д харагдах нэр (жишээ "DAN-Government SSO").
+	// Issuer нь authenticator app-д харагдах нэр (жишээ "Government SSO").
 	Issuer string
 	// PendingTTL нь бүртгэлийн шидтэний pending session-ий амьдрах хугацаа.
 	PendingTTL time.Duration
@@ -96,7 +96,7 @@ func NewUsecase(
 		cfg.MFAMaxAttempts = 5
 	}
 	if cfg.Issuer == "" {
-		cfg.Issuer = "DAN-Government SSO"
+		cfg.Issuer = "Government SSO"
 	}
 	return &usecase{
 		google:          googleClient,

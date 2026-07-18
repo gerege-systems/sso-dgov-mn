@@ -2,7 +2,7 @@
 
 > 🌐 **English** · [Монгол](API_CONTRACT_MN.md)
 
-REST API reference for **DAN-Government SSO** (sso.dgov.mn) — the eID-based
+REST API reference for **Government SSO** (sso.dgov.mn) — the eID-based
 national Single Sign-On built on the **Government Template Platform V3.0** stack
 (Clean-Architecture Go backend + Next.js BFF + Gemini AI). The live,
 auto-generated spec is served at `GET /swagger/` (source: `docs/swagger.json`).
@@ -265,7 +265,7 @@ is configured** (`ProviderConfigured()`).
 
 | `app_type` | Grant | Client | Use |
 |------------|-------|--------|-----|
-| `web` | `authorization_code` (+ `refresh_token`) | confidential (secret) | RP "Login with DAN" — server-side web app |
+| `web` | `authorization_code` (+ `refresh_token`) | confidential (secret) | RP "Login with Government SSO" — server-side web app |
 | `spa` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, no secret) | Browser SPA |
 | `native` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, no secret) | Mobile / native app |
 | `m2m` | `client_credentials` | confidential (secret) | Server-to-server |

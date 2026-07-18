@@ -2,7 +2,7 @@
 
 > 🌐 [English](API_CONTRACT.md) · **Монгол**
 
-**DAN-Government SSO** (sso.dgov.mn)-ийн REST API лавлагаа — **Government Template
+**Government SSO** (sso.dgov.mn)-ийн REST API лавлагаа — **Government Template
 Platform V3.0** стек (Clean-Architecture Go backend + Next.js BFF + Gemini AI)
 дээр бүтээгдсэн eID-д суурилсан үндэсний нэгдсэн нэвтрэлт (Single Sign-On). Амьд,
 автоматаар үүсгэгддэг spec-ийг `GET /swagger/`-ээр үзүүлнэ (эх сурвалж:
@@ -264,7 +264,7 @@ client**; service тус бүрийн хандалтыг OAuth **scope**-оор 
 
 | `app_type` | Grant | Client | Хэрэглээ |
 |------------|-------|--------|-----|
-| `web` | `authorization_code` (+ `refresh_token`) | confidential (secret) | RP "Login with DAN" — сервер талын web апп |
+| `web` | `authorization_code` (+ `refresh_token`) | confidential (secret) | RP "Login with Government SSO" — сервер талын web апп |
 | `spa` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, secret-гүй) | Браузер SPA |
 | `native` | `authorization_code` (+ `refresh_token`) | **public** (PKCE, secret-гүй) | Мобайл / native апп |
 | `m2m` | `client_credentials` | confidential (secret) | Server-to-server |

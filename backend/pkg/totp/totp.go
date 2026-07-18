@@ -9,7 +9,7 @@ package totp
 import "github.com/pquerna/otp/totp"
 
 // Generate нь шинэ TOTP secret (base32) + otpauth:// provisioning URI буцаана.
-// issuer нь app-ийн нэр (жишээ "DAN-Government SSO"), account нь хэрэглэгчийн
+// issuer нь app-ийн нэр (жишээ "Government SSO"), account нь хэрэглэгчийн
 // таних (email г.м.) — authenticator app-д эдгээр харагдана.
 func Generate(issuer, account string) (secret, url string, err error) {
 	key, err := totp.Generate(totp.GenerateOpts{

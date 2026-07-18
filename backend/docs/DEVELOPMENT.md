@@ -2,7 +2,7 @@
 
 > 🌐 **English** · [Монгол](DEVELOPMENT_MN.md)
 
-This guide helps developers set up and work with the **DAN-Government SSO**
+This guide helps developers set up and work with the **Government SSO**
 codebase — the eID-based national Single Sign-On built on the **Government
 Template Platform V3.0** stack.
 

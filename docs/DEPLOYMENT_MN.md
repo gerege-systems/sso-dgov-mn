@@ -2,7 +2,7 @@
 
 > 🌐 [English](DEPLOYMENT.md) · **Монгол**
 
-**DAN-Government SSO** (sso.dgov.mn)-ийг нэг VPS дээр Docker Compose-оор,
+**Government SSO** (sso.dgov.mn)-ийг нэг VPS дээр Docker Compose-оор,
 nginx-ийн ард deploy хийх заавар. Стек нь Postgres + Redis + Go API + Next.js
 BFF web + **Ory Hydra** (dan-ийг SSO provider болгодог OIDC issuer). Жишиг
 deployment-д ашигласан бодит runbook.

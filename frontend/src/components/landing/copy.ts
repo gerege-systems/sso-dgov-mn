@@ -1,12 +1,12 @@
 // Government Template Platform V3.0
 // Gerege Systems Development Team & Claude AI, 2026
 //
-// DAN-Government SSO нүүр (landing) хуудасны маркетингийн текст — mn / en хосоор.
+// Government SSO нүүр (landing) хуудасны маркетингийн текст — mn / en хосоор.
 // Апп-ын үндсэн dict (lib/i18n.ts)-ийг бөглөхгүйн тулд landing-ийн урт мөрүүдийг
 // энд төвлөрүүлэв. Бүх түлхүүр хоёр хэлэнд адил байх ёстой (i18n.ts-тэй нэг зарчим).
 
 export interface LandingCopy {
-  /** Брэнд нэр (nav + footer). Хоосон бол 'DAN-Government SSO'. Theme-ээр солино. */
+  /** Брэнд нэр (nav + footer). Хоосон бол 'Government SSO'. Theme-ээр солино. */
   brand?: string;
   nav: { features: string; security: string; tech: string; login: string };
   hero: {
@@ -56,6 +56,7 @@ export interface LandingCopy {
 }
 
 const mn: LandingCopy = {
+  brand: 'Төрийн нэгдсэн нэвтрэлт',
   nav: { features: 'Боломжууд', security: 'Аюулгүй байдал', tech: 'Технологи', login: 'Нэвтрэх' },
   hero: {
     badge: 'Үндэсний цахим нэвтрэлт · eID',
@@ -63,8 +64,8 @@ const mn: LandingCopy = {
     titleAccent: 'бүх төрийн',
     titleTail: 'үйлчилгээ',
     lede:
-      'DAN нь үндэсний цахим үнэмлэг (eID)-т тулгуурласан төрийн нэгдсэн нэвтрэлт юм. Нэг удаа баталгаажуулснаар холбогдсон бүх төрийн болон хувийн үйлчилгээнд дахин нэвтрэлгүйгээр, найдвартай орно.',
-    ctaLogin: 'DAN-аар нэвтрэх',
+      'Төрийн нэгдсэн нэвтрэлт нь үндэсний цахим үнэмлэг (eID)-т тулгуурласан төрийн нэгдсэн нэвтрэлт юм. Нэг удаа баталгаажуулснаар холбогдсон бүх төрийн болон хувийн үйлчилгээнд дахин нэвтрэлгүйгээр, найдвартай орно.',
+    ctaLogin: 'eID-ээр нэвтрэх',
     ctaExplore: 'Боломжийг үзэх',
     stackLabel: 'Дэмждэг стандартууд',
     stats: [
@@ -88,10 +89,10 @@ const mn: LandingCopy = {
       'Нэвтрэлтийн түлхүүр зөвхөн серверт хадгалагдаж, хөтчийн код руу хэзээ ч ил гардаггүй. Давхар хамгаалалт, өгөгдлийн мөр бүрийн хандалтын хяналт, хүсэлтийн ухаалаг хязгаарлалтаар бүрхэгдсэн.',
     ssoTitle: 'Бусад системд нэгдсэн нэвтрэлт (SSO)',
     ssoBody:
-      'DAN-д холбогдсон аппликейшнүүд өөрсдийн нэвтрэлтийг DAN-аар гүйцэтгүүлж, хэрэглэгчийн баталгаажсан мэдээллийг олон улсын нээлттэй стандартаар аюулгүй хүлээн авна. Хэрэглэгч нэг л удаа нэвтэрч, холбогдсон бүх системд орно.',
+      'Government SSO-д холбогдсон аппликейшнүүд өөрсдийн нэвтрэлтийг Government SSO-гоор гүйцэтгүүлж, хэрэглэгчийн баталгаажсан мэдээллийг олон улсын нээлттэй стандартаар аюулгүй хүлээн авна. Хэрэглэгч нэг л удаа нэвтэрч, холбогдсон бүх системд орно.',
     signTitle: 'Цахим гарын үсгийн зуучлал',
     signBody:
-      'Холбогдсон системүүд DAN-ий итгэмжлэлээр дамжуулан баримт бичигт цахим гарын үсэг зуруулж чадна — өөрсдөө тусад нь гэрчилгээ эзэмших шаардлагагүйгээр.',
+      'Холбогдсон системүүд Government SSO-ийн итгэмжлэлээр дамжуулан баримт бичигт цахим гарын үсэг зуруулж чадна — өөрсдөө тусад нь гэрчилгээ эзэмших шаардлагагүйгээр.',
     consentTitle: 'Зөвшөөрлийг санана',
     consentBody:
       'Аппликейшн бүр таны зөвшөөрлийг зөвхөн анх удаа асууна. Дараа нь дахин төвөг учруулахгүй — жигд, тасралтгүй туршлага.',
@@ -133,20 +134,21 @@ const mn: LandingCopy = {
     ],
   },
   cta: {
-    title: 'Одоо DAN-аар нэвтэрнэ үү',
+    title: 'Одоо eID-ээр нэвтэрнэ үү',
     sub: 'Цахим үнэмлэгээ бэлдээд, нэг л баталгаажуулалтаар холбогдсон бүх үйлчилгээнд аюулгүй нэвтэрнэ.',
-    ctaLogin: 'DAN-аар нэвтрэх',
+    ctaLogin: 'eID-ээр нэвтрэх',
     ctaExplore: 'Боломжийг үзэх',
     tagline: 'Цахим үнэмлэг · Нээлттэй стандарт · Найдвартай хамгаалалт',
   },
   footer: {
     tagline: 'Үндэсний цахим үнэмлэгт суурилсан төрийн нэгдсэн нэвтрэлт. Gerege Systems, 2026.',
     links: ['Үйлчилгээний нөхцөл', 'Нууцлалын бодлого', 'Холбоо барих'],
-    copyright: '© 2026 Gerege Systems · DAN-Government SSO',
+    copyright: '© 2026 Gerege Systems · Government SSO',
   },
 };
 
 const en: LandingCopy = {
+  brand: 'Government SSO',
   nav: { features: 'Features', security: 'Security', tech: 'Technology', login: 'Sign in' },
   hero: {
     badge: 'National Single Sign-On · eID',
@@ -154,8 +156,8 @@ const en: LandingCopy = {
     titleAccent: 'every government',
     titleTail: 'service',
     lede:
-      'DAN-Government SSO is a national single sign-on built on the electronic ID (eID). Verify once, then access every connected government and private service securely — without signing in again.',
-    ctaLogin: 'Sign in with DAN',
+      'Government SSO is a national single sign-on built on the electronic ID (eID). Verify once, then access every connected government and private service securely — without signing in again.',
+    ctaLogin: 'Sign in with eID',
     ctaExplore: 'Explore features',
     stackLabel: 'Standards supported',
     stats: [
@@ -179,10 +181,10 @@ const en: LandingCopy = {
       'Tokens in httpOnly cookies (never exposed to browser JS), double CSRF defense, row-level security (RLS), CSP/HSTS headers and per-IP rate limiting.',
     ssoTitle: 'SSO for third parties (OAuth2 / OIDC)',
     ssoBody:
-      'An OpenID Connect provider built on Ory Hydra. Relying applications (RPs) delegate sign-in to DAN and receive verified user data as standard claims.',
+      'An OpenID Connect provider built on Ory Hydra. Relying applications (RPs) delegate sign-in to Government SSO and receive verified user data as standard claims.',
     signTitle: 'Signature relay',
     signBody:
-      'Third-party RPs can have documents e-signed through DAN’s eID RP credentials — without holding their own eID certificates.',
+      'Third-party RPs can have documents e-signed through Government SSO’s eID RP credentials — without holding their own eID certificates.',
     consentTitle: 'Remembers consent',
     consentBody:
       'Each application asks for your consent only the first time. After that it never re-prompts — a smooth, uninterrupted experience.',
@@ -224,16 +226,16 @@ const en: LandingCopy = {
     ],
   },
   cta: {
-    title: 'Sign in with DAN now',
+    title: 'Sign in with eID now',
     sub: 'Have your electronic ID ready and, with a single verification, access every connected service securely.',
-    ctaLogin: 'Sign in with DAN',
+    ctaLogin: 'Sign in with eID',
     ctaExplore: 'Explore features',
     tagline: 'eID-based · Open standards · Secure by design',
   },
   footer: {
     tagline: 'National single sign-on built on the electronic ID. Gerege Systems, 2026.',
     links: ['Terms of Service', 'Privacy Policy', 'Contact'],
-    copyright: '© 2026 Gerege Systems · DAN-Government SSO',
+    copyright: '© 2026 Gerege Systems · Government SSO',
   },
 };
 

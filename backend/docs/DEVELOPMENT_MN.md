@@ -2,7 +2,7 @@
 
 > 🌐 [English](DEVELOPMENT.md) · **Монгол**
 
-Энэ заавар нь хөгжүүлэгчдэд **DAN-Government SSO** кодын бааз — **Government
+Энэ заавар нь хөгжүүлэгчдэд **Government SSO** кодын бааз — **Government
 Template Platform V3.0** стек дээр бүтээгдсэн eID-д суурилсан үндэсний Single
 Sign-On — дээр тохиргоо хийж, ажиллахад туслана.
 

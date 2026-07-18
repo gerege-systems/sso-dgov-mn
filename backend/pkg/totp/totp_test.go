@@ -18,7 +18,7 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	secret, uri, err := totp.Generate("DAN-Government SSO", "bat@dgov.mn")
+	secret, uri, err := totp.Generate("Government SSO", "bat@dgov.mn")
 	require.NoError(t, err)
 	assert.NotEmpty(t, secret)
 
@@ -28,7 +28,7 @@ func TestGenerate(t *testing.T) {
 	require.NoError(t, parseErr)
 	assert.Equal(t, "otpauth", u.Scheme)
 	assert.Equal(t, "totp", u.Host)
-	assert.Equal(t, "DAN-Government SSO", u.Query().Get("issuer"))
+	assert.Equal(t, "Government SSO", u.Query().Get("issuer"))
 	assert.Equal(t, secret, u.Query().Get("secret"))
 	assert.Contains(t, u.Path, "bat@dgov.mn")
 }
@@ -43,7 +43,7 @@ func TestGenerateUniqueSecrets(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	secret, _, err := totp.Generate("DAN-Government SSO", "bat@dgov.mn")
+	secret, _, err := totp.Generate("Government SSO", "bat@dgov.mn")
 	require.NoError(t, err)
 
 	t.Run("зөв код → true", func(t *testing.T) {

@@ -2,14 +2,14 @@
 
 > 🌐 [English](ARCHITECTURE.md) · **Монгол**
 
-Энэ баримт нь **DAN-Government SSO** (**sso.dgov.mn** дээр байрлуулсан) — **eID-д
+Энэ баримт нь **Government SSO** (**sso.dgov.mn** дээр байрлуулсан) — **eID-д
 суурилсан улсын Single Sign-On**-ийн ерөнхий архитектурыг тайлбарлана. Уг систем
 нь **Government Template Platform V3.0** стек дээр бүтээгдсэн. Backend модуль нь
 `template`; стек нь **chi (net/http) + pgx (pgxpool) + PostgreSQL + Redis + Gemini
 AI**, Clean Architecture зарчмаар зохион байгуулагдсан бөгөөд Next.js BFF-ээр
 хучигдсан.
 
-DAN-Government SSO нь нэгэн зэрэг **eID Relying Party** (хэрэглэгч eID-ээр нэвтэрнэ)
+Government SSO нь нэгэн зэрэг **eID Relying Party** (хэрэглэгч eID-ээр нэвтэрнэ)
 бөгөөд **OIDC Identity Provider** (бусад төрийн апп-ууд Ory Hydra-аар дамжуулан
 dan-*аар* нэвтэрнэ) юм. PostgreSQL дахь Row-Level Security нь хэрэглэгч тус бүрийн
 тусгаарлалтыг үүрдэг гол хамгаалалтын хил юм —
@@ -227,7 +227,7 @@ adapter-ээс хэзээ ч биш.
 
 ## Танилт (Authentication)
 
-DAN-Government SSO нь **JWT access + refresh токен** (`pkg/jwt`) олгодог ч **нууц
+Government SSO нь **JWT access + refresh токен** (`pkg/jwt`) олгодог ч **нууц
 үгээр нэвтрэх, email/OTP бүртгэл, нууц үг сэргээх зэрэг байхгүй**. Identity нь
 зөвхөн гадаад provider-оос ирнэ. Endpoint-ийн хэлбэрийг
 [API_CONTRACT.md](API_CONTRACT_MN.md)-ээс үз; route-ууд нь
@@ -359,13 +359,13 @@ role чимээгүй алгасдаг тул `guardRLSEnforceable`
 
 ## OIDC Provider (Ory Hydra)
 
-DAN-Government SSO өөрөө **Identity Provider**: бусад төрийн апп-ууд **Ory Hydra**-аар
+Government SSO өөрөө **Identity Provider**: бусад төрийн апп-ууд **Ory Hydra**-аар
 дамжуулан нэвтрэлтээ dan-д даалгадаг. Энэ гадаргуу нь зөвхөн `ProviderConfigured()`
 true үед идэвхжинэ (`HYDRA_ADMIN_URL` + `HYDRA_PUBLIC_URL` + `SSO_STATE_KEY ≥ 32
 байт`); эс бөгөөс inert бөгөөс route нь огт бүртгэгдэхгүй.
 
 - **Login / consent / logout цөм** — `usecases/provider` + `pkg/hydra` нь Hydra-гийн challenge-ийг зохицуулна; first-party client-ууд (`SSO_FIRSTPARTY_CLIENTS`) consent UI-г алгасна. `/api/v1/provider` дор mount.
-- **Applications (нэгдсэн client бүртгэл)** — `usecases/applications` (`/api/v1/applications` дор mount, `gateway.manage`-ээр хамгаалагдсан) нь OAuth2 client бүртгэх одоогийн арга: RP "Login with DAN" апп-ууд (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` нь public, PKCE, secret-гүй) болон m2m client-ууд (`client_credentials`). Тус бүр нь Hydra OAuth2 client бөгөөс scope нь зөвшөөрсөн gateway service-үүд (`application_services` → `gateway_services.scope`); confidential `client_secret` нь create/rotate үед нэг удаа харагдана.
+- **Applications (нэгдсэн client бүртгэл)** — `usecases/applications` (`/api/v1/applications` дор mount, `gateway.manage`-ээр хамгаалагдсан) нь OAuth2 client бүртгэх одоогийн арга: RP "Login with Government SSO" апп-ууд (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` нь public, PKCE, secret-гүй) болон m2m client-ууд (`client_credentials`). Тус бүр нь Hydra OAuth2 client бөгөөс scope нь зөвшөөрсөн gateway service-үүд (`application_services` → `gateway_services.scope`); confidential `client_secret` нь create/rotate үед нэг удаа харагдана.
 - **Операторын гадаргуу (legacy)** — `internal/provider/adminapi` нь **`/admin`** дор (`http.StripPrefix`-ээр) RP OAuth2-client бүртгэл/удирдлагад mount; `devapps` (`developer_apps`) store болон `adminkeys` (bootstrap key нь `SSO_ADMIN_API_KEYS`-аас, SHA-256-аар тааруулна)-аар дэмжигдэнэ. Энэ admin-API-key операторын гадаргуу болон `developer_apps` overlay нь хэвээр байгаа ч шинэ ажилд **нэгдсэн Applications загвараар орлогдсон**.
 - **Sign relay** — `internal/provider/signrelay` нь **`/rp/sign/*`** дор mount; доод RP-үүд dan-ий eidmongolia RP credential-ээр *дамжин* eID PDF гарын үсэг зурах reverse proxy (`SIGN_RELAY_TOKEN` + `EID_RP_SECRET`-ээр идэвхжинэ).
 

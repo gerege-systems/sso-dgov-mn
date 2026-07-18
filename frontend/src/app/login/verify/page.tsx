@@ -6,7 +6,7 @@ import EidVerify from './EidVerify';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'eID баталгаажуулалт — DAN-Government SSO' };
+export const metadata = { title: 'eID баталгаажуулалт — Төрийн нэгдсэн нэвтрэлт' };
 
 // eID апп-аас App2App буцалтын callback (IdP-д бүртгэгдсэн
 // https://sso.dgov.mn/login/verify). eID апп буцахдаа session id-г

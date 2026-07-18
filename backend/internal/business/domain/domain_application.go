@@ -7,7 +7,7 @@ import "time"
 
 // Application нь API Gateway consumer + SSO RP (developer_apps)-ыг нэгтгэсэн
 // бүртгэл. Мөр бүр нэг Hydra OAuth2 client-тэй тохирно: web/spa/native нь
-// authorization_code (DAN-аар нэвтрэх RP), m2m нь client_credentials (API дуудагч).
+// authorization_code (eID-ээр нэвтрэх RP), m2m нь client_credentials (API дуудагч).
 // Аппад ямар gateway service ашиглаж болохыг ServiceIDs (application_services →
 // scope) заана. Secret нь зөвхөн үүсгэх/эргүүлэх үед НЭГ удаа дүүрнэ (DB-д
 // хадгалагдахгүй — Hydra эзэмшинэ).

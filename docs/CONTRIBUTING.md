@@ -1,6 +1,6 @@
 # Contributing · Хувь нэмэр оруулах
 
-Thanks for your interest in improving **DAN-Government SSO**! / **DAN-Government SSO**-ийг сайжруулах сонирхолд тань баярлалаа!
+Thanks for your interest in improving **Government SSO**! / **Government SSO**-ийг сайжруулах сонирхолд тань баярлалаа!
 
 ## Getting started · Эхлэх
 

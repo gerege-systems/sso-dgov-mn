@@ -251,9 +251,9 @@ export default function AppShell({ user, children }: Props) {
   return (
     <div className={`shell2${collapsed ? ' is-collapsed' : ''}`}>
       <aside className="iconrail">
-        <Link href="/" className="iconrail__brand" aria-label="DAN-Government SSO">
+        <Link href="/" className="iconrail__brand" aria-label="Төрийн нэгдсэн нэвтрэлт">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand.webp" alt="DAN-Government SSO" />
+          <img src="/brand.webp" alt="Төрийн нэгдсэн нэвтрэлт" />
         </Link>
         <nav className="iconrail__nav" aria-label={T('shell.menu')}>
           {systems.map((s) => {

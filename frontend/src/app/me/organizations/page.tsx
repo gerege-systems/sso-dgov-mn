@@ -6,7 +6,7 @@ import ImageUploadCard from '@/components/me/ImageUploadCard';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Байгууллага — DAN-Government SSO' };
+export const metadata = { title: 'Байгууллага — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function MeOrganizationsPage() {
   const me = await fetchMe();

@@ -4,7 +4,7 @@ import ProfileView from '@/components/me/ProfileView';
 import { fetchMe } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Профайл — DAN-Government SSO' };
+export const metadata = { title: 'Профайл — Төрийн нэгдсэн нэвтрэлт' };
 
 export default async function MeProfilePage() {
   const me = await fetchMe();
