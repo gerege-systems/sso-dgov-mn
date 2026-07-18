@@ -472,7 +472,7 @@ func NewApp() (*App, error) {
 		// (introspection боломжтой) үед идэвхжинэ.
 		if hydraAdmin != nil {
 			eidOAuthMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "eid")
-			routes.NewEIDProxyRoute(api, authUC, eidOAuthMW).Routes()
+			routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidOAuthMW).Routes()
 		}
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
 		if providerUC != nil {

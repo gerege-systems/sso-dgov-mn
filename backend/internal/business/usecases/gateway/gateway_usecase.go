@@ -18,6 +18,10 @@ type Usecase interface {
 	CreateService(ctx context.Context, in ServiceInput) (domain.GatewayService, error)
 	UpdateService(ctx context.Context, id string, in ServiceInput) (domain.GatewayService, error)
 	DeleteService(ctx context.Context, id string) error
+	// ServiceEnabled нь catalog дахь нэрээр service идэвхтэй эсэхийг буцаана —
+	// admin gateway UI-аас enable/disable хийсэн runtime feature toggle. Catalog-д
+	// олдоогүй бол true (код-default идэвхтэй; catalog нь код-функцийг хаадаггүй).
+	ServiceEnabled(ctx context.Context, name string) (bool, error)
 
 	// Telemetry
 	ListRequestLogs(ctx context.Context, limit int) ([]domain.GatewayRequestLog, error)
