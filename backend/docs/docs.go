@@ -6519,6 +6519,11 @@ const docTemplate = `{
                 "doc_text": {
                     "type": "string"
                 },
+                "extra": {
+                    "description": "activity service-ийн нэмэлт талбарууд",
+                    "type": "object",
+                    "additionalProperties": {}
+                },
                 "flow": {
                     "type": "string"
                 },

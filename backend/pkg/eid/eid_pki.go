@@ -69,13 +69,50 @@ type ActivityCounts struct {
 	Signature      int `json:"signature"`
 }
 
-// PersonActivityItem нь RP-scoped session түүхийн нэг бичлэг.
+// PersonActivityItem нь RP-scoped session түүхийн нэг бичлэг. Extra нь activity
+// service-ийн буцаадаг нэмэлт (танихгүй) талбаруудыг задлан хадгална — upstream
+// өргөжихөд UI ямар ч талбарыг харуулж чадна ("бүгдийг харуул").
 type PersonActivityItem struct {
-	SessionID string    `json:"sessionId"`
-	Flow      string    `json:"flow"` // AUTHENTICATION | SIGNATURE
-	Outcome   string    `json:"outcome"`
-	DocText   string    `json:"docText"`
-	Timestamp time.Time `json:"timestamp"`
+	SessionID string         `json:"sessionId"`
+	Flow      string         `json:"flow"` // AUTHENTICATION | SIGNATURE
+	Outcome   string         `json:"outcome"`
+	DocText   string         `json:"docText"`
+	Timestamp time.Time      `json:"timestamp"`
+	Extra     map[string]any `json:"-"` // танигдсанаас бусад бүх талбар (raw)
+}
+
+// activityKnownKeys нь дээрх typed талбаруудын JSON нэрс — Extra-д давхардуулахгүй.
+var activityKnownKeys = map[string]struct{}{
+	"sessionId": {}, "flow": {}, "outcome": {}, "docText": {}, "timestamp": {},
+}
+
+// UnmarshalJSON нь typed талбаруудыг бөглөөд, үлдсэн бүх түлхүүрийг Extra-д хийнэ.
+func (i *PersonActivityItem) UnmarshalJSON(b []byte) error {
+	type alias PersonActivityItem // рекурс сэргийлэх (Extra нь json:"-")
+	var a alias
+	if err := json.Unmarshal(b, &a); err != nil {
+		return err
+	}
+	*i = PersonActivityItem(a)
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	for k, v := range raw {
+		if _, known := activityKnownKeys[k]; known {
+			continue
+		}
+		var val any
+		if err := json.Unmarshal(v, &val); err != nil {
+			continue // задлагдахгүй талбарыг алгасна
+		}
+		if i.Extra == nil {
+			i.Extra = map[string]any{}
+		}
+		i.Extra[k] = val
+	}
+	return nil
 }
 
 // PersonActivity нь GET /v3/rp/activity/etsi/{personEtsi}-ийн хариу (RP-scoped).

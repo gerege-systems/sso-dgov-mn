@@ -38,6 +38,8 @@ export interface PkiActItem {
   outcome: string;
   doc_text?: string;
   timestamp?: string;
+  // activity service өргөжихөд буцаах нэмэлт (динамик) талбарууд.
+  extra?: Record<string, unknown>;
 }
 
 /** pkiGet нь backend PKI endpoint-ыг дуудаж {status, data}-г бүрэн буцаана. */
