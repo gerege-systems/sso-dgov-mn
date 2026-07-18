@@ -471,8 +471,12 @@ func NewApp() (*App, error) {
 		// eID credential эзэмших шаардлагагүй. Зөвхөн Hydra тохируулагдсан
 		// (introspection боломжтой) үед идэвхжинэ.
 		if hydraAdmin != nil {
-			eidOAuthMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "eid")
-			routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidOAuthMW).Routes()
+			// Service тус бүрийн зөвшөөрөл нь client-ийн Hydra allowed scope дахь
+			// "svc:<service>"-ээр илэрхийлэгдэнэ (admin gateway UI-аас апп-д service
+			// олгоход нэмэгддэг). Олгогдоогүй апп 403 авна.
+			eidMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "svc:"+routes.EIDProxyServiceName)
+			eidOrgMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "svc:"+routes.EIDOrgProxyServiceName)
+			routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidMW, eidOrgMW).Routes()
 		}
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
 		if providerUC != nil {
