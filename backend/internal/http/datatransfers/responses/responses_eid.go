@@ -131,11 +131,12 @@ type EIDCertificatesResponse struct {
 }
 
 type EIDPersonDevice struct {
-	DocumentNumber string     `json:"document_number"`
-	Platform       string     `json:"platform,omitempty"`
-	EnrolledAt     *time.Time `json:"enrolled_at,omitempty"`
-	Active         bool       `json:"active"`
-	DeactivatedAt  *time.Time `json:"deactivated_at,omitempty"`
+	DocumentNumber string         `json:"document_number"`
+	Platform       string         `json:"platform,omitempty"`
+	EnrolledAt     *time.Time     `json:"enrolled_at,omitempty"`
+	Active         bool           `json:"active"`
+	DeactivatedAt  *time.Time     `json:"deactivated_at,omitempty"`
+	Extra          map[string]any `json:"extra,omitempty"` // upstream-ийн нэмэлт талбарууд
 }
 
 type EIDDevicesResponse struct {
@@ -206,6 +207,7 @@ func FromEIDDevices(d *eid.PersonDevices) EIDDevicesResponse {
 		devs = append(devs, EIDPersonDevice{
 			DocumentNumber: x.DocumentNumber, Platform: x.Platform,
 			EnrolledAt: tptr(x.EnrolledAt), Active: x.Active, DeactivatedAt: x.DeactivatedAt,
+			Extra: x.Extra,
 		})
 	}
 	return EIDDevicesResponse{Devices: devs, ActiveCount: d.ActiveCount, Total: d.Total}

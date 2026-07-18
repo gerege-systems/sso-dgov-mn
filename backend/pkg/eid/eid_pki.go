@@ -122,13 +122,49 @@ type PersonActivity struct {
 	Total    int                  `json:"total"`
 }
 
-// PersonDeviceItem нь холбоотой нэг төхөөрөмж.
+// PersonDeviceItem нь холбоотой нэг төхөөрөмж. Extra нь upstream-ийн буцаадаг
+// нэмэлт (танихгүй) талбаруудыг задлан хадгална ("бүгдийг харуул").
 type PersonDeviceItem struct {
-	DocumentNumber string     `json:"documentNumber"`
-	Platform       string     `json:"platform"` // APNS | FCM
-	EnrolledAt     time.Time  `json:"enrolledAt"`
-	Active         bool       `json:"active"`
-	DeactivatedAt  *time.Time `json:"deactivatedAt"`
+	DocumentNumber string         `json:"documentNumber"`
+	Platform       string         `json:"platform"` // APNS | FCM
+	EnrolledAt     time.Time      `json:"enrolledAt"`
+	Active         bool           `json:"active"`
+	DeactivatedAt  *time.Time     `json:"deactivatedAt"`
+	Extra          map[string]any `json:"-"` // танигдсанаас бусад бүх талбар (raw)
+}
+
+// deviceKnownKeys нь дээрх typed талбаруудын JSON нэрс — Extra-д давхардуулахгүй.
+var deviceKnownKeys = map[string]struct{}{
+	"documentNumber": {}, "platform": {}, "enrolledAt": {}, "active": {}, "deactivatedAt": {},
+}
+
+// UnmarshalJSON нь typed талбаруудыг бөглөөд, үлдсэн бүх түлхүүрийг Extra-д хийнэ.
+func (i *PersonDeviceItem) UnmarshalJSON(b []byte) error {
+	type alias PersonDeviceItem // рекурс сэргийлэх (Extra нь json:"-")
+	var a alias
+	if err := json.Unmarshal(b, &a); err != nil {
+		return err
+	}
+	*i = PersonDeviceItem(a)
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	for k, v := range raw {
+		if _, known := deviceKnownKeys[k]; known {
+			continue
+		}
+		var val any
+		if err := json.Unmarshal(v, &val); err != nil {
+			continue
+		}
+		if i.Extra == nil {
+			i.Extra = map[string]any{}
+		}
+		i.Extra[k] = val
+	}
+	return nil
 }
 
 // PersonDevices нь GET /v3/devices/etsi/{personEtsi}-ийн хариу.
