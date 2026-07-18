@@ -465,6 +465,15 @@ func NewApp() (*App, error) {
 		routes.NewSiteRoute(api, siteUC, rbacUC, authMiddleware).Routes()
 		routes.NewThemeRoute(api, themeUC, rbacUC, authMiddleware).Routes()
 		routes.NewSignRoute(api, signUC, usersUC, assetsUC, authMiddleware).Routes()
+		// eID service proxy — бүртгэгдсэн апп (relying party)-ууд хэрэглэгчийнхээ
+		// Hydra access token-оор ("eid" scope) SSO-ий eID service-үүдийг ДАМЖУУЛАН
+		// дуудна (/v1/eid/*). SSO өөрийн eidmongolia RP creds-ээр татаж өгнө; апп-д
+		// eID credential эзэмших шаардлагагүй. Зөвхөн Hydra тохируулагдсан
+		// (introspection боломжтой) үед идэвхжинэ.
+		if hydraAdmin != nil {
+			eidOAuthMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "eid")
+			routes.NewEIDProxyRoute(api, authUC, eidOAuthMW).Routes()
+		}
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
 		if providerUC != nil {
 			routes.NewProviderRoute(api, providerUC, authMiddleware).Routes()
