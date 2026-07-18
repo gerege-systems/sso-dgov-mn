@@ -30,8 +30,9 @@ type Usecase interface {
 	// GrantAdmin нь байгаа хэрэглэгчид admin эрх олгоно (RoleAdmin болгоно).
 	// Аль хэдийн админ (admin/super admin) бол apperror.Conflict.
 	GrantAdmin(ctx context.Context, req GrantAdminRequest) error
-	// AddAdminByRegister нь регистрийн дугаараар (Core-оос батлагдсан иргэн)
-	// БАЙГАА хэрэглэгчийг admin болгоно. Тухайн регистрээр DAN-д бүртгэлтэй
+	// AddAdminByRegister нь регистрийн дугаараар DAN-д (eID-ээр нэвтэрч)
+	// БАЙГАА хэрэглэгчийг admin болгоно. Core (үндэсний бүртгэл) руу ХАНДАХГҮЙ —
+	// зөвхөн local DAN хэрэглэгчийг лавлана. Тухайн регистрээр DAN-д бүртгэлтэй
 	// хэрэглэгч байхгүй бол apperror.NotFound ("эхлээд eID-ээр нэвтэрсэн байх
 	// шаардлагатай") — шинэ хэрэглэгч ҮҮСГЭХГҮЙ. Промоушн хийсэн хэрэглэгчийг буцаана.
 	AddAdminByRegister(ctx context.Context, req AddAdminByRegisterRequest) (CreateAdminResponse, error)

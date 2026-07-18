@@ -172,8 +172,9 @@ export default function SuperadminManager({ currentUserId }: Props) {
     <div className="users">
       {error && <div className="alert alert--danger" role="alert">{error}</div>}
 
-      {/* Регистрээр админ болгох — DAN-д бүртгэлтэй байгаа хэрэглэгчийг Core-оос
-          хайж, нэрийг нь баталгаажуулаад админ эрх олгоно. */}
+      {/* Регистрээр админ болгох — DAN-д бүртгэлтэй байгаа (eID-ээр нэвтэрсэн)
+          хэрэглэгчийг регистрээр нь хайж, нэрийг баталгаажуулаад админ эрх олгоно.
+          Core (үндэсний бүртгэл) руу ХАНДАХГҮЙ — зөвхөн local DAN хэрэглэгч. */}
       <div className="card" style={{ padding: 16, marginBottom: 16, display: 'grid', gap: 10 }}>
         <label className="field__label">{T('superadmin.byRegisterTitle')}</label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
