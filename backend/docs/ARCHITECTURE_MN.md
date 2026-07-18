@@ -279,8 +279,25 @@ true. Role ID `0` нь claim-гүй хуучин токенуудын sentinel �
 **Динамик RBAC** — role-ийн бүдүүн зэрэглэлээс гадна `rbac.Usecase` нь role-ийн
 permission багцыг DB-ээс шийддэг (`8_rbac_roles_permissions` migration).
 `RequirePermission(resolver, perm)` нь route-ийг нэрлэсэн permission-оор хаана;
-admin давна. Super admin-ыг `SUPERADMIN_EMAIL` (эсвэл DB)-ээс bootstrap хийнэ,
-хэзээ ч API-аар биш.
+admin давна.
+
+**Super admin-ы бүртгэл** (`35_superadmin_mfa`, `37_superadmin_accounts` migration) —
+super admin нь `role_id = 1`-тэй `users` мөр боловч түүний **бүртгэл ба credential нь
+тусдаа `superadmin_accounts` satellite хүснэгтэд** (`user_id`-аар түлхүүрлэсэн)
+хадгалагдана: eID identity (`civil_id` / `national_id`), AES-GCM-ээр шифрлэгдсэн TOTP
+secret, `mfa_enabled`, `email_verified`, урилга / onboarding metadata. `users` мөр нь
+`google_sub`-аар (Google нэвтрэлт) түлхүүрлэгддэг бөгөөд **`civil_id`-гүй** тул нэг
+хүн хоёр тусдаа account эзэмшиж чадна — **eID admin** (өөрийн `civil_id`-тэй мөр)
+болон **Google super admin** (тусдаа мөр) — `civil_id`-ийн partial-unique index
+зөрчихгүйгээр.
+
+Super admin зөвхөн **MFA onboarding шидтэнгээр** (урилгын allow-list → Google → eID →
+и-мэйл OTP → TOTP + нөөц код; `superadmin_onboarding` usecase нь `users` мөр ба
+satellite мөрийг НЭГ транзакцид бичдэг) эсвэл `SUPERADMIN_EMAIL`-ээс bootstrap-аар
+үүснэ — хэзээ ч энгийн API бичилтээр биш. MFA төлөв satellite хүснэгтэд байдаг тул
+super admin-ы **аль ч** нэвтрэлт MFA-гаар хаагдана (`requiresMFA` нь super admin-д
+болзолгүй, satellite мөр байхгүй бол fail-closed); challenge нь TOTP secret-ыг
+`superadmin_accounts`-аас уншина (энэ хүснэгт нь service / admin RLS policy-той).
 
 ## Row-Level Security (RLS)
 

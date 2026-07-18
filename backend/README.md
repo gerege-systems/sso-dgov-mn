@@ -221,11 +221,21 @@ SUPERADMIN_EMAIL=                # optional: promote this (already-signed-in) us
 Roles are ordered by privilege (id 1 = highest): **superadmin=1, admin=2,
 manager=3, user=4** (seeded/remapped by migration `23_superadmin_role`). A
 **super admin** sits above admin and is the only role that can manage admin
-accounts (create / grant / revoke) via `/api/v1/superadmin/*`
-(`RequireSuperAdmin`); regular admins cannot reach that surface. The API never
-mints a super admin — bootstrap one by setting `SUPERADMIN_EMAIL` to an existing
-user who has already signed in via eID (promoted on the next boot) or by updating
-`role_id=1` in the DB.
+accounts (grant by register number / revoke) via `/api/v1/superadmin/*`
+(`RequireSuperAdmin`); regular admins cannot reach that surface. Admins are
+granted against **local eID-registered users** (`GetByNationalID`), not the
+national registry.
+
+Super admins are **MFA-secured, separate accounts**. Their registration and
+credentials live in a dedicated **`superadmin_accounts` satellite table**
+(migration `37_superadmin_accounts`): eID identity, AES-GCM-encrypted TOTP secret,
+`mfa_enabled`, `email_verified`, invite/onboarding metadata. The `users` row is
+keyed by `google_sub` with **no `civil_id`**, so one person can hold both an eID
+admin and a Google super admin account. The API never mints a super admin — they
+are created only through the **onboarding wizard** (invite allow-list → Google →
+eID → email OTP → TOTP + recovery codes; `superadmin_onboarding` writes the `users`
+row and satellite row in one transaction) or bootstrapped via `SUPERADMIN_EMAIL`.
+Every super admin login is MFA-gated (fail-closed if the satellite row is missing).
 
 > **Breaking change (existing deployments):** migration `23` renumbers roles, so
 > JWTs issued before it are reinterpreted (old `admin=1` → superadmin,
@@ -285,6 +295,8 @@ register / forgot-reset endpoint** — authentication is eID + Google + dgov SSO
 | POST | `/api/v1/security/events` | Ingest a client security event |
 | GET | `/api/v1/superadmin/admins` | List admin-level accounts (super admin only) |
 | POST | `/api/v1/superadmin/admins` | Create a new admin account (super admin only) |
+| GET | `/api/v1/superadmin/admins/by-register` | Look up a **local DAN** user by register number — preview before promoting (super admin only) |
+| POST | `/api/v1/superadmin/admins/by-register` | Promote a local DAN user to admin by register number (super admin only) |
 | PUT | `/api/v1/superadmin/admins/{id}/grant` | Grant admin to an existing user (super admin only) |
 | DELETE | `/api/v1/superadmin/admins/{id}` | Revoke admin (super admin only) |
 

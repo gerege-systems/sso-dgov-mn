@@ -277,8 +277,26 @@ downgraded to `RoleUser` by the RBAC middleware.
 **Dynamic RBAC** — beyond the coarse role rank, `rbac.Usecase` resolves a role's
 permission set from the database (migration `8_rbac_roles_permissions`).
 `RequirePermission(resolver, perm)` gates a route on a named permission; admins
-bypass. Super admin is bootstrapped from `SUPERADMIN_EMAIL` (or by DB), never via
-API.
+bypass.
+
+**Super admin accounts** (migrations `35_superadmin_mfa`, `37_superadmin_accounts`) —
+a super admin is a `users` row with `role_id = 1`, but its **registration and
+credentials live in a separate `superadmin_accounts` satellite table** (keyed by
+`user_id`): the eID identity (`civil_id` / `national_id`), the AES-GCM-encrypted
+TOTP secret, `mfa_enabled`, `email_verified`, and the invite / onboarding metadata.
+The `users` row itself is keyed by `google_sub` (Google login) with **no `civil_id`**,
+so one physical person can hold two independent accounts — an **eID admin** (their
+`civil_id` row) and a **Google super admin** (a separate row) — without colliding on
+the `civil_id` partial-unique index.
+
+Super admins are created only through the **MFA onboarding wizard** (invite
+allow-list → Google → eID → email OTP → TOTP + recovery codes; the
+`superadmin_onboarding` usecase writes both the `users` row and its satellite row in
+one transaction), or bootstrapped from `SUPERADMIN_EMAIL` — never via a plain API
+write. Because MFA state lives in the satellite table, **every** super admin login is
+MFA-gated (`requiresMFA` is unconditional for super admins and fails closed when the
+satellite row is missing); the challenge reads the TOTP secret from
+`superadmin_accounts`, which is RLS-guarded (service / admin policies only).
 
 ## Row-Level Security (RLS)
 

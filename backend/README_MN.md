@@ -233,11 +233,21 @@ SUPERADMIN_EMAIL=                # сонголттой: boot үед энэ (а�
 Role-ууд эрхийн зэрэглэлээр дугаарлагдсан (id 1 = хамгийн дээд):
 **superadmin=1, admin=2, manager=3, user=4** (`23_superadmin_role` migration-оор
 seed/remap хийгдэнэ). **Super admin** нь admin-аас дээгүүр бөгөөд админ
-бүртгэлүүдийг удирдах (үүсгэх/эрх олгох/хасах) цорын ганц эрх —
+бүртгэлүүдийг удирдах (регистрээр эрх олгох/хасах) цорын ганц эрх —
 `/api/v1/superadmin/*` (`RequireSuperAdmin`); энгийн admin энэ гадаргууд
-хүрэхгүй. API нь super admin-г хэзээ ч үүсгэдэггүй — bootstrap хийхдээ
-`SUPERADMIN_EMAIL`-д аль хэдийн eID-ээр нэвтэрсэн хэрэглэгчийн и-мэйлийг заана
-(дараагийн boot-д ахиулна) эсвэл DB-д `role_id=1` болгоно.
+хүрэхгүй. Админыг **local eID-ээр бүртгэлтэй хэрэглэгчээс** (`GetByNationalID`)
+регистрийн дугаараар олгоно — үндэсний бүртгэлээс биш.
+
+Super admin нь **MFA-тай, тусдаа account**. Түүний бүртгэл ба credential нь
+тусдаа **`superadmin_accounts` satellite хүснэгтэд** (`37_superadmin_accounts`
+migration) хадгалагдана: eID identity, AES-GCM-ээр шифрлэгдсэн TOTP secret,
+`mfa_enabled`, `email_verified`, урилга/onboarding metadata. `users` мөр нь
+`google_sub`-аар түлхүүрлэгдэж **`civil_id`-гүй** тул нэг хүн eID admin ба Google
+super admin account хоёуланг эзэмшиж чадна. API нь super admin-г хэзээ ч
+үүсгэдэггүй — зөвхөн **onboarding шидтэнгээр** (урилгын allow-list → Google → eID →
+и-мэйл OTP → TOTP + нөөц код; `superadmin_onboarding` нь `users` мөр ба satellite
+мөрийг нэг транзакцид бичдэг) эсвэл `SUPERADMIN_EMAIL`-ээр bootstrap хийж үүснэ.
+Super admin-ы аль ч нэвтрэлт MFA-гаар хаагдана (satellite мөр байхгүй бол fail-closed).
 
 > **Эвдрэлтэй өөрчлөлт (одоо ажиллаж буй deployment):** `23` migration нь role-
 > уудыг дахин дугаарладаг тул түүнээс өмнө олгосон JWT-үүд өөр утгаар унших
@@ -296,6 +306,8 @@ AI туслах давхаргат system prompt-оор ажиллана: **suur
 | POST | `/api/v1/security/events` | Client security event бүртгэх |
 | GET | `/api/v1/superadmin/admins` | Админ түвшний бүртгэлүүдийг жагсаах (зөвхөн super admin) |
 | POST | `/api/v1/superadmin/admins` | Шинэ админ үүсгэх (зөвхөн super admin) |
+| GET | `/api/v1/superadmin/admins/by-register` | **Local DAN** хэрэглэгчийг регистрээр урьдчилан харах — эрх олгохын өмнөх preview (зөвхөн super admin) |
+| POST | `/api/v1/superadmin/admins/by-register` | Local DAN хэрэглэгчийг регистрийн дугаараар админ болгох (зөвхөн super admin) |
 | PUT | `/api/v1/superadmin/admins/{id}/grant` | Байгаа хэрэглэгчид админ эрх олгох (зөвхөн super admin) |
 | DELETE | `/api/v1/superadmin/admins/{id}` | Админ эрх хасах (зөвхөн super admin) |
 
