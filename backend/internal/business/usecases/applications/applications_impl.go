@@ -11,39 +11,70 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"template/internal/apperror"
 	"template/internal/business/domain"
-	repointerface "template/internal/datasources/repositories/interface"
 	"template/pkg/hydra"
 )
 
-// hydraClients нь Hydra admin-ийн ашиглах OAuth2 client CRUD дэд олонлог
-// (*hydra.Admin үүнийг хангана) — usecase-ыг тест хийхэд эвтэйхэн.
+// hydraClients нь Hydra admin-ийн OAuth2 client CRUD + жагсаалт (*hydra.Admin
+// үүнийг хангана) — usecase-ыг тест хийхэд эвтэйхэн. Applications-ийн ЦОРЫН ГАНЦ
+// эх сурвалж нь Hydra: апп бүр нэг OAuth2 client. Overlay (tags/enabled/
+// app_type)-ыг Hydra client-ийн metadata-д хадгална.
 type hydraClients interface {
+	ListClients(ctx context.Context) ([]hydra.ClientListEntry, error)
 	CreateClient(ctx context.Context, body hydra.ClientCreate) (*hydra.ClientCreate, error)
 	GetClient(ctx context.Context, clientID string) (*hydra.ClientListEntry, error)
 	UpdateClient(ctx context.Context, clientID string, body hydra.ClientUpdate) (*hydra.ClientCreate, error)
 	DeleteClient(ctx context.Context, clientID string) error
 }
 
+// serviceScopeResolver нь gateway service id ↔ OAuth scope хооронд хөрвүүлнэ
+// (gateway_services хүснэгт). Апп-ыг Hydra эзэмшдэг тул DB-ээс зөвхөн service
+// scope-ийг л резолв хийнэ (application-ийн бусад өгөгдлийг DB-д хадгалахаа больсон).
+type serviceScopeResolver interface {
+	ServiceScopes(ctx context.Context, serviceIDs []string) ([]string, error)
+	ServiceIDsForScopes(ctx context.Context, scopes []string) ([]string, error)
+}
+
 type usecase struct {
-	repo  repointerface.ApplicationRepository
+	svc   serviceScopeResolver
 	hydra hydraClients
 }
 
 // NewUsecase нь applications usecase-ыг буцаана. hydra нь Hydra admin client
-// (ProviderConfigured үед л энэ usecase залгагдана).
-func NewUsecase(repo repointerface.ApplicationRepository, h hydraClients) Usecase {
-	return &usecase{repo: repo, hydra: h}
+// (ProviderConfigured үед л энэ usecase залгагдана); svc нь gateway service
+// scope resolver.
+func NewUsecase(svc serviceScopeResolver, h hydraClients) Usecase {
+	return &usecase{svc: svc, hydra: h}
 }
 
 func (u *usecase) List(ctx context.Context) ([]domain.Application, error) {
-	return u.repo.List(ctx)
+	clients, err := u.hydra.ListClients(ctx)
+	if err != nil {
+		return nil, apperror.InternalCause(fmt.Errorf("list oauth clients: %w", err))
+	}
+	out := make([]domain.Application, 0, len(clients))
+	for i := range clients {
+		app, err := u.clientToApp(ctx, &clients[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, app)
+	}
+	return out, nil
 }
 
 func (u *usecase) Get(ctx context.Context, id string) (domain.Application, error) {
-	return u.repo.Get(ctx, id)
+	c, err := u.hydra.GetClient(ctx, id)
+	if err != nil {
+		if isNotFound(err) {
+			return domain.Application{}, apperror.NotFound("application not found")
+		}
+		return domain.Application{}, apperror.InternalCause(err)
+	}
+	return u.clientToApp(ctx, c)
 }
 
 func (u *usecase) Create(ctx context.Context, in Input) (domain.Application, error) {
@@ -52,6 +83,7 @@ func (u *usecase) Create(ctx context.Context, in Input) (domain.Application, err
 		return domain.Application{}, err
 	}
 	app.ClientID = "app-" + randomHex(8)
+	app.ID = app.ClientID // Hydra-д тусдаа UUID байхгүй — client_id нь танигч.
 
 	scopes, err := u.scopesFor(ctx, app.AppType, app.ServiceIDs)
 	if err != nil {
@@ -65,19 +97,13 @@ func (u *usecase) Create(ctx context.Context, in Input) (domain.Application, err
 	if err != nil {
 		return domain.Application{}, apperror.InternalCause(fmt.Errorf("create oauth client: %w", err))
 	}
-
-	stored, err := u.repo.Create(ctx, &app)
-	if err != nil {
-		// Overlay бичих амжилтгүй бол Hydra client-ыг цэвэрлэж orphan үлдээхгүй.
-		_ = u.hydra.DeleteClient(ctx, app.ClientID)
-		return domain.Application{}, err
-	}
-	// Public (spa/native) client-д secret байхгүй — Hydra юу буцаахаас үл хамааран
-	// хэзээ ч гаргахгүй. Confidential (web/m2m)-д зөвхөн энэ хариунд НЭГ удаа.
+	// Public (spa/native)-д secret байхгүй; confidential (web/m2m)-д зөвхөн энэ
+	// хариунд НЭГ удаа (дараа нь Hydra эзэмшинэ).
 	if !domain.AppIsPublic(app.AppType) {
-		stored.Secret = firstNonEmpty(created.ClientSecret, secret)
+		app.Secret = firstNonEmpty(created.ClientSecret, secret)
 	}
-	return stored, nil
+	app.CreatedAt = time.Now()
+	return app, nil
 }
 
 func (u *usecase) Update(ctx context.Context, id string, in Input) (domain.Application, error) {
@@ -85,54 +111,54 @@ func (u *usecase) Update(ctx context.Context, id string, in Input) (domain.Appli
 	if err != nil {
 		return domain.Application{}, err
 	}
-	existing, err := u.repo.Get(ctx, id)
-	if err != nil {
-		return domain.Application{}, err
+	if _, err := u.hydra.GetClient(ctx, id); err != nil {
+		if isNotFound(err) {
+			return domain.Application{}, apperror.NotFound("application not found")
+		}
+		return domain.Application{}, apperror.InternalCause(err)
 	}
 	app.ID = id
-	app.ClientID = existing.ClientID
+	app.ClientID = id
 
 	scopes, err := u.scopesFor(ctx, app.AppType, app.ServiceIDs)
 	if err != nil {
 		return domain.Application{}, err
 	}
-	if err := u.syncClient(ctx, app, scopes, ""); err != nil {
-		return domain.Application{}, err
+	// secret хоосон → Hydra одоогийн secret-ыг хадгална (rotate биш).
+	if _, err := u.hydra.UpdateClient(ctx, id, buildClient(app, scopes, "")); err != nil {
+		return domain.Application{}, apperror.InternalCause(fmt.Errorf("update oauth client: %w", err))
 	}
-	return u.repo.Update(ctx, &app)
+	return u.Get(ctx, id)
 }
 
 func (u *usecase) Delete(ctx context.Context, id string) error {
-	app, err := u.repo.Get(ctx, id)
-	if err != nil {
-		return err
-	}
-	if err := u.hydra.DeleteClient(ctx, app.ClientID); err != nil && !isNotFound(err) {
+	if err := u.hydra.DeleteClient(ctx, id); err != nil && !isNotFound(err) {
 		return apperror.InternalCause(fmt.Errorf("delete oauth client: %w", err))
 	}
-	return u.repo.Delete(ctx, id)
+	return nil
 }
 
 func (u *usecase) RotateSecret(ctx context.Context, id string) (domain.Application, error) {
-	app, err := u.repo.Get(ctx, id)
+	c, err := u.hydra.GetClient(ctx, id)
+	if err != nil {
+		if isNotFound(err) {
+			return domain.Application{}, apperror.BadRequest("application has no OAuth client to rotate")
+		}
+		return domain.Application{}, apperror.InternalCause(err)
+	}
+	app, err := u.clientToApp(ctx, c)
 	if err != nil {
 		return domain.Application{}, err
 	}
 	if domain.AppIsPublic(app.AppType) {
 		return domain.Application{}, apperror.BadRequest("public client (spa/native) has no secret to rotate")
 	}
-	if _, err := u.hydra.GetClient(ctx, app.ClientID); err != nil {
-		if isNotFound(err) {
-			return domain.Application{}, apperror.BadRequest("application has no OAuth client to rotate")
-		}
-		return domain.Application{}, apperror.InternalCause(err)
-	}
 	scopes, err := u.scopesFor(ctx, app.AppType, app.ServiceIDs)
 	if err != nil {
 		return domain.Application{}, err
 	}
 	secret := randomToken(40)
-	if _, err := u.hydra.UpdateClient(ctx, app.ClientID, buildClient(app, scopes, secret)); err != nil {
+	if _, err := u.hydra.UpdateClient(ctx, id, buildClient(app, scopes, secret)); err != nil {
 		return domain.Application{}, apperror.InternalCause(fmt.Errorf("rotate oauth secret: %w", err))
 	}
 	app.Secret = secret
@@ -140,7 +166,14 @@ func (u *usecase) RotateSecret(ctx context.Context, id string) (domain.Applicati
 }
 
 func (u *usecase) SetServices(ctx context.Context, id string, serviceIDs []string) (domain.Application, error) {
-	app, err := u.repo.Get(ctx, id)
+	c, err := u.hydra.GetClient(ctx, id)
+	if err != nil {
+		if isNotFound(err) {
+			return domain.Application{}, apperror.NotFound("application not found")
+		}
+		return domain.Application{}, apperror.InternalCause(err)
+	}
+	app, err := u.clientToApp(ctx, c)
 	if err != nil {
 		return domain.Application{}, err
 	}
@@ -149,68 +182,15 @@ func (u *usecase) SetServices(ctx context.Context, id string, serviceIDs []strin
 	if err != nil {
 		return domain.Application{}, err
 	}
-	if err := u.syncClient(ctx, app, scopes, ""); err != nil {
-		return domain.Application{}, err
+	if _, err := u.hydra.UpdateClient(ctx, id, buildClient(app, scopes, "")); err != nil {
+		return domain.Application{}, apperror.InternalCause(fmt.Errorf("update oauth client: %w", err))
 	}
-	if err := u.repo.SetServices(ctx, id, app.ServiceIDs); err != nil {
-		return domain.Application{}, err
-	}
-	return u.repo.Get(ctx, id)
+	return u.Get(ctx, id)
 }
 
-// seedRPMarker нь migration-аар seed хийсэн RP overlay мөрийг тэмдэглэнэ
-// (32_real_gateway_services). Bootstrap ЗӨВХӨН эдгээрт Hydra client үүсгэнэ.
-const seedRPMarker = "seed-rp"
-
-// ReconcileClients нь seed хийсэн RP overlay мөрүүдийн Hydra client дутуу байвал
-// үүсгэнэ (startup дээр нэг удаа). Байгаа client-ыг алгасна (idempotent); UI-аас
-// устгасан RP-д мөр байхгүй тул дахин үүсэхгүй. Гарын үсэг зурах secret нь Hydra-д
-// үүснэ; админ UI-аас "rotate secret"-ээр авна.
-func (u *usecase) ReconcileClients(ctx context.Context) (int, error) {
-	apps, err := u.repo.List(ctx)
-	if err != nil {
-		return 0, err
-	}
-	created := 0
-	for _, app := range apps {
-		if app.CreatedBy != seedRPMarker {
-			continue
-		}
-		if _, err := u.hydra.GetClient(ctx, app.ClientID); err == nil {
-			continue // Hydra client аль хэдийн бий
-		} else if !isNotFound(err) {
-			return created, apperror.InternalCause(err)
-		}
-		scopes, err := u.scopesFor(ctx, app.AppType, app.ServiceIDs)
-		if err != nil {
-			return created, err
-		}
-		secret := ""
-		if !domain.AppIsPublic(app.AppType) {
-			secret = randomToken(40)
-		}
-		if _, err := u.hydra.CreateClient(ctx, buildClient(app, scopes, secret)); err != nil {
-			return created, apperror.InternalCause(fmt.Errorf("reconcile client %s: %w", app.ClientID, err))
-		}
-		created++
-	}
-	return created, nil
-}
-
-// syncClient нь апп-ын desired state-ыг Hydra client руу бичнэ. Hydra client
-// байхгүй (demo/seed апп) бол чимээгүй алгасна — overlay-only.
-func (u *usecase) syncClient(ctx context.Context, app domain.Application, scopes []string, secret string) error {
-	if _, err := u.hydra.GetClient(ctx, app.ClientID); err != nil {
-		if isNotFound(err) {
-			return nil
-		}
-		return apperror.InternalCause(err)
-	}
-	if _, err := u.hydra.UpdateClient(ctx, app.ClientID, buildClient(app, scopes, secret)); err != nil {
-		return apperror.InternalCause(fmt.Errorf("update oauth client: %w", err))
-	}
-	return nil
-}
+// ReconcileClients нь хуучин DB overlay → Hydra тулгалт байсан. Апп-ыг одоо
+// Hydra эзэмшдэг тул тулгах зүйлгүй — no-op (интерфейсийн нийцлийн төлөө үлдээв).
+func (u *usecase) ReconcileClients(_ context.Context) (int, error) { return 0, nil }
 
 // scopesFor нь base OIDC scope (RP төрөлд) + зөвшөөрсөн service-үүдийн scope-г нэгтгэнэ.
 func (u *usecase) scopesFor(ctx context.Context, appType string, serviceIDs []string) ([]string, error) {
@@ -218,15 +198,41 @@ func (u *usecase) scopesFor(ctx context.Context, appType string, serviceIDs []st
 	if domain.AppUsesRedirect(appType) {
 		out = append(out, "openid", "profile", "email")
 	}
-	svc, err := u.repo.ServiceScopes(ctx, serviceIDs)
+	svc, err := u.svc.ServiceScopes(ctx, serviceIDs)
 	if err != nil {
 		return nil, apperror.InternalCause(err)
 	}
 	return dedup(append(out, svc...)), nil
 }
 
+// clientToApp нь Hydra OAuth2 client-ыг домэйн Application болгоно. tags/enabled/
+// app_type-ыг client metadata-аас (байхгүй бол grant-аас дүгнэж / default), service
+// id-уудыг svc:* scope-оос сэргээнэ.
+func (u *usecase) clientToApp(ctx context.Context, c *hydra.ClientListEntry) (domain.Application, error) {
+	serviceIDs, err := u.svc.ServiceIDsForScopes(ctx, filterSvcScopes(c.Scope))
+	if err != nil {
+		return domain.Application{}, apperror.InternalCause(err)
+	}
+	app := domain.Application{
+		ID:           c.ClientID,
+		ClientID:     c.ClientID,
+		Name:         c.ClientName,
+		AppType:      appTypeOf(c),
+		Tags:         metaTags(c.Metadata),
+		RedirectURIs: c.RedirectURIs,
+		Enabled:      metaEnabled(c.Metadata),
+		ServiceIDs:   cleanList(serviceIDs),
+		CreatedAt:    parseTime(c.CreatedAt),
+	}
+	if ut := parseTime(c.UpdatedAt); !ut.IsZero() {
+		app.UpdatedAt = &ut
+	}
+	return app, nil
+}
+
 // buildClient нь домэйн апп-аас Hydra ClientCreate/Update body-г угсарна. secret
 // хоосон бол Hydra одоогийн secret-ыг хадгална (update); шинэ secret бол сольно.
+// tags/enabled/app_type-ыг metadata-д тавина.
 func buildClient(app domain.Application, scopes []string, secret string) hydra.ClientCreate {
 	grants, responseTypes, authMethod := grantsFor(app.AppType)
 	b := hydra.ClientCreate{
@@ -238,11 +244,65 @@ func buildClient(app domain.Application, scopes []string, secret string) hydra.C
 		Scope:                   strings.Join(scopes, " "),
 		TokenEndpointAuthMethod: authMethod,
 		SubjectType:             "public",
+		Metadata: map[string]any{
+			"app_type": app.AppType,
+			"tags":     arrStr(app.Tags),
+			"enabled":  app.Enabled,
+		},
 	}
 	if domain.AppUsesRedirect(app.AppType) {
 		b.RedirectURIs = app.RedirectURIs
 	}
 	return b
+}
+
+// appTypeOf нь Hydra client-ээс апп төрлийг тодорхойлно: metadata.app_type байвал
+// түүнийг (spa/native ялгааг хадгална), эс бол grant/auth-method-оос дүгнэнэ.
+func appTypeOf(c *hydra.ClientListEntry) string {
+	if t, ok := c.Metadata["app_type"].(string); ok && domain.AppTypes[t] {
+		return t
+	}
+	if contains(c.GrantTypes, "client_credentials") {
+		return "m2m"
+	}
+	if c.TokenEndpointAuthMethod == "none" {
+		return "spa" // public authorization_code (native-г metadata-гүйгээр ялгах боломжгүй)
+	}
+	return "web"
+}
+
+// filterSvcScopes нь scope мөрөөс зөвхөн gateway service scope-уудыг (svc:*) авна.
+func filterSvcScopes(scope string) []string {
+	var out []string
+	for _, s := range strings.Fields(scope) {
+		if strings.HasPrefix(s, "svc:") {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func metaTags(m map[string]any) []string {
+	raw, ok := m["tags"].([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(raw))
+	for _, v := range raw {
+		if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// metaEnabled нь metadata.enabled-ийг уншина; байхгүй бол default идэвхтэй (хуучин
+// metadata-гүй client-уудыг идэвхтэй гэж үзнэ).
+func metaEnabled(m map[string]any) bool {
+	if v, ok := m["enabled"].(bool); ok {
+		return v
+	}
+	return true
 }
 
 // grantsFor нь апп төрлөөр Hydra grant_types / response_types / auth method-ыг өгнө.
@@ -365,6 +425,33 @@ func cleanList(in []string) []string {
 
 func dedup(in []string) []string { return cleanList(in) }
 
+func arrStr(in []string) []string {
+	if in == nil {
+		return []string{}
+	}
+	return in
+}
+
+func contains(list []string, v string) bool {
+	for _, s := range list {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
+func parseTime(s string) time.Time {
+	if s == "" {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
 func firstNonEmpty(a, b string) string {
 	if a != "" {
 		return a
@@ -372,7 +459,7 @@ func firstNonEmpty(a, b string) string {
 	return b
 }
 
-// isNotFound нь Hydra 404 (client байхгүй)-г таних — demo апп-д client байхгүй.
+// isNotFound нь Hydra 404 (client байхгүй)-г таних.
 func isNotFound(err error) bool {
 	return err != nil && (strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "Not Found"))
 }
