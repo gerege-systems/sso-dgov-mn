@@ -44,12 +44,12 @@ type Usecase interface {
 	// EIDStart нь eID device-link нэвтрэлтийг IdP дээр эхлүүлж, клиент харуулах session мэдээллийг
 	// буцаана. callbackURL хоосон = CROSS-DEVICE (desktop QR); хоосон биш = SAME-DEVICE (mobile
 	// browser App2App — approve-ийн дараа browser callback руу буцна).
-	EIDStart(ctx context.Context, callbackURL string) (EIDStartResponse, error)
+	EIDStart(ctx context.Context, callbackURL string, app eid.AppContext) (EIDStartResponse, error)
 	// EIDStartByNationalID нь иргэний РД (national_id)-аар нэвтрэлтийг IdP дээр
 	// эхлүүлж, тухайн РД-тэй холбоотой төхөөрөмж рүү баталгаажуулах prompt push
 	// хийлгэнэ. device_link шаардлагагүй тул зөвхөн session_id, verification_code,
 	// expires_at буцна; дуусгахдаа QR урсгалтай ижил EIDPoll ашиглана.
-	EIDStartByNationalID(ctx context.Context, nationalID, callbackURL string) (EIDStartResponse, error)
+	EIDStartByNationalID(ctx context.Context, nationalID, callbackURL string, app eid.AppContext) (EIDStartResponse, error)
 	// EIDPoll нь session-ийн төлвийг long-poll-оор асууна. COMPLETE болоход
 	// IdP-ийн identity-аар хэрэглэгчийг upsert хийж, access+refresh токен хос
 	// олгож буцаана; бусад (RUNNING/EXPIRED/REFUSED) үед зөвхөн State буцаана.

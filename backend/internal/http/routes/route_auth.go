@@ -31,9 +31,9 @@ type authRoute struct {
 // эзэмшдэг тул тэдгээрийн cleanup goroutine-г graceful shutdown үед Stop()
 // хийж болно; auth middleware нь users route-той хуваалцагддаг. pollRateLimiter
 // нь /eid/poll-д зориулсан тусдаа сул хязгаарлагч (long-poll-ийг 429-дэхгүй).
-func NewAuthRoute(router chi.Router, authUC auth.Usecase, auditUC audit.Usecase, authMiddleware func(http.Handler) http.Handler, rateLimiter, pollRateLimiter *middlewares.RateLimiter) *authRoute {
+func NewAuthRoute(router chi.Router, authUC auth.Usecase, auditUC audit.Usecase, loginApp authhandler.LoginAppResolver, authMiddleware func(http.Handler) http.Handler, rateLimiter, pollRateLimiter *middlewares.RateLimiter) *authRoute {
 	return &authRoute{
-		handler:         authhandler.NewHandlerWithAudit(authUC, auditUC),
+		handler:         authhandler.NewHandlerWithAudit(authUC, auditUC, loginApp),
 		router:          router,
 		rateLimiter:     rateLimiter,
 		pollRateLimiter: pollRateLimiter,

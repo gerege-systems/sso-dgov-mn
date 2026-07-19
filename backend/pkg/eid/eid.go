@@ -103,6 +103,15 @@ type Certificate struct {
 	KeyType   string // жишээ: "ECDSA P-256", "RSA 2048"
 }
 
+// AppContext нь нэвтрэлт/гарын үсгийг эхлүүлж буй "дэд систем"-ийг (SSO дээр
+// бүртгэгдсэн RP апп) eID рүү дамжуулах мэдээлэл. SSO өөрөө (base) эхлүүлж байвал
+// хоосон; бүртгэгдсэн RP апп-аас эхэлж байвал Subsystem = апп-ийн нэр, SubURL =
+// апп-ийн домэйн (redirect_uri-ийн origin). eID push дэлгэцэнд/логд ашиглагдана.
+type AppContext struct {
+	Subsystem string // RP апп-ийн нэр (base SSO бол хоосон)
+	SubURL    string // RP апп-ийн домэйн URL (base SSO бол хоосон)
+}
+
 // StartResult нь initiate хариуны клиентэд харагдах хэсэг.
 type StartResult struct {
 	SessionID        string
@@ -193,11 +202,11 @@ type Client interface {
 	// QRInitiate нь QR нэвтрэлтийг эхлүүлж session мэдээллийг буцаана. callbackURL
 	// нь энэ template-ийн cross-device QR урсгалд ашиглагддаггүй (RP өөрөө poll
 	// хийнэ) тул зөвхөн интерфейсийн нийцлийн төлөө үлдээв.
-	QRInitiate(ctx context.Context, displayText, callbackURL, nonce string) (*StartResult, error)
+	QRInitiate(ctx context.Context, displayText, callbackURL, nonce string, app AppContext) (*StartResult, error)
 	// Initiate нь иргэний РД (civil_id)-аар нэвтрэлтийг эхлүүлнэ — IdP нь тухайн
 	// РД-тэй холбоотой бүртгэлтэй төхөөрөмж рүү баталгаажуулах push мэдэгдэл
 	// илгээдэг. device_link шаардлагагүй тул хариунд DeviceLinkURL хоосон.
-	Initiate(ctx context.Context, nationalID, displayText, callbackURL string) (*StartResult, error)
+	Initiate(ctx context.Context, nationalID, displayText, callbackURL string, app AppContext) (*StartResult, error)
 	// Session нь session-ийн төлвийг long-poll-оор асууна (timeoutMs хүртэл).
 	Session(ctx context.Context, sessionID string, timeoutMs int) (*SessionResult, error)
 	// Representations нь тухайн хүн (personEtsi = PNOMN-<civil_id>)-ий төлөөлж
@@ -295,9 +304,13 @@ type authInitiateBody struct {
 	// (desktop QR/push): eID backend утас руу callback дамжуулахгүй, browser өөрөө poll хийнэ.
 	// eID backend үүнийг өөрийн стандарт зам (/auth/eid/callback) руу force-normalize хийдэг.
 	InitialCallbackURL string `json:"initialCallbackUrl,omitempty"`
+	// Subsystem / SubURL — нэвтрэлтийг эхлүүлж буй бүртгэгдсэн RP апп (base SSO бол
+	// хоосон). Always-present (omitempty-гүй): eID тал хоосон утгыг "SSO өөрөө" гэж үзнэ.
+	Subsystem string `json:"subsystem"`
+	SubURL    string `json:"sub_url"`
 }
 
-func (c *client) newAuthBody(displayText, callbackURL string) (authInitiateBody, error) {
+func (c *client) newAuthBody(displayText, callbackURL string, app AppContext) (authInitiateBody, error) {
 	challenge, err := randomHashB64()
 	if err != nil {
 		return authInitiateBody{}, err
@@ -317,13 +330,15 @@ func (c *client) newAuthBody(displayText, callbackURL string) (authInitiateBody,
 		RPChallenge:        challenge,
 		Interactions:       []interaction{{Type: "displayTextAndPIN", DisplayText60: dt}},
 		InitialCallbackURL: callbackURL,
+		Subsystem:          app.Subsystem,
+		SubURL:             app.SubURL,
 	}, nil
 }
 
 // QRInitiate — device-link auth эхлүүлнэ. callbackURL хоосон бол CROSS-DEVICE (desktop QR); хоосон
 // биш бол SAME-DEVICE (mobile browser App2App — утас approve-ийн дараа browser-ийг буцаана).
-func (c *client) QRInitiate(ctx context.Context, displayText, callbackURL, _ string) (*StartResult, error) {
-	body, err := c.newAuthBody(displayText, callbackURL)
+func (c *client) QRInitiate(ctx context.Context, displayText, callbackURL, _ string, app AppContext) (*StartResult, error) {
+	body, err := c.newAuthBody(displayText, callbackURL, app)
 	if err != nil {
 		return nil, fmt.Errorf("eid: build challenge: %w", err)
 	}
@@ -359,8 +374,8 @@ func (c *client) QRInitiate(ctx context.Context, displayText, callbackURL, _ str
 // (desktop browser + утас руу push — browser өөрөө poll хийнэ); хоосон биш бол SAME-DEVICE
 // (утасны browser — push ижил утас руу ирж, approve хийсний дараа eID app browser-ийг callback
 // руу буцаана). eID backend callbackURL-ийг стандарт зам (/auth/eid/callback) руу normalize хийнэ.
-func (c *client) Initiate(ctx context.Context, nationalID, displayText, callbackURL string) (*StartResult, error) {
-	body, err := c.newAuthBody(displayText, callbackURL)
+func (c *client) Initiate(ctx context.Context, nationalID, displayText, callbackURL string, app AppContext) (*StartResult, error) {
+	body, err := c.newAuthBody(displayText, callbackURL, app)
 	if err != nil {
 		return nil, fmt.Errorf("eid: build challenge: %w", err)
 	}

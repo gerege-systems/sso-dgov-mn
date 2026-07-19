@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const bad = checkOrigin(req);
   if (bad) return bad;
 
-  const { national_id, callbackUrl } = await readJson<{ national_id?: string; callbackUrl?: string }>(req);
+  const { national_id, callbackUrl, login_challenge } = await readJson<{ national_id?: string; callbackUrl?: string; login_challenge?: string }>(req);
 
   if (!national_id) {
     return NextResponse.json(
@@ -33,7 +33,12 @@ export async function POST(req: Request) {
   // CROSS-DEVICE (desktop). Backend force-normalize хийнэ.
   const result = await backendFetch<EidStartIdData>('/auth/eid/start-id', {
     method: 'POST',
-    body: JSON.stringify({ national_id, callbackUrl: typeof callbackUrl === 'string' ? callbackUrl : '' }),
+    body: JSON.stringify({
+      national_id,
+      callbackUrl: typeof callbackUrl === 'string' ? callbackUrl : '',
+      // login_challenge (сонголт): бүртгэгдсэн RP апп-аас нэвтэрч байвал subsystem/sub_url resolve.
+      login_challenge: typeof login_challenge === 'string' ? login_challenge : '',
+    }),
   });
   return proxyResult(result);
 }

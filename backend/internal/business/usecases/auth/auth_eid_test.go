@@ -44,14 +44,14 @@ func jwtPairZero() jwt.TokenPair { return jwt.TokenPair{} }
 func TestEIDStart(t *testing.T) {
 	t.Run("success maps start result to response", func(t *testing.T) {
 		f := newFixture(t)
-		f.eid.On("QRInitiate", mock.Anything, "template.dgov.mn", "", mock.AnythingOfType("string")).
+		f.eid.On("QRInitiate", mock.Anything, "template.dgov.mn", "", mock.AnythingOfType("string"), mock.Anything).
 			Return(&eid.StartResult{
 				SessionID:        "sess-1",
 				VerificationCode: "1234",
 				DeviceLinkURL:    "https://eidmongolia.mn/dl?deviceLinkType=QR&sessionToken=tok",
 			}, nil).Once()
 
-		resp, err := f.usecase.EIDStart(context.Background(), "")
+		resp, err := f.usecase.EIDStart(context.Background(), "", eid.AppContext{})
 		require.NoError(t, err)
 		assert.Equal(t, "sess-1", resp.SessionID)
 		assert.Equal(t, "1234", resp.VerificationCode)
@@ -60,19 +60,19 @@ func TestEIDStart(t *testing.T) {
 
 	t.Run("provider 4xx surfaces as BadRequest", func(t *testing.T) {
 		f := newFixture(t)
-		f.eid.On("QRInitiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		f.eid.On("QRInitiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, eid.ErrInitiateRejected).Once()
 
-		_, err := f.usecase.EIDStart(context.Background(), "")
+		_, err := f.usecase.EIDStart(context.Background(), "", eid.AppContext{})
 		requireDomainType(t, err, apperror.ErrTypeBadRequest)
 	})
 
 	t.Run("provider network error surfaces as Internal", func(t *testing.T) {
 		f := newFixture(t)
-		f.eid.On("QRInitiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		f.eid.On("QRInitiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, errors.New("dial tcp: timeout")).Once()
 
-		_, err := f.usecase.EIDStart(context.Background(), "")
+		_, err := f.usecase.EIDStart(context.Background(), "", eid.AppContext{})
 		requireDomainType(t, err, apperror.ErrTypeInternal)
 	})
 }
@@ -80,16 +80,16 @@ func TestEIDStart(t *testing.T) {
 func TestEIDStartByNationalID(t *testing.T) {
 	t.Run("empty national_id is rejected before any provider call", func(t *testing.T) {
 		f := newFixture(t)
-		_, err := f.usecase.EIDStartByNationalID(context.Background(), "  ", "")
+		_, err := f.usecase.EIDStartByNationalID(context.Background(), "  ", "", eid.AppContext{})
 		requireDomainType(t, err, apperror.ErrTypeBadRequest)
 	})
 
 	t.Run("success returns session without device link (push flow)", func(t *testing.T) {
 		f := newFixture(t)
-		f.eid.On("Initiate", mock.Anything, "УБ99887766", "template.dgov.mn", mock.AnythingOfType("string")).
+		f.eid.On("Initiate", mock.Anything, "УБ99887766", "template.dgov.mn", mock.AnythingOfType("string"), mock.Anything).
 			Return(&eid.StartResult{SessionID: "sess-2", VerificationCode: "5678"}, nil).Once()
 
-		resp, err := f.usecase.EIDStartByNationalID(context.Background(), "УБ99887766", "")
+		resp, err := f.usecase.EIDStartByNationalID(context.Background(), "УБ99887766", "", eid.AppContext{})
 		require.NoError(t, err)
 		assert.Equal(t, "sess-2", resp.SessionID)
 		assert.Equal(t, "5678", resp.VerificationCode)
@@ -98,19 +98,19 @@ func TestEIDStartByNationalID(t *testing.T) {
 
 	t.Run("unknown citizen (4xx) surfaces as BadRequest", func(t *testing.T) {
 		f := newFixture(t)
-		f.eid.On("Initiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		f.eid.On("Initiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, eid.ErrInitiateRejected).Once()
 
-		_, err := f.usecase.EIDStartByNationalID(context.Background(), "УБ00000000", "")
+		_, err := f.usecase.EIDStartByNationalID(context.Background(), "УБ00000000", "", eid.AppContext{})
 		requireDomainType(t, err, apperror.ErrTypeBadRequest)
 	})
 
 	t.Run("provider error surfaces as Internal", func(t *testing.T) {
 		f := newFixture(t)
-		f.eid.On("Initiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		f.eid.On("Initiate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, errors.New("connection refused")).Once()
 
-		_, err := f.usecase.EIDStartByNationalID(context.Background(), "УБ11111111", "")
+		_, err := f.usecase.EIDStartByNationalID(context.Background(), "УБ11111111", "", eid.AppContext{})
 		requireDomainType(t, err, apperror.ErrTypeInternal)
 	})
 }

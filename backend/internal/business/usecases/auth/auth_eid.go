@@ -29,7 +29,7 @@ const eidPollTimeoutMs = 25000
 // (desktop QR — browser өөрөө poll хийнэ); хоосон биш бол SAME-DEVICE (mobile browser App2App —
 // утас approve-ийн дараа browser-ийг тэр URL руу буцаана). callbackURL нь frontend-ээс ирсэн
 // <origin>/auth/eid/callback байх ба eID backend түүнийг стандарт зам руу force-normalize хийнэ.
-func (uc *usecase) EIDStart(ctx context.Context, callbackURL string) (resp EIDStartResponse, err error) {
+func (uc *usecase) EIDStart(ctx context.Context, callbackURL string, app eid.AppContext) (resp EIDStartResponse, err error) {
 	const (
 		usecaseName = "auth"
 		funcName    = "EIDStart"
@@ -65,7 +65,7 @@ func (uc *usecase) EIDStart(ctx context.Context, callbackURL string) (resp EIDSt
 	// desktop browser device_link/QR-аа уншуулаад /eid/poll-оор нэвтэрнэ. callbackURL хоосон биш
 	// (SAME-DEVICE, mobile browser App2App): утас approve хийсний дараа browser-ийг callback руу
 	// буцаана. eID backend callbackURL-ийг стандарт зам (/auth/eid/callback) руу force-normalize хийнэ.
-	start, initErr := uc.eid.QRInitiate(ctx, uc.cfg.EIDDisplayText, callbackURL, nonce)
+	start, initErr := uc.eid.QRInitiate(ctx, uc.cfg.EIDDisplayText, callbackURL, nonce, app)
 	if initErr != nil {
 		err = mapInitiateErr(initErr, "eID session эхлүүлэх боломжгүй байна")
 		logger.ErrorWithContext(ctx, "EIDStart failed: initiate error", logger.Fields{
@@ -92,7 +92,7 @@ func (uc *usecase) EIDStart(ctx context.Context, callbackURL string) (resp EIDSt
 // EIDStartByNationalID — РД-аар push нэвтрэлт. callbackURL хоосон бол CROSS-DEVICE (desktop +
 // утас руу push); хоосон биш бол SAME-DEVICE (утасны browser — push ижил утас руу, approve-ийн
 // дараа browser callback руу буцна). callbackURL нь frontend-ээс ирсэн <origin>/auth/eid/callback.
-func (uc *usecase) EIDStartByNationalID(ctx context.Context, nationalID, callbackURL string) (resp EIDStartResponse, err error) {
+func (uc *usecase) EIDStartByNationalID(ctx context.Context, nationalID, callbackURL string, app eid.AppContext) (resp EIDStartResponse, err error) {
 	const (
 		usecaseName = "auth"
 		funcName    = "EIDStartByNationalID"
@@ -122,7 +122,7 @@ func (uc *usecase) EIDStartByNationalID(ctx context.Context, nationalID, callbac
 		return EIDStartResponse{}, err
 	}
 
-	start, initErr := uc.eid.Initiate(ctx, nationalID, uc.cfg.EIDDisplayText, callbackURL)
+	start, initErr := uc.eid.Initiate(ctx, nationalID, uc.cfg.EIDDisplayText, callbackURL, app)
 	if initErr != nil {
 		err = mapInitiateErr(initErr, "Регистрийн дугаар олдсонгүй эсвэл буруу байна")
 		logger.ErrorWithContext(ctx, "EIDStartByNationalID failed: initiate error", logger.Fields{

@@ -109,7 +109,7 @@ type FakeEID struct {
 	SessionErr    error
 }
 
-func (f *FakeEID) QRInitiate(_ context.Context, _, _, _ string) (*eid.StartResult, error) {
+func (f *FakeEID) QRInitiate(_ context.Context, _, _, _ string, _ eid.AppContext) (*eid.StartResult, error) {
 	if f.InitiateErr != nil {
 		return nil, f.InitiateErr
 	}
@@ -120,7 +120,7 @@ func (f *FakeEID) QRInitiate(_ context.Context, _, _, _ string) (*eid.StartResul
 }
 
 // Initiate нь РД-ээр (push) flow-ийн fake — QRInitiate-тэй ижил хариу өгнө.
-func (f *FakeEID) Initiate(_ context.Context, _, _, _ string) (*eid.StartResult, error) {
+func (f *FakeEID) Initiate(_ context.Context, _, _, _ string, _ eid.AppContext) (*eid.StartResult, error) {
 	if f.InitiateErr != nil {
 		return nil, f.InitiateErr
 	}

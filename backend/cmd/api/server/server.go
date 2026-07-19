@@ -438,7 +438,9 @@ func NewApp() (*App, error) {
 		api.Use(gwLogMW)
 
 		api.Get("/", routes.RootHandler)
-		routes.NewAuthRoute(api, authUC, auditUC, authMiddleware, authRateLimiter, pollRateLimiter).Routes()
+		// providerUC (nil байж болно — Hydra тохируулаагүй) нь eID push-д RP апп-ийн
+		// subsystem/sub_url-г login_challenge-аас resolve хийнэ.
+		routes.NewAuthRoute(api, authUC, auditUC, providerUC, authMiddleware, authRateLimiter, pollRateLimiter).Routes()
 		routes.NewUsersRoute(api, usersUC, authMiddleware).Routes()
 		routes.NewEIDProfileRoute(api, authUC, authMiddleware, govWriteRateLimiter).Routes()
 		routes.NewRBACRoute(api, rbacUC, auditUC, authMiddleware).Routes()
