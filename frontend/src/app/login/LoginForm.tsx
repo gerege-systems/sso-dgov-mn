@@ -31,7 +31,7 @@ function sameDeviceCallbackUrl(): string {
 }
 
 // challengeFromNext — OIDC урсгалд `next` нь /oauth/login?login_challenge=… байдаг.
-// Тэндээс login_challenge-ийг гаргана (backend eID push-д subsystem/sub_url-г
+// Тэндээс login_challenge-ийг гаргана (backend eID push-д rp_app/rp_app_url-г
 // бүртгэгдсэн RP апп-аас resolve хийхэд ашиглана). Base нэвтрэлтэд хоосон.
 function challengeFromNext(next: string): string {
   const i = next.indexOf('?');
@@ -68,7 +68,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
   // token эзэмшинэ); null бол Google callback (sa_mfa cookie ашиглана).
   const [mfa, setMfa] = useState<{ token?: string } | null>(mfaGate ? {} : null);
   // Бүртгэгдсэн RP апп-аас (OIDC) нэвтэрч байвал login_challenge — eID push-д
-  // subsystem/sub_url-г үүгээр дамжуулна (base нэвтрэлтэд хоосон).
+  // rp_app/rp_app_url-г үүгээр дамжуулна (base нэвтрэлтэд хоосон).
   const loginChallenge = challengeFromNext(next);
 
   // unmount хийсний дараа интервалд timer-уудыг цэвэрлэхэд ашиглана.

@@ -102,7 +102,7 @@ type EIDStartByNationalIDRequest struct {
 	// бол CROSS-DEVICE (desktop). Backend force-normalize хийнэ.
 	CallbackUrl string `json:"callbackUrl,omitempty"`
 	// LoginChallenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал
-	// frontend дамжуулна — eID push-д subsystem/sub_url-г үүнээс resolve хийнэ.
+	// frontend дамжуулна — eID push-д rp_app/rp_app_url-г үүнээс resolve хийнэ.
 	LoginChallenge string `json:"login_challenge,omitempty"`
 }
 

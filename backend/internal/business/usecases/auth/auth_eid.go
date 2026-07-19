@@ -47,9 +47,9 @@ func (uc *usecase) EIDStart(ctx context.Context, callbackURL string, app eid.App
 		}
 		if err == nil {
 			fields["response"] = logger.Fields{"session_id": resp.SessionID}
-			// eID push-д ямар subsystem/sub_url явсныг тэмдэглэнэ (base бол RP платформ).
-			fields["subsystem"] = app.Subsystem
-			fields["sub_url"] = app.SubURL
+			// eID push-д ямар rp_app/rp_app_url явсныг тэмдэглэнэ (base бол RP платформ).
+			fields["rp_app"] = app.RPApp
+			fields["rp_app_url"] = app.RPAppURL
 		}
 		logger.InfoWithContext(ctx, fmt.Sprintf("Lower %s", funcName), fields)
 	}()
@@ -115,9 +115,9 @@ func (uc *usecase) EIDStartByNationalID(ctx context.Context, nationalID, callbac
 		}
 		if err == nil {
 			fields["response"] = logger.Fields{"session_id": resp.SessionID}
-			// eID push-д ямар subsystem/sub_url явсныг тэмдэглэнэ (base бол RP платформ).
-			fields["subsystem"] = app.Subsystem
-			fields["sub_url"] = app.SubURL
+			// eID push-д ямар rp_app/rp_app_url явсныг тэмдэглэнэ (base бол RP платформ).
+			fields["rp_app"] = app.RPApp
+			fields["rp_app_url"] = app.RPAppURL
 		}
 		logger.InfoWithContext(ctx, fmt.Sprintf("Lower %s", funcName), fields)
 	}()

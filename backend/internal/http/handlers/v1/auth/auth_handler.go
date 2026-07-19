@@ -15,11 +15,11 @@ import (
 )
 
 // LoginAppResolver нь OIDC login_challenge-аас нэвтэрч буй бүртгэгдсэн RP апп-ийн
-// "дэд систем" контекстийг (subsystem нэр, sub_url домэйн) тодорхойлно. Base SSO,
+// контекстийг (rp_app нэр, rp_app_url домэйн) тодорхойлно. Base SSO,
 // first-party client, эсвэл хоосон/буруу challenge үед хоосон утга буцаана
 // (провайдер usecase хэрэгжүүлнэ; Hydra тохируулаагүй бол nil — hooson).
 type LoginAppResolver interface {
-	LoginAppContext(ctx context.Context, challenge string) (subsystem, subURL string)
+	LoginAppContext(ctx context.Context, challenge string) (rpApp, rpAppURL string)
 }
 
 // Handler нь auth-handler-ийн нэгтгэл; endpoint бүрийн method-ууд
@@ -31,7 +31,7 @@ type LoginAppResolver interface {
 // бичлэг алгасагдана (тестүүдэд эсвэл audit идэвхгүй орчинд).
 //
 // loginApp нь eID push-д дамжуулах RP апп контекстийг login_challenge-аас
-// resolve хийнэ. nil байж болно (Hydra тохируулаагүй / тест) — тэр үед subsystem
+// resolve хийнэ. nil байж болно (Hydra тохируулаагүй / тест) — тэр үед rp_app
 // хоосон (base SSO гэж үзнэ).
 type Handler struct {
 	usecase  auth.Usecase
@@ -44,7 +44,7 @@ func NewHandler(usecase auth.Usecase) Handler {
 }
 
 // NewHandlerWithAudit нь audit use case + login-app resolver-ийг тарьж handler
-// үүсгэнэ. loginApp nil байж болно (subsystem хоосон болно).
+// үүсгэнэ. loginApp nil байж болно (rp_app хоосон болно).
 func NewHandlerWithAudit(usecase auth.Usecase, auditUC audit.Usecase, loginApp LoginAppResolver) Handler {
 	return Handler{usecase: usecase, auditUC: auditUC, loginApp: loginApp}
 }
@@ -55,6 +55,6 @@ func (h Handler) resolveApp(ctx context.Context, challenge string) eid.AppContex
 	if h.loginApp == nil || challenge == "" {
 		return eid.AppContext{}
 	}
-	sub, url := h.loginApp.LoginAppContext(ctx, challenge)
-	return eid.AppContext{Subsystem: sub, SubURL: url}
+	rpApp, rpAppURL := h.loginApp.LoginAppContext(ctx, challenge)
+	return eid.AppContext{RPApp: rpApp, RPAppURL: rpAppURL}
 }

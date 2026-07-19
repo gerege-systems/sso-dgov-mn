@@ -58,10 +58,10 @@ type Usecase interface {
 	GetLogin(ctx context.Context, challenge string) (LoginInfo, error)
 	AcceptLogin(ctx context.Context, userID, challenge string) (redirectTo string, err error)
 	RejectLogin(ctx context.Context, challenge, reason string) (redirectTo string, err error)
-	// LoginAppContext нь login_challenge-аас нэвтэрч буй RP апп-ийн (subsystem нэр,
-	// sub_url домэйн)-г буцаана — eID push-д дамжуулна. Base SSO / first-party /
+	// LoginAppContext нь login_challenge-аас нэвтэрч буй RP апп-ийн (rp_app нэр,
+	// rp_app_url домэйн)-г буцаана — eID push-д дамжуулна. Base SSO / first-party /
 	// хоосон/буруу challenge үед хоосон (нэвтрэлтийг блоклохгүй, fail-open).
-	LoginAppContext(ctx context.Context, challenge string) (subsystem, subURL string)
+	LoginAppContext(ctx context.Context, challenge string) (rpApp, rpAppURL string)
 	GetConsent(ctx context.Context, challenge string) (ConsentInfo, error)
 	AcceptConsent(ctx context.Context, userID, challenge string, grantScope []string) (redirectTo string, err error)
 	RejectConsent(ctx context.Context, challenge, reason string) (redirectTo string, err error)
@@ -107,7 +107,7 @@ func (u *usecase) GetLogin(ctx context.Context, challenge string) (LoginInfo, er
 	}, nil
 }
 
-func (u *usecase) LoginAppContext(ctx context.Context, challenge string) (subsystem, subURL string) {
+func (u *usecase) LoginAppContext(ctx context.Context, challenge string) (rpApp, rpAppURL string) {
 	if strings.TrimSpace(challenge) == "" {
 		return "", ""
 	}
@@ -115,7 +115,7 @@ func (u *usecase) LoginAppContext(ctx context.Context, challenge string) (subsys
 	if err != nil || req == nil {
 		return "", "" // resolve чадсангүй — base гэж үзэж хоосон (нэвтрэлтийг блоклохгүй)
 	}
-	// First-party client (base SSO / dan-web гэх мэт) → subsystem хоосон: "SSO өөрөө".
+	// First-party client (base SSO / dan-web гэх мэт) → rp_app хоосон: "SSO өөрөө".
 	if _, ok := u.firstParty[req.Client.ClientID]; ok {
 		return "", ""
 	}

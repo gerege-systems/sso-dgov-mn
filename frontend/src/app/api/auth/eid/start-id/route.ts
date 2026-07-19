@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     body: JSON.stringify({
       national_id,
       callbackUrl: typeof callbackUrl === 'string' ? callbackUrl : '',
-      // login_challenge (сонголт): бүртгэгдсэн RP апп-аас нэвтэрч байвал subsystem/sub_url resolve.
+      // login_challenge (сонголт): бүртгэгдсэн RP апп-аас нэвтэрч байвал rp_app/rp_app_url resolve.
       login_challenge: typeof login_challenge === 'string' ? login_challenge : '',
     }),
   });

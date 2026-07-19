@@ -44,7 +44,7 @@ func TestQRInitiate(t *testing.T) {
 		var body authInitiateBody
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		// UUID нь RP-ийн auth identity (тогтмол); relyingPartyName нь харагдах нэр —
-		// RP апп-аас эхэлсэн бол апп-ийн нэрээр (subsystem = "MyApp") тавигдана.
+		// RP апп-аас эхэлсэн бол апп-ийн нэрээр (rp_app = "MyApp") тавигдана.
 		if body.RelyingPartyUUID != testUUID || body.RelyingPartyName != "MyApp" {
 			t.Errorf("rp identity/name not sent: %+v", body)
 		}
@@ -55,14 +55,14 @@ func TestQRInitiate(t *testing.T) {
 		if len(body.Interactions) != 1 || body.Interactions[0].Type != "displayTextAndPIN" || body.Interactions[0].DisplayText60 != "Нэвтрэх" {
 			t.Errorf("interactions wrong: %+v", body.Interactions)
 		}
-		// Бүртгэгдсэн RP апп-аас эхэлсэн бол subsystem/sub_url дамжина.
-		if body.Subsystem != "MyApp" || body.SubURL != "https://app.example.mn" {
-			t.Errorf("subsystem/sub_url wrong: subsystem=%q sub_url=%q", body.Subsystem, body.SubURL)
+		// Бүртгэгдсэн RP апп-аас эхэлсэн бол rp_app/rp_app_url дамжина.
+		if body.RPApp != "MyApp" || body.RPAppURL != "https://app.example.mn" {
+			t.Errorf("rp_app/rp_app_url wrong: rp_app=%q rp_app_url=%q", body.RPApp, body.RPAppURL)
 		}
 		_, _ = io.WriteString(w, `{"sessionID":"sess-1","sessionToken":"tok-abc","sessionSecret":"s","deviceLinkBase":"https://eidmongolia.mn/dl","vc":"7270"}`)
 	})
 
-	res, err := c.QRInitiate(context.Background(), "Нэвтрэх", "", "nonce", AppContext{Subsystem: "MyApp", SubURL: "https://app.example.mn"})
+	res, err := c.QRInitiate(context.Background(), "Нэвтрэх", "", "nonce", AppContext{RPApp: "MyApp", RPAppURL: "https://app.example.mn"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,11 +86,11 @@ func TestInitiateByNationalID(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "УБ12345678") {
 			t.Errorf("national id not in path: %s", r.URL.Path)
 		}
-		// Base SSO (хоосон AppContext) үед subsystem нь RP платформын нэрээр орлоно.
+		// Base SSO (хоосон AppContext) үед rp_app нь RP платформын нэрээр орлоно.
 		var body authInitiateBody
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body.Subsystem != testName || body.SubURL != "" {
-			t.Errorf("base subsystem/sub_url wrong: subsystem=%q sub_url=%q", body.Subsystem, body.SubURL)
+		if body.RPApp != testName || body.RPAppURL != "" {
+			t.Errorf("base rp_app/rp_app_url wrong: rp_app=%q rp_app_url=%q", body.RPApp, body.RPAppURL)
 		}
 		// notification нь vc-г object хэлбэрээр буцаана.
 		_, _ = io.WriteString(w, `{"sessionID":"sess-2","vc":{"type":"alphaNumeric4","value":"0489"}}`)

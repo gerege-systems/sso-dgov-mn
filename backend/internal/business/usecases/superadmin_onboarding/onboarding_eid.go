@@ -35,7 +35,7 @@ func (uc *usecase) EIDStart(ctx context.Context, req EIDStartRequest) (EIDStartR
 	if nErr != nil {
 		return EIDStartResponse{}, apperror.InternalCause(fmt.Errorf("generate nonce: %w", nErr))
 	}
-	// Superadmin onboarding нь SSO өөр дээрээ хийгддэг тул subsystem хоосон.
+	// Superadmin onboarding нь SSO өөр дээрээ хийгддэг тул rp_app хоосон.
 	start, initErr := uc.eid.QRInitiate(ctx, uc.cfg.EIDDisplayText, req.CallbackURL, nonce, eid.AppContext{})
 	if initErr != nil {
 		return EIDStartResponse{}, mapInitiateErr(initErr, "eID session эхлүүлэх боломжгүй байна")

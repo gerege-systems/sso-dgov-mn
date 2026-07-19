@@ -38,7 +38,7 @@ func (h Handler) EIDStart(w http.ResponseWriter, r *http.Request) error {
 	// дамжуулна; хоосон/байхгүй бол CROSS-DEVICE (desktop QR). Body байхгүй ч зүгээр (cross-device) —
 	// декод алдааг үл хайхарч callbackUrl-ийг хоосон гэж үзнэ.
 	// loginChallenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал
-	// frontend дамжуулна — eID push-д subsystem/sub_url-г үүнээс resolve хийнэ.
+	// frontend дамжуулна — eID push-д rp_app/rp_app_url-г үүнээс resolve хийнэ.
 	var body struct {
 		CallbackURL    string `json:"callbackUrl"`
 		LoginChallenge string `json:"login_challenge"`
