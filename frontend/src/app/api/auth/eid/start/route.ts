@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const body = (await req.json()) as { callbackUrl?: unknown; login_challenge?: unknown };
     if (typeof body?.callbackUrl === 'string') callbackUrl = body.callbackUrl;
     // login_challenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал —
-    // backend eID push-д subsystem/sub_url-г үүнээс resolve хийнэ.
+    // backend eID push-д rp_app/rp_app_url-г үүнээс resolve хийнэ.
     if (typeof body?.login_challenge === 'string') loginChallenge = body.login_challenge;
   } catch {
     /* body-гүй → cross-device */

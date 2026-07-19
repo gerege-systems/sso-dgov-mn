@@ -5796,7 +5796,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "login_challenge": {
-                    "description": "LoginChallenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал\nfrontend дамжуулна — eID push-д subsystem/sub_url-г үүнээс resolve хийнэ.",
+                    "description": "LoginChallenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал\nfrontend дамжуулна — eID push-д rp_app/rp_app_url-г үүнээс resolve хийнэ.",
                     "type": "string"
                 },
                 "national_id": {

@@ -105,12 +105,12 @@ type Certificate struct {
 
 // AppContext нь нэвтрэлт/гарын үсгийг эхлүүлж буй "дэд систем"-ийг (SSO дээр
 // бүртгэгдсэн RP апп) eID рүү дамжуулах мэдээлэл. Бүртгэгдсэн RP апп-аас эхэлж
-// байвал Subsystem = апп-ийн нэр, SubURL = апп-ийн домэйн (redirect_uri-ийн
-// origin). SSO өөрөө (base) эхлүүлж байвал Subsystem хоосон — client үүнийг RP
+// байвал RPApp = апп-ийн нэр, RPAppURL = апп-ийн домэйн (redirect_uri-ийн
+// origin). SSO өөрөө (base) эхлүүлж байвал RPApp хоосон — client үүнийг RP
 // платформын нэрээр (c.rpName) орлуулна (eID push дэлгэцэнд/логд ашиглагдана).
 type AppContext struct {
-	Subsystem string // RP апп-ийн нэр (base SSO бол хоосон → RP платформын нэрээр орлоно)
-	SubURL    string // RP апп-ийн домэйн URL (base SSO бол хоосон)
+	RPApp    string // RP апп-ийн нэр (base SSO бол хоосон → RP платформын нэрээр орлоно)
+	RPAppURL string // RP апп-ийн домэйн URL (base SSO бол хоосон)
 }
 
 // StartResult нь initiate хариуны клиентэд харагдах хэсэг.
@@ -305,11 +305,11 @@ type authInitiateBody struct {
 	// (desktop QR/push): eID backend утас руу callback дамжуулахгүй, browser өөрөө poll хийнэ.
 	// eID backend үүнийг өөрийн стандарт зам (/auth/eid/callback) руу force-normalize хийдэг.
 	InitialCallbackURL string `json:"initialCallbackUrl,omitempty"`
-	// Subsystem / SubURL — нэвтрэлтийг эхлүүлж буй бүртгэгдсэн RP апп. Base SSO
-	// (өөрөө) үед Subsystem нь RP платформын нэр (rpName), SubURL хоосон. Always-
+	// RPApp / RPAppURL — нэвтрэлтийг эхлүүлж буй бүртгэгдсэн RP апп. Base SSO
+	// (өөрөө) үед RPApp нь RP платформын нэр (rpName), RPAppURL хоосон. Always-
 	// present (omitempty-гүй).
-	Subsystem string `json:"subsystem"`
-	SubURL    string `json:"sub_url"`
+	RPApp    string `json:"rp_app"`
+	RPAppURL string `json:"rp_app_url"`
 }
 
 func (c *client) newAuthBody(displayText, callbackURL string, app AppContext) (authInitiateBody, error) {
@@ -324,25 +324,25 @@ func (c *client) newAuthBody(displayText, callbackURL string, app AppContext) (a
 	if len(dt) > 60 {
 		dt = dt[:60]
 	}
-	// Base SSO (өөрөө) үед subsystem хоосон ирнэ — RP платформын нэрээр орлуулна.
+	// Base SSO (өөрөө) үед rp_app хоосон ирнэ — RP платформын нэрээр орлуулна.
 	// Бүртгэгдсэн RP апп-аас ирвэл тэр апп-ийн нэр хэвээр үлдэнэ.
-	subsystem := app.Subsystem
-	if subsystem == "" {
-		subsystem = c.rpName
+	rpApp := app.RPApp
+	if rpApp == "" {
+		rpApp = c.rpName
 	}
-	// relyingPartyName-ийг ч subsystem-ээр тавина: eID апп push дэлгэцэнд ҮҮНИЙГ
+	// relyingPartyName-ийг ч rp_app-ээр тавина: eID апп push дэлгэцэнд ҮҮНИЙГ
 	// харуулдаг тул RP апп-аас нэвтрэхэд апп-ийн нэр (жишээ template.dgov.mn), base
 	// үед платформын нэр гарна. RP-г UUID+secret-ээр танидаг тул нэр нь зүгээр label.
 	return authInitiateBody{
 		RelyingPartyUUID:   c.rpUUID,
-		RelyingPartyName:   subsystem,
+		RelyingPartyName:   rpApp,
 		CertificateLevel:   c.certLevel,
 		SignatureProtocol:  "ACSP_V2",
 		RPChallenge:        challenge,
 		Interactions:       []interaction{{Type: "displayTextAndPIN", DisplayText60: dt}},
 		InitialCallbackURL: callbackURL,
-		Subsystem:          subsystem,
-		SubURL:             app.SubURL,
+		RPApp:              rpApp,
+		RPAppURL:           app.RPAppURL,
 	}, nil
 }
 

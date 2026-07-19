@@ -618,8 +618,8 @@ func (u *usecase) setRPAuth(req *http.Request) {
 }
 
 func (u *usecase) startV3Sign(ctx context.Context, etsi, digestB64, displayName, onBehalfOfOrg string) (sessionID, vc string, err error) {
-	// Гарын үсгийн үйлдэл ҮРГЭЛЖ SSO өөр дээрээ хийгддэг тул subsystem = RP
-	// платформын нэр (cfg.RPName), sub_url хоосон. Гэхдээ ХЭН гарын үсэг зурж буйг
+	// Гарын үсгийн үйлдэл ҮРГЭЛЖ SSO өөр дээрээ хийгддэг тул rp_app = RP
+	// платформын нэр (cfg.RPName), rp_app_url хоосон. Гэхдээ ХЭН гарын үсэг зурж буйг
 	// (etsi/нэр + байгууллагын өмнөөс эсэх) audit-д тэмдэглэнэ.
 	logger.InfoWithContext(ctx, "eID sign push (SSO-originated)", logger.Fields{
 		"usecase":          "sign",
@@ -627,7 +627,7 @@ func (u *usecase) startV3Sign(ctx context.Context, etsi, digestB64, displayName,
 		"signer_etsi":      etsi,
 		"signer_name":      displayName,
 		"on_behalf_of_org": onBehalfOfOrg,
-		"subsystem":        u.cfg.RPName,
+		"rp_app":           u.cfg.RPName,
 	})
 	body := map[string]any{
 		"relyingPartyUUID":  u.cfg.RPUUID,
@@ -639,10 +639,10 @@ func (u *usecase) startV3Sign(ctx context.Context, etsi, digestB64, displayName,
 		"interactions": []map[string]string{
 			{"type": "displayTextAndPIN", "displayText60": "Gerege — баримтад гарын үсэг"},
 		},
-		// Гарын үсэг SSO өөр дээрээ хийгддэг тул subsystem = RP платформын нэр
-		// (auth push-ийн base кейстэй нэгэн ижил), sub_url хоосон.
-		"subsystem": u.cfg.RPName,
-		"sub_url":   "",
+		// Гарын үсэг SSO өөр дээрээ хийгддэг тул rp_app = RP платформын нэр
+		// (auth push-ийн base кейстэй нэгэн ижил), rp_app_url хоосон.
+		"rp_app":     u.cfg.RPName,
+		"rp_app_url": "",
 	}
 	// onBehalfOf (NTRMN-<РД>) — байгууллагын нэрийн өмнөөс. Сервер төлөөллийн эрхийг
 	// session үүсэх үед шалгаж, эрхгүй бол 403 буцаана.

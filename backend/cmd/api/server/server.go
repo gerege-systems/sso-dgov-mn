@@ -439,7 +439,7 @@ func NewApp() (*App, error) {
 
 		api.Get("/", routes.RootHandler)
 		// providerUC (nil байж болно — Hydra тохируулаагүй) нь eID push-д RP апп-ийн
-		// subsystem/sub_url-г login_challenge-аас resolve хийнэ.
+		// rp_app/rp_app_url-г login_challenge-аас resolve хийнэ.
 		routes.NewAuthRoute(api, authUC, auditUC, providerUC, authMiddleware, authRateLimiter, pollRateLimiter).Routes()
 		routes.NewUsersRoute(api, usersUC, authMiddleware).Routes()
 		routes.NewEIDProfileRoute(api, authUC, authMiddleware, govWriteRateLimiter).Routes()
