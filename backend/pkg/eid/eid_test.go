@@ -43,8 +43,10 @@ func TestQRInitiate(t *testing.T) {
 		}
 		var body authInitiateBody
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body.RelyingPartyUUID != testUUID || body.RelyingPartyName != testName {
-			t.Errorf("rp identity not sent: %+v", body)
+		// UUID нь RP-ийн auth identity (тогтмол); relyingPartyName нь харагдах нэр —
+		// RP апп-аас эхэлсэн бол апп-ийн нэрээр (subsystem = "MyApp") тавигдана.
+		if body.RelyingPartyUUID != testUUID || body.RelyingPartyName != "MyApp" {
+			t.Errorf("rp identity/name not sent: %+v", body)
 		}
 		// Auth-д challenge талбар нь rpChallenge (hash БИШ) — регрессийн хамгаалалт.
 		if body.RPChallenge == "" || body.SignatureProtocol != "ACSP_V2" {
