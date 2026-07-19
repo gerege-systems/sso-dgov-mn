@@ -167,6 +167,30 @@ func (r *applicationRepository) ServiceScopes(ctx context.Context, serviceIDs []
 	return out, rows.Err()
 }
 
+// ServiceIDsForScopes нь өгсөн OAuth scope нэрсэд харгалзах gateway service
+// id-уудыг буцаана (ServiceScopes-ийн урвуу). Hydra client-ийн scope-оос апп-ын
+// зөвшөөрсөн service-үүдийг сэргээхэд ашиглана.
+func (r *applicationRepository) ServiceIDsForScopes(ctx context.Context, scopes []string) ([]string, error) {
+	if len(scopes) == 0 {
+		return nil, nil
+	}
+	rows, err := r.pool.Query(ctx,
+		`SELECT id::text FROM gateway_services WHERE scope = ANY($1) AND scope <> ''`, scopes)
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
 // replaceServices нь апп-ын service grant-уудыг бүхэлд нь орлуулна (tx дотор).
 func replaceServices(ctx context.Context, tx pgx.Tx, appID string, serviceIDs []string) error {
 	if _, err := tx.Exec(ctx, `DELETE FROM application_services WHERE application_id=$1`, appID); err != nil {

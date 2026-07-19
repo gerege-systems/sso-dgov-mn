@@ -252,17 +252,18 @@ type ClientUpdate = ClientCreate
 // ClientListEntry нь GET /admin/clients-ийн буцаадаг shape-ийн бидний ашиглах
 // талбарууд.
 type ClientListEntry struct {
-	ClientID                string   `json:"client_id"`
-	ClientName              string   `json:"client_name,omitempty"`
-	GrantTypes              []string `json:"grant_types,omitempty"`
-	ResponseTypes           []string `json:"response_types,omitempty"`
-	Scope                   string   `json:"scope,omitempty"`
-	RedirectURIs            []string `json:"redirect_uris,omitempty"`
-	PostLogoutRedirectURIs  []string `json:"post_logout_redirect_uris,omitempty"`
-	SubjectType             string   `json:"subject_type,omitempty"`
-	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method,omitempty"`
-	CreatedAt               string   `json:"created_at,omitempty"`
-	UpdatedAt               string   `json:"updated_at,omitempty"`
+	ClientID                string         `json:"client_id"`
+	ClientName              string         `json:"client_name,omitempty"`
+	GrantTypes              []string       `json:"grant_types,omitempty"`
+	ResponseTypes           []string       `json:"response_types,omitempty"`
+	Scope                   string         `json:"scope,omitempty"`
+	RedirectURIs            []string       `json:"redirect_uris,omitempty"`
+	PostLogoutRedirectURIs  []string       `json:"post_logout_redirect_uris,omitempty"`
+	SubjectType             string         `json:"subject_type,omitempty"`
+	TokenEndpointAuthMethod string         `json:"token_endpoint_auth_method,omitempty"`
+	Metadata                map[string]any `json:"metadata,omitempty"`
+	CreatedAt               string         `json:"created_at,omitempty"`
+	UpdatedAt               string         `json:"updated_at,omitempty"`
 }
 
 // ListClients нь бүртгэлтэй бүх OAuth2 client-ыг буцаана (эхний хуудас, 200).

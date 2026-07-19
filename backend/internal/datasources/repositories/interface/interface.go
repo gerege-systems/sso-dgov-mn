@@ -209,6 +209,9 @@ type ApplicationRepository interface {
 	SetServices(ctx context.Context, appID string, serviceIDs []string) error
 	// ServiceScopes нь өгсөн service id-уудын OAuth scope нэрсийг буцаана (Hydra-д).
 	ServiceScopes(ctx context.Context, serviceIDs []string) ([]string, error)
+	// ServiceIDsForScopes нь OAuth scope нэрсэд харгалзах service id-уудыг буцаана
+	// (ServiceScopes-ийн урвуу; Hydra client scope-оос service-үүдийг сэргээхэд).
+	ServiceIDsForScopes(ctx context.Context, scopes []string) ([]string, error)
 }
 
 // OrgRepository нь байгууллага болон гишүүнчлэлийг (organization_memberships)
