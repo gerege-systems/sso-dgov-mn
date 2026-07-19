@@ -84,6 +84,12 @@ func TestInitiateByNationalID(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "УБ12345678") {
 			t.Errorf("national id not in path: %s", r.URL.Path)
 		}
+		// Base SSO (хоосон AppContext) үед subsystem нь RP платформын нэрээр орлоно.
+		var body authInitiateBody
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body.Subsystem != testName || body.SubURL != "" {
+			t.Errorf("base subsystem/sub_url wrong: subsystem=%q sub_url=%q", body.Subsystem, body.SubURL)
+		}
 		// notification нь vc-г object хэлбэрээр буцаана.
 		_, _ = io.WriteString(w, `{"sessionID":"sess-2","vc":{"type":"alphaNumeric4","value":"0489"}}`)
 	})
