@@ -330,9 +330,12 @@ func (c *client) newAuthBody(displayText, callbackURL string, app AppContext) (a
 	if subsystem == "" {
 		subsystem = c.rpName
 	}
+	// relyingPartyName-ийг ч subsystem-ээр тавина: eID апп push дэлгэцэнд ҮҮНИЙГ
+	// харуулдаг тул RP апп-аас нэвтрэхэд апп-ийн нэр (жишээ template.dgov.mn), base
+	// үед платформын нэр гарна. RP-г UUID+secret-ээр танидаг тул нэр нь зүгээр label.
 	return authInitiateBody{
 		RelyingPartyUUID:   c.rpUUID,
-		RelyingPartyName:   c.rpName,
+		RelyingPartyName:   subsystem,
 		CertificateLevel:   c.certLevel,
 		SignatureProtocol:  "ACSP_V2",
 		RPChallenge:        challenge,
