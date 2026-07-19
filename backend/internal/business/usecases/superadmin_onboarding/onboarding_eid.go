@@ -35,7 +35,8 @@ func (uc *usecase) EIDStart(ctx context.Context, req EIDStartRequest) (EIDStartR
 	if nErr != nil {
 		return EIDStartResponse{}, apperror.InternalCause(fmt.Errorf("generate nonce: %w", nErr))
 	}
-	start, initErr := uc.eid.QRInitiate(ctx, uc.cfg.EIDDisplayText, req.CallbackURL, nonce)
+	// Superadmin onboarding нь SSO өөр дээрээ хийгддэг тул subsystem хоосон.
+	start, initErr := uc.eid.QRInitiate(ctx, uc.cfg.EIDDisplayText, req.CallbackURL, nonce, eid.AppContext{})
 	if initErr != nil {
 		return EIDStartResponse{}, mapInitiateErr(initErr, "eID session эхлүүлэх боломжгүй байна")
 	}
@@ -62,7 +63,7 @@ func (uc *usecase) EIDStartByNationalID(ctx context.Context, req EIDStartByNatio
 	if nationalID == "" {
 		return EIDStartResponse{}, apperror.BadRequest("national_id is required")
 	}
-	start, initErr := uc.eid.Initiate(ctx, nationalID, uc.cfg.EIDDisplayText, req.CallbackURL)
+	start, initErr := uc.eid.Initiate(ctx, nationalID, uc.cfg.EIDDisplayText, req.CallbackURL, eid.AppContext{})
 	if initErr != nil {
 		return EIDStartResponse{}, mapInitiateErr(initErr, "Регистрийн дугаар олдсонгүй эсвэл буруу байна")
 	}

@@ -14,6 +14,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"template/internal/apperror"
@@ -57,6 +58,10 @@ type Usecase interface {
 	GetLogin(ctx context.Context, challenge string) (LoginInfo, error)
 	AcceptLogin(ctx context.Context, userID, challenge string) (redirectTo string, err error)
 	RejectLogin(ctx context.Context, challenge, reason string) (redirectTo string, err error)
+	// LoginAppContext нь login_challenge-аас нэвтэрч буй RP апп-ийн (subsystem нэр,
+	// sub_url домэйн)-г буцаана — eID push-д дамжуулна. Base SSO / first-party /
+	// хоосон/буруу challenge үед хоосон (нэвтрэлтийг блоклохгүй, fail-open).
+	LoginAppContext(ctx context.Context, challenge string) (subsystem, subURL string)
 	GetConsent(ctx context.Context, challenge string) (ConsentInfo, error)
 	AcceptConsent(ctx context.Context, userID, challenge string, grantScope []string) (redirectTo string, err error)
 	RejectConsent(ctx context.Context, challenge, reason string) (redirectTo string, err error)
@@ -100,6 +105,36 @@ func (u *usecase) GetLogin(ctx context.Context, challenge string) (LoginInfo, er
 		Subject:        req.Subject,
 		Skip:           req.Skip,
 	}, nil
+}
+
+func (u *usecase) LoginAppContext(ctx context.Context, challenge string) (subsystem, subURL string) {
+	if strings.TrimSpace(challenge) == "" {
+		return "", ""
+	}
+	req, err := u.hydra.GetLoginRequest(ctx, challenge)
+	if err != nil || req == nil {
+		return "", "" // resolve чадсангүй — base гэж үзэж хоосон (нэвтрэлтийг блоклохгүй)
+	}
+	// First-party client (base SSO / dan-web гэх мэт) → subsystem хоосон: "SSO өөрөө".
+	if _, ok := u.firstParty[req.Client.ClientID]; ok {
+		return "", ""
+	}
+	name := strings.TrimSpace(req.Client.ClientName)
+	if name == "" {
+		name = req.Client.ClientID
+	}
+	return name, redirectOrigin(req.Client.RedirectURIs)
+}
+
+// redirectOrigin нь эхний хүчинтэй redirect_uri-ийн origin (scheme://host)-г буцаана.
+func redirectOrigin(uris []string) string {
+	for _, u := range uris {
+		p, err := url.Parse(strings.TrimSpace(u))
+		if err == nil && p.Scheme != "" && p.Host != "" {
+			return p.Scheme + "://" + p.Host
+		}
+	}
+	return ""
 }
 
 func (u *usecase) AcceptLogin(ctx context.Context, userID, challenge string) (string, error) {

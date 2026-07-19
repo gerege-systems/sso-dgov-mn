@@ -5795,6 +5795,10 @@ const docTemplate = `{
                     "description": "CallbackUrl (сонголт): SAME-DEVICE (утасны browser) үед \u003corigin\u003e/auth/eid/callback; хоосон\nбол CROSS-DEVICE (desktop). Backend force-normalize хийнэ.",
                     "type": "string"
                 },
+                "login_challenge": {
+                    "description": "LoginChallenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал\nfrontend дамжуулна — eID push-д subsystem/sub_url-г үүнээс resolve хийнэ.",
+                    "type": "string"
+                },
                 "national_id": {
                     "type": "string"
                 }

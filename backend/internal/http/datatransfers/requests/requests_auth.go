@@ -101,6 +101,9 @@ type EIDStartByNationalIDRequest struct {
 	// CallbackUrl (сонголт): SAME-DEVICE (утасны browser) үед <origin>/auth/eid/callback; хоосон
 	// бол CROSS-DEVICE (desktop). Backend force-normalize хийнэ.
 	CallbackUrl string `json:"callbackUrl,omitempty"`
+	// LoginChallenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал
+	// frontend дамжуулна — eID push-д subsystem/sub_url-г үүнээс resolve хийнэ.
+	LoginChallenge string `json:"login_challenge,omitempty"`
 }
 
 // ResetPasswordRequest нь POST /auth/password/reset-ийн body юм. Нууц үг

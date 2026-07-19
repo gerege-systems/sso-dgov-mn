@@ -37,14 +37,17 @@ func (h Handler) EIDStart(w http.ResponseWriter, r *http.Request) error {
 	// callbackUrl (сонголт): SAME-DEVICE (mobile browser) үед frontend <origin>/auth/eid/callback
 	// дамжуулна; хоосон/байхгүй бол CROSS-DEVICE (desktop QR). Body байхгүй ч зүгээр (cross-device) —
 	// декод алдааг үл хайхарч callbackUrl-ийг хоосон гэж үзнэ.
+	// loginChallenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал
+	// frontend дамжуулна — eID push-д subsystem/sub_url-г үүнээс resolve хийнэ.
 	var body struct {
-		CallbackURL string `json:"callbackUrl"`
+		CallbackURL    string `json:"callbackUrl"`
+		LoginChallenge string `json:"login_challenge"`
 	}
 	if r.Body != nil {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 	}
 
-	result, err := h.usecase.EIDStart(ctx, body.CallbackURL)
+	result, err := h.usecase.EIDStart(ctx, body.CallbackURL, h.resolveApp(ctx, body.LoginChallenge))
 	if err != nil {
 		logger.ErrorWithContext(ctx, "EIDStart failed in controller", logger.Fields{
 			"controller": controllerName,
@@ -97,7 +100,7 @@ func (h Handler) EIDStartByNationalID(w http.ResponseWriter, r *http.Request) er
 		return v1.RespondWithError(w, r, err)
 	}
 
-	result, err := h.usecase.EIDStartByNationalID(ctx, req.NationalID, req.CallbackUrl)
+	result, err := h.usecase.EIDStartByNationalID(ctx, req.NationalID, req.CallbackUrl, h.resolveApp(ctx, req.LoginChallenge))
 	if err != nil {
 		logger.ErrorWithContext(ctx, "EIDStartByNationalID failed in controller", logger.Fields{
 			"controller": controllerName,

@@ -53,10 +53,14 @@ func TestQRInitiate(t *testing.T) {
 		if len(body.Interactions) != 1 || body.Interactions[0].Type != "displayTextAndPIN" || body.Interactions[0].DisplayText60 != "Нэвтрэх" {
 			t.Errorf("interactions wrong: %+v", body.Interactions)
 		}
+		// Бүртгэгдсэн RP апп-аас эхэлсэн бол subsystem/sub_url дамжина.
+		if body.Subsystem != "MyApp" || body.SubURL != "https://app.example.mn" {
+			t.Errorf("subsystem/sub_url wrong: subsystem=%q sub_url=%q", body.Subsystem, body.SubURL)
+		}
 		_, _ = io.WriteString(w, `{"sessionID":"sess-1","sessionToken":"tok-abc","sessionSecret":"s","deviceLinkBase":"https://eidmongolia.mn/dl","vc":"7270"}`)
 	})
 
-	res, err := c.QRInitiate(context.Background(), "Нэвтрэх", "", "nonce")
+	res, err := c.QRInitiate(context.Background(), "Нэвтрэх", "", "nonce", AppContext{Subsystem: "MyApp", SubURL: "https://app.example.mn"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +88,7 @@ func TestInitiateByNationalID(t *testing.T) {
 		_, _ = io.WriteString(w, `{"sessionID":"sess-2","vc":{"type":"alphaNumeric4","value":"0489"}}`)
 	})
 
-	res, err := c.Initiate(context.Background(), "УБ12345678", "Нэвтрэх", "nonce")
+	res, err := c.Initiate(context.Background(), "УБ12345678", "Нэвтрэх", "nonce", AppContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +108,7 @@ func TestInitiateRejected(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = io.WriteString(w, `{"error":"citizen not found"}`)
 	})
-	_, err := c.Initiate(context.Background(), "УБ00000000", "", "")
+	_, err := c.Initiate(context.Background(), "УБ00000000", "", "", AppContext{})
 	if !errors.Is(err, ErrInitiateRejected) {
 		t.Fatalf("want ErrInitiateRejected, got %v", err)
 	}

@@ -60,13 +60,13 @@ func (_m *AuthUsecase) ResetPassword(ctx context.Context, req auth.ResetPassword
 	return _m.Called(ctx, req).Error(0)
 }
 
-func (_m *AuthUsecase) EIDStart(ctx context.Context, callbackURL string) (auth.EIDStartResponse, error) {
-	ret := _m.Called(ctx, callbackURL)
+func (_m *AuthUsecase) EIDStart(ctx context.Context, callbackURL string, app eid.AppContext) (auth.EIDStartResponse, error) {
+	ret := _m.Called(ctx, callbackURL, app)
 	return ret.Get(0).(auth.EIDStartResponse), ret.Error(1)
 }
 
-func (_m *AuthUsecase) EIDStartByNationalID(ctx context.Context, nationalID, callbackURL string) (auth.EIDStartResponse, error) {
-	ret := _m.Called(ctx, nationalID, callbackURL)
+func (_m *AuthUsecase) EIDStartByNationalID(ctx context.Context, nationalID, callbackURL string, app eid.AppContext) (auth.EIDStartResponse, error) {
+	ret := _m.Called(ctx, nationalID, callbackURL, app)
 	return ret.Get(0).(auth.EIDStartResponse), ret.Error(1)
 }
 

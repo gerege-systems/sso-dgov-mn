@@ -30,6 +30,19 @@ function sameDeviceCallbackUrl(): string {
   return window.location.origin + '/auth/eid/callback' + (retScheme ? '?retScheme=' + retScheme : '');
 }
 
+// challengeFromNext — OIDC урсгалд `next` нь /oauth/login?login_challenge=… байдаг.
+// Тэндээс login_challenge-ийг гаргана (backend eID push-д subsystem/sub_url-г
+// бүртгэгдсэн RP апп-аас resolve хийхэд ашиглана). Base нэвтрэлтэд хоосон.
+function challengeFromNext(next: string): string {
+  const i = next.indexOf('?');
+  if (i < 0) return '';
+  try {
+    return new URLSearchParams(next.slice(i + 1)).get('login_challenge') || '';
+  } catch {
+    return '';
+  }
+}
+
 interface StartData {
   session_id: string;
   device_link_url?: string; // зөвхөн QR арга буцаана
@@ -54,6 +67,9 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
   // шаардвал энэ challenge-ийг харуулна. mfaToken байвал eID poll урсгал (клиент
   // token эзэмшинэ); null бол Google callback (sa_mfa cookie ашиглана).
   const [mfa, setMfa] = useState<{ token?: string } | null>(mfaGate ? {} : null);
+  // Бүртгэгдсэн RP апп-аас (OIDC) нэвтэрч байвал login_challenge — eID push-д
+  // subsystem/sub_url-г үүгээр дамжуулна (base нэвтрэлтэд хоосон).
+  const loginChallenge = challengeFromNext(next);
 
   // unmount хийсний дараа интервалд timer-уудыг цэвэрлэхэд ашиглана.
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -162,7 +178,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
 
     const mobile = isMobileBrowser();
     const callbackUrl = mobile ? sameDeviceCallbackUrl() : '';
-    const res = await postJSON<StartData>('/api/auth/eid/start', { callbackUrl });
+    const res = await postJSON<StartData>('/api/auth/eid/start', { callbackUrl, login_challenge: loginChallenge });
     if (!mounted.current) return;
 
     if (!res.ok || !res.data?.session_id) {
@@ -175,7 +191,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
     if (mobile) {
       window.location.href = 'geregesmartid://approve?sessionId=' + encodeURIComponent(res.data.session_id);
     }
-  }, [armSession, stopTimers]);
+  }, [armSession, stopTimers, loginChallenge]);
 
   // РД арга — backend иргэний апп руу push мэдэгдэл илгээнэ (device_link_url алга).
   const beginId = useCallback(async () => {
@@ -195,7 +211,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
     // дараа eID app browser-ийг /auth/eid/callback руу буцаана. DESKTOP: callbackUrl хоосон, browser poll.
     const mobile = isMobileBrowser();
     const callbackUrl = mobile ? sameDeviceCallbackUrl() : '';
-    const res = await postJSON<StartData>('/api/auth/eid/start-id', { national_id: rd, callbackUrl });
+    const res = await postJSON<StartData>('/api/auth/eid/start-id', { national_id: rd, callbackUrl, login_challenge: loginChallenge });
     if (!mounted.current) return;
 
     if (!res.ok || !res.data?.session_id) {
@@ -203,7 +219,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
       return;
     }
     armSession(res.data);
-  }, [armSession, nationalId, stopTimers, T]);
+  }, [armSession, nationalId, stopTimers, T, loginChallenge]);
 
   // Terminal төлөвт сүүлд хэрэглэсэн аргаар дахин эхлүүлнэ.
   const retry = useCallback(() => {
