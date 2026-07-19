@@ -23,6 +23,12 @@ type ActResponse = {
 const PAGE = 20;
 const isSign = (f: string) => f === 'SIGNATURE';
 
+// extraStr нь activity service-ийн нэмэлт (extra) талбараас string утга уншина.
+const extraStr = (extra: Record<string, unknown> | undefined, key: string): string => {
+  const v = extra?.[key];
+  return v === null || v === undefined || v === '' ? '—' : String(v);
+};
+
 export default function EidLogsView({ show }: { show: boolean }) {
   const { T } = useT();
   const [filter, setFilter] = useState<Filter>('all');
@@ -95,6 +101,8 @@ export default function EidLogsView({ show }: { show: boolean }) {
             <tr>
               <th style={{ width: 32 }}></th>
               <th>{T('eid.logs.col.type')}</th>
+              <th>{T('eid.logs.col.rpApp')}</th>
+              <th>{T('eid.logs.col.rpName')}</th>
               <th>{T('eid.logs.col.detail')}</th>
               <th>{T('eid.logs.col.session')}</th>
               <th>{T('eid.logs.col.outcome')}</th>
@@ -139,7 +147,14 @@ export default function EidLogsView({ show }: { show: boolean }) {
                         <span style={{ fontWeight: 500 }}>{flowLabel(a.flow)}</span>
                       </span>
                     </td>
-                    <td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}
+                      title={extraStr(a.extra, 'subsystemName')}>
+                      {extraStr(a.extra, 'subsystemName')}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }} title={extraStr(a.extra, 'rpName')}>
+                      {extraStr(a.extra, 'rpName')}
+                    </td>
+                    <td style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                       title={a.doc_text || flowLabel(a.flow)}>
                       {a.doc_text || flowLabel(a.flow)}
                     </td>
@@ -149,7 +164,7 @@ export default function EidLogsView({ show }: { show: boolean }) {
                   </tr>
                   {expanded && (
                     <tr>
-                      <td colSpan={6} style={{ background: 'var(--surface-2)', padding: '12px 16px' }}>
+                      <td colSpan={8} style={{ background: 'var(--surface-2)', padding: '12px 16px' }}>
                         <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)', marginBottom: 8 }}>
                           {T('eid.logs.details')}
                         </div>
@@ -171,7 +186,7 @@ export default function EidLogsView({ show }: { show: boolean }) {
               );
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 20 }}>{T('me.pki.none')}</td></tr>
+              <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 20 }}>{T('me.pki.none')}</td></tr>
             )}
           </tbody>
         </table>
