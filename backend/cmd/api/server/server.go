@@ -75,7 +75,6 @@ import (
 	"template/pkg/gemini"
 	"template/pkg/google"
 	gspaceclient "template/pkg/gspace"
-	"template/pkg/hydra"
 	"template/pkg/jwt"
 	"template/pkg/logger"
 	"template/pkg/observability"
@@ -388,10 +387,6 @@ func NewApp() (*App, error) {
 	// OIDC provider (sso.dgov.mn = SSO) — Hydra урдаа тавьсан login/consent/logout
 	// цөм. Зөвхөн Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс
 	// бөгөөс providerUC == nil тул route бүртгэгдэхгүй (inert).
-	var hydraAdmin *hydra.Admin
-	if config.AppConfig.ProviderConfigured() {
-		hydraAdmin = hydra.NewAdmin(config.AppConfig.HydraAdminURL)
-	}
 	oauthClients := oauthpostgres.NewClientRepository(pool)
 	oidcSvc := oidcuc.NewService(oauthClients, oauthpostgres.NewFlowRepository(pool), config.AppConfig.Issuer())
 	providerUC := provideruc.NewUsecase(oidcSvc, oauthClients, usersUC,
@@ -485,18 +480,16 @@ func NewApp() (*App, error) {
 		routes.NewThemeRoute(api, themeUC, rbacUC, authMiddleware).Routes()
 		routes.NewSignRoute(api, signUC, usersUC, assetsUC, authMiddleware).Routes()
 		// eID service proxy — бүртгэгдсэн апп (relying party)-ууд хэрэглэгчийнхээ
-		// Hydra access token-оор ("eid" scope) SSO-ий eID service-үүдийг ДАМЖУУЛАН
-		// дуудна (/v1/eid/*). SSO өөрийн eidmongolia RP creds-ээр татаж өгнө; апп-д
-		// eID credential эзэмших шаардлагагүй. Зөвхөн Hydra тохируулагдсан
-		// (introspection боломжтой) үед идэвхжинэ.
-		if hydraAdmin != nil {
-			// Service тус бүрийн зөвшөөрөл нь client-ийн Hydra allowed scope дахь
-			// "svc:<service>"-ээр илэрхийлэгдэнэ (admin gateway UI-аас апп-д service
-			// олгоход нэмэгддэг). Олгогдоогүй апп 403 авна.
-			eidMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDProxyServiceName)
-			eidOrgMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDOrgProxyServiceName)
-			routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidMW, eidOrgMW).Routes()
-		}
+		// access token-оор SSO-ий eID service-үүдийг ДАМЖУУЛАН дуудна (/v1/eid/*).
+		// SSO өөрийн eidmongolia RP creds-ээр татаж өгнө; апп-д eID credential
+		// эзэмших шаардлагагүй.
+		//
+		// Service тус бүрийн зөвшөөрөл нь client-ийн allowed scope дахь
+		// "svc:<service>"-ээр илэрхийлэгдэнэ (admin gateway UI-аас апп-д service
+		// олгоход нэмэгддэг). Олгогдоогүй апп 403 авна.
+		eidMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDProxyServiceName)
+		eidOrgMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDOrgProxyServiceName)
+		routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidMW, eidOrgMW).Routes()
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
 		if providerUC != nil {
 			routes.NewProviderRoute(api, providerUC, authMiddleware).Routes()
@@ -512,9 +505,9 @@ func NewApp() (*App, error) {
 		// chi.Mount нь plain http.Handler-ийн r.URL.Path-аас prefix-ыг хасдаггүй
 		// тул StripPrefix-ээр хасна — ингэснээр доторх ServeMux нь /api/v1/...
 		// pattern-тэй таарна.
-		r.Mount("/admin", http.StripPrefix("/admin", adminapi.New(hydraAdmin, devAppsStore, adminKeyStore).Router()))
+		r.Mount("/admin", http.StripPrefix("/admin", adminapi.New(oauthClients, devAppsStore, adminKeyStore).Router()))
 		logger.Info("OIDC provider admin surface mounted at /admin", logger.Fields{
-			"hydra_admin": config.AppConfig.HydraAdminURL,
+			"issuer": config.AppConfig.Issuer(),
 		})
 	}
 
