@@ -1,0 +1,97 @@
+// Government Template Platform V3.0
+// Gerege Systems Development Team болон Claude AI хамтран бүтээв, 2026.
+
+package domain
+
+import "time"
+
+// OAuthClient нь бүртгэгдсэн relying party (OAuth2 client). Өмнө нь энэ бүртгэл
+// Hydra-д амьдардаг байсан; одоо oauth_clients хүснэгтэд.
+//
+// SecretHash нь ХЭЗЭЭ Ч энэ процессоос гарахгүй — API хариунд зөвхөн шинээр
+// үүсгэсэн/эргүүлсэн түүхий secret нэг удаа буцна.
+type OAuthClient struct {
+	ClientID                string
+	ClientName              string
+	SecretHash              string
+	TokenEndpointAuthMethod string // client_secret_basic | client_secret_post | none
+	AppType                 string // web | spa | native | m2m
+	GrantTypes              []string
+	ResponseTypes           []string
+	Scopes                  []string
+	RedirectURIs            []string
+	PostLogoutRedirectURIs  []string
+	Tags                    []string
+	Enabled                 bool
+	CreatedBy               string
+	CreatedAt               time.Time
+	UpdatedAt               *time.Time
+}
+
+// Grant / auth method-ийн зөвшөөрөгдсөн утгууд.
+const (
+	GrantAuthorizationCode = "authorization_code"
+	GrantRefreshToken      = "refresh_token"
+	GrantClientCredentials = "client_credentials"
+
+	AuthMethodBasic = "client_secret_basic"
+	AuthMethodPost  = "client_secret_post"
+	AuthMethodNone  = "none"
+)
+
+// IsPublic нь client secret нууцалж чаддаггүй (spa/native) эсэхийг заана.
+// Public client-д PKCE ЗААВАЛ шаардагдана.
+func (c OAuthClient) IsPublic() bool {
+	return c.TokenEndpointAuthMethod == AuthMethodNone
+}
+
+// HasGrant нь тухайн grant type зөвшөөрөгдсөн эсэхийг шалгана.
+func (c OAuthClient) HasGrant(grant string) bool {
+	return containsExact(c.GrantTypes, grant)
+}
+
+// AllowsScope нь тухайн scope client-д олгогдсон эсэхийг шалгана.
+func (c OAuthClient) AllowsScope(scope string) bool {
+	return containsExact(c.Scopes, scope)
+}
+
+// FilterAllowedScopes нь хүссэн scope-уудаас client-д ОЛГОГДСОНЫГ нь л үлдээнэ
+// (эрх өсгөх боломжгүй). Дараалал нь хүсэлтийнхээр хадгалагдана.
+func (c OAuthClient) FilterAllowedScopes(requested []string) []string {
+	out := make([]string, 0, len(requested))
+	seen := make(map[string]bool, len(requested))
+	for _, s := range requested {
+		if s == "" || seen[s] || !c.AllowsScope(s) {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	return out
+}
+
+// MatchRedirectURI нь redirect_uri-г бүртгэгдсэн жагсаалттай ЯГ (яг тэмдэгт
+// бүрээр) тулгана.
+//
+// АЮУЛГҮЙ БАЙДАЛ: энд prefix/substring/wildcard тулгалт ХЭЗЭЭ Ч хийж болохгүй.
+// Сул тулгалт нь authorization code-ыг халдагчийн хаяг руу дамжуулах сонгодог
+// эмзэг байдал (open redirect → code хулгай). RFC 6749 §3.1.2.3, RFC 9700 §2.1.
+func (c OAuthClient) MatchRedirectURI(uri string) bool {
+	return containsExact(c.RedirectURIs, uri)
+}
+
+// MatchPostLogoutRedirectURI нь logout-ийн дараах буцах хаягийг ЯГ тулгана
+// (OIDC RP-Initiated Logout §3). Тулгалтын шалтгаан нь MatchRedirectURI-тай ижил.
+func (c OAuthClient) MatchPostLogoutRedirectURI(uri string) bool {
+	return containsExact(c.PostLogoutRedirectURIs, uri)
+}
+
+// containsExact нь яг тэнцүү мөр байгаа эсэхийг шалгана.
+func containsExact(list []string, v string) bool {
+	for _, s := range list {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
