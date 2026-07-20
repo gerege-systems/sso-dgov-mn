@@ -11,8 +11,8 @@ The Go backend for **Government SSO** ([sso.dgov.mn](https://sso.dgov.mn)), an
 eID-based national Single Sign-On built on the **Government Template Platform V3.0**
 stack (Clean Architecture principles). Based on **chi (net/http)** for HTTP,
 **pgx (pgxpool) + PostgreSQL** for data, **Redis + Ristretto** for cache, and
-**eID Mongolia + Google OAuth + dgov SSO (OIDC)** for authentication — plus an
-optional **Ory Hydra** front-end so DAN itself acts as an OIDC provider.
+**eID Mongolia + Google OAuth + dgov SSO (OIDC)** for authentication — plus a
+built-in **OAuth2/OIDC provider** so DAN itself acts as an OIDC issuer.
 
 ## 📌 Origin & Open Source
 
@@ -38,7 +38,7 @@ optional **Ory Hydra** front-end so DAN itself acts as an OIDC provider.
 - **eID authentication** — the only login method: eID Mongolia Relying Party (QR / mobile deep-link / national-ID push) with a long-poll session; issues JWT access + refresh tokens (rotation, `kind` claim guard)
 - **Google OAuth linking** — link a Google account to an eID user (code exchange server-side only) and log in with it thereafter
 - **dgov SSO (OIDC) consumer** — a second login path via `sso.dgov.mn` (start / callback / native / logout)
-- **OIDC provider (SSO)** — an optional Ory Hydra front-end so DAN acts as an identity provider; login/consent/logout flows plus an `/admin` surface for RP client registration (enabled only when Hydra is configured)
+- **OIDC provider (SSO)** — a built-in OAuth2/OIDC provider (`usecases/oidc`) so DAN acts as an identity provider: `/oauth2/*`, `/userinfo`, discovery + JWKS, plus the login/consent/logout flows and an `/admin` surface for RP client registration (enabled once `OAUTH_ISSUER` is set)
 - **eID PKI profile** — the signed-in citizen's linked organizations & signers, certificates, devices, and activity
 - **Organizations & membership** — org create/lookup (Gerege Verify/XYP state-registry lookup) + member/role management, RLS-scoped per user
 - **Government services portal** — catalogue, applications, references, notifications, payments, appointments
@@ -72,8 +72,8 @@ optional **Ory Hydra** front-end so DAN itself acts as an OIDC provider.
 │   │   ├── domain/              # Domain entities (innermost layer)
 │   │   └── usecases/           # Business logic (interface + impl), one package per module:
 │   │       #  auth · users · rbac · superadmin · ai · audit · security · site
-│   │       #  org · gov · gateway · core · sso · provider · sign · assets
-│   │       #  integrations · gspace
+│   │       #  org · gov · gateway · core · sso · provider · oidc · sign
+│   │       #  applications · assets · integrations · gspace
 │   ├── datasources/
 │   │   ├── drivers/             # pgx (pgxpool) Postgres connection (driver_pgx.go)
 │   │   ├── caches/              # Redis + Ristretto
@@ -91,7 +91,7 @@ optional **Ory Hydra** front-end so DAN itself acts as an OIDC provider.
 ├── docs/                        # Swagger + ARCHITECTURE.md + DEVELOPMENT.md
 └── pkg/                         # jwt, logger, clock, helpers, validators,
                                  # audit, observability, gemini,
-                                 # eid, google, oidc, hydra, xyp, gspace, verify
+                                 # eid, google, secrethash, xyp, gspace, verify
 ```
 
 ## Quick Start
@@ -168,9 +168,8 @@ SSO_REDIRECT_URI=
 SSO_SCOPE=openid profile email
 SSO_NATIVE_CLIENT_ID=            # mobile PKCE public client_id
 
-# OIDC PROVIDER side (DAN as issuer, via Ory Hydra) — provider flows are inert unless set
-HYDRA_ADMIN_URL=http://hydra:4445
-HYDRA_PUBLIC_URL=                # issuer, e.g. https://sso.dgov.mn (empty = provider off)
+# OIDC PROVIDER side (DAN as issuer, built in) — provider flows are inert unless set
+OAUTH_ISSUER=                    # issuer, e.g. https://sso.dgov.mn (empty = provider off)
 SSO_STATE_KEY=                   # >= 32 bytes; login/consent state cookie HMAC
 SSO_FIRSTPARTY_CLIENTS=          # CSV client_ids that skip the consent screen
 SSO_ADMIN_API_KEYS=              # CSV bootstrap keys for the /admin surface
@@ -300,10 +299,18 @@ register / forgot-reset endpoint** — authentication is eID + Google + dgov SSO
 | PUT | `/api/v1/superadmin/admins/{id}/grant` | Grant admin to an existing user (super admin only) |
 | DELETE | `/api/v1/superadmin/admins/{id}` | Revoke admin (super admin only) |
 
-### OIDC provider (only when Hydra is configured)
-`GET /api/v1/provider/login` · `/consent`, plus accept/reject for login/consent/logout
-(the Hydra-driven login/consent screens). RP OAuth2 client registration lives under
-the mounted `/admin` surface.
+### OIDC provider (only when `OAUTH_ISSUER` is set)
+Public protocol endpoints are mounted at the **root** (OIDC fixes their paths, so they
+are not under `/api/v1`) and answer with bare RFC-shaped JSON, not the `BaseResponse`
+envelope:
+
+`GET /oauth2/auth` · `POST /oauth2/token` · `POST /oauth2/introspect` ·
+`POST /oauth2/revoke` · `GET /oauth2/sessions/logout` · `GET|POST /userinfo` ·
+`GET /.well-known/openid-configuration` · `GET /.well-known/jwks.json`
+
+The browser-facing challenge API stays where it was: `GET /api/v1/provider/login` ·
+`/consent`, plus accept/reject for login/consent/logout (the login/consent screens).
+RP OAuth2 client registration lives under the mounted `/admin` surface.
 
 ### Ops
 `GET /health` (liveness) · `GET /ready` (DB+Redis) · `GET /metrics` · `GET /swagger/doc.json`

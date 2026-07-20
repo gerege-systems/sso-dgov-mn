@@ -197,7 +197,7 @@ type GatewayRepository interface {
 
 // ApplicationRepository нь нэгдсэн Applications (Gateway consumer + SSO RP)
 // overlay-г хадгална: applications мөр + зөвшөөрсөн gateway service-үүд
-// (application_services). Hydra client өөрөө Hydra-д амьдардаг тул энд зөвхөн
+// (application_services). OAuth2 client өөрөө oauth_clients-д амьдардаг тул энд зөвхөн
 // client_id болон overlay талбарууд. RLS-гүй нийтийн config.
 type ApplicationRepository interface {
 	List(ctx context.Context) ([]domain.Application, error)
@@ -207,10 +207,10 @@ type ApplicationRepository interface {
 	Delete(ctx context.Context, id string) error
 	// SetServices нь апп-ын зөвшөөрсөн service-ийн жагсаалтыг бүхэлд нь орлуулна.
 	SetServices(ctx context.Context, appID string, serviceIDs []string) error
-	// ServiceScopes нь өгсөн service id-уудын OAuth scope нэрсийг буцаана (Hydra-д).
+	// ServiceScopes нь өгсөн service id-уудын OAuth scope нэрсийг буцаана.
 	ServiceScopes(ctx context.Context, serviceIDs []string) ([]string, error)
 	// ServiceIDsForScopes нь OAuth scope нэрсэд харгалзах service id-уудыг буцаана
-	// (ServiceScopes-ийн урвуу; Hydra client scope-оос service-үүдийг сэргээхэд).
+	// (ServiceScopes-ийн урвуу; client-ийн scope-оос service-үүдийг сэргээхэд).
 	ServiceIDsForScopes(ctx context.Context, scopes []string) ([]string, error)
 }
 

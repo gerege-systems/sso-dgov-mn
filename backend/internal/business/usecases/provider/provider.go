@@ -161,8 +161,7 @@ func (u *usecase) AcceptLogin(ctx context.Context, userID, challenge string) (st
 	if err != nil {
 		return "", err
 	}
-	// Browser-ыг зөвшөөрлийн хуудас руу. (Hydra-тай үед энэ нь Hydra-аар дамжиж
-	// байсан; одоо шууд.)
+	// Browser-ыг зөвшөөрлийн хуудас руу (өмнө нь Hydra-аар дамждаг байсан).
 	return u.issuer + "/oauth/consent?consent_challenge=" + url.QueryEscape(consentChallenge), nil
 }
 

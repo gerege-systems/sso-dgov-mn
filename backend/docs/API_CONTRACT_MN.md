@@ -44,6 +44,11 @@ Platform V3.0** стек (Clean-Architecture Go backend + Next.js BFF + Gemini A
 - `data` — амжилтад байна (алдаанд орхигдоно/null)
 - `request_id` — корреляцийн id (`X-Request-ID` header-т мөн давхардуулна)
 
+> **Нэг үл хамаарах зүйл.** Үндэс дээр суусан OAuth2/OIDC протоколын endpoint-ууд
+> (`/oauth2/*`, `/userinfo`, `/.well-known/*` — *Non-`/api` mounts*-ыг үз) энэ
+> дугтуйг ХЭРЭГЛЭХГҮЙ, RFC-ийн хэлбэртэй нүцгэн JSON буцаана — RP-ийн сан
+> (library)-ууд шууд задлан уншдаг тул.
+
 ### Статус кодууд
 
 | Код | Утга | Хэзээ |
@@ -254,11 +259,11 @@ Upstream **service** бүртгэл + телеметр. Бүх endpoint 🔒 + �
 ## Applications (`/api/v1/applications`) 🛡️ `gateway.manage`
 
 Нэгдсэн OAuth2 **client бүртгэл** — хуучин gateway "consumers + API keys" болон
-тусдаа SSO RP бүртгэлийг нэгтгэн орлуулсан. Application бүр нь **Ory Hydra OAuth2
-client**; service тус бүрийн хандалтыг OAuth **scope**-оор илэрхийлнэ
-(`application_services` → `gateway_services.scope`). Бүх endpoint 🔒 + 🛡️
-`gateway.manage` шаардах ба энэ бүлэг нь **зөвхөн Hydra тохируулагдсан үед**
-(`ProviderConfigured()`) бүртгэгдэнэ.
+тусдаа SSO RP бүртгэлийг нэгтгэн орлуулсан. Application бүр нь дотоод provider-ийн
+**OAuth2 client** (`oauth_clients` хүснэгтийн мөр); service тус бүрийн хандалтыг
+OAuth **scope**-оор илэрхийлнэ (`application_services` → `gateway_services.scope`).
+Бүх endpoint 🔒 + 🛡️ `gateway.manage` шаардах ба энэ бүлэг нь **зөвхөн provider
+тохируулагдсан үед** (`ProviderConfigured()`) бүртгэгдэнэ.
 
 `app_type` нь grant + auth-method-ыг сонгоно:
 
@@ -275,10 +280,10 @@ OAuth2 **`client_secret`** (зөвхөн confidential төрөл) нь create / 
 | Method | Path | Тайлбар |
 |--------|------|-------------|
 | GET | `/applications` | Application-уудыг жагсаах. |
-| POST | `/applications` | Үүсгэх; Hydra OAuth2 client үүсгээд апп-ыг нэг удаагийн `secret`-ийн хамт буцаана (confidential төрөл). |
+| POST | `/applications` | Үүсгэх; OAuth2 client үүсгээд апп-ыг нэг удаагийн `secret`-ийн хамт буцаана (confidential төрөл). |
 | GET | `/applications/{id}` | Нэг application авах. |
-| PUT | `/applications/{id}` | Overlay + Hydra client-ийн хүссэн төлөвийг шинэчлэх. |
-| DELETE | `/applications/{id}` | Hydra client + overlay-г устгах. |
+| PUT | `/applications/{id}` | OAuth2 client-ийн хүссэн төлөвийг шинэчлэх. |
+| DELETE | `/applications/{id}` | OAuth2 client-ийг устгах. |
 | POST | `/applications/{id}/rotate-secret` | Шинэ client secret гаргаж нэг удаа буцаах (зөвхөн confidential). |
 | PUT | `/applications/{id}/secret` | Тодорхой client secret-ыг гараар оноох (зөвхөн confidential); body `{ secret }`, 16–128 тэмдэгт. |
 | PUT | `/applications/{id}/services` | Зөвшөөрсөн gateway service-үүдийг солих — тэдгээр нь client-ийн OAuth scope болно. |
@@ -311,8 +316,9 @@ identity-ээр (callback нь `users`-т upsert хийнэ).
 
 ## OIDC provider — login/consent/logout (`/api/v1/provider`)
 
-Зөвхөн **Hydra тохируулагдсан үед** (`ProviderConfigured()`) идэвхжинэ. Энэ нь
-sso.dgov.mn нь Ory Hydra урдаа тавьж OIDC **provider** болсон нь; Next.js BFF-ийн
+Зөвхөн **provider тохируулагдсан үед** (`ProviderConfigured()`) идэвхжинэ. Энэ нь
+sso.dgov.mn нь OIDC **provider** болсон нь; эдгээр endpoint нь доорх *Non-`/api`
+mounts*-д жагсаасан протоколын урсгалын browser талыг жолооддог. Next.js BFF-ийн
 `/login`, `/consent`, `/logout` хуудсууд дуудна. Body хязгаартай (4 KiB).
 `get`/`reject`/`logout-accept` нь challenge-аар баталгаажна (bearer-гүй);
 `accept` endpoint-ууд нэвтэрсэн иргэн шаардана (subject = dan user ID).
@@ -341,7 +347,7 @@ sso.dgov.mn нь Ory Hydra урдаа тавьж OIDC **provider** болсон 
 | PUT | `/admin/ai/prompts/{key}` | 🛡️ `settings.manage` | Prompt давхарга шинэчлэх (`key` ∈ `scope` \| `instructions`). |
 
 > **Нэрийн тэмдэглэл.** Апп доторх энэ `/api/v1/admin` бүлэг нь доор *Non-`/api`
-> mounts*-д баримтжуулсан дээд түвшний `/admin` Hydra оператор гадаргуутай огт
+> mounts*-д баримтжуулсан дээд түвшний `/admin` OIDC-provider оператор гадаргуутай огт
 > өөр — ижил үг, өөр mount.
 
 ## Super admin (`/api/v1/superadmin`) 🔒
@@ -460,9 +466,42 @@ chunk хоосон талбар буцаана — амьд орчуулгын U
 
 ## Non-`/api` mounts
 
+### OAuth2 / OIDC протоколын endpoint-ууд (root)
+
+Зөвхөн **provider тохируулагдсан үед** (`ProviderConfigured()` — `OAUTH_ISSUER` +
+`SSO_STATE_KEY`) идэвхжинэ. Эдгээрийг энэ backend дотор баригдсан OAuth2/OIDC
+provider (`usecases/oidc`) үйлчилдэг бөгөөд OIDC нь замыг нь тогтоодог тул
+`/api/v1` дор биш, **үндэс** дээр mount хийгдсэн.
+
+> ⚠️ **Дугтуйгүй.** `/api/v1`-ийн бүх endpoint-оос ялгаатай нь эдгээр нь RFC-ийн
+> хэлбэртэй нүцгэн JSON буцаана (`{ "access_token": … }`,
+> `{ "error": "invalid_grant", … }`, discovery/JWKS баримт) — RP-ийн сангууд
+> шууд задлан уншдаг тул. Бүгд нээлттэй; client-ийн баталгаажуулалт нь холбогдох
+> RFC-ийн дагуу endpoint бүрийн дотор хийгдэнэ.
+
+| Method | Path | Тайлбар |
+|--------|------|-------------|
+| GET | `/oauth2/auth` | Authorization endpoint — хүсэлтийг шалгаад login/consent challenge урсгалыг жолоодож, `code`-тойгоо буцаан redirect хийнэ. |
+| POST | `/oauth2/token` | Token endpoint — `authorization_code` солилцоо, `refresh_token` (эргэлддэг), `client_credentials`. |
+| POST | `/oauth2/introspect` | RFC 7662 token introspection. |
+| POST | `/oauth2/revoke` | RFC 7009 token revocation. |
+| GET | `/oauth2/sessions/logout` | RP-initiated logout (end-session endpoint). |
+| GET, POST | `/userinfo` | OIDC UserInfo — access token-ий subject-ийн claim-ууд. |
+| GET | `/.well-known/openid-configuration` | OIDC discovery баримт. |
+| GET | `/.well-known/jwks.json` | id_token шалгах нийтийн RS256 түлхүүрүүд (JWKS). |
+
+**Дэмждэг:** `authorization_code` + PKCE (**зөвхөн S256**), `refresh_token`
+(эргэлддэг, дахин ашиглалтыг илрүүлнэ), `client_credentials`, discovery / JWKS /
+userinfo, introspection, revocation, RP-initiated logout. Access token нь
+**opaque** (introspect хийж шалгана); id_token нь **RS256 JWT**.
+
+**Дэмждэггүй** (санаатайгаар — production-д хэзээ ч хэрэглэгдээгүй): pairwise
+subject type, DPoP, device grant, back-channel болон front-channel logout,
+implicit ба hybrid урсгал, JAR/PAR request object.
+
 ### OIDC provider админ гадаргуу — `/admin` (оператор)
 
-Зөвхөн **Hydra тохируулагдсан үед** (`ProviderConfigured()`) идэвхжинэ. `/admin`-д
+Зөвхөн **provider тохируулагдсан үед** (`ProviderConfigured()`) идэвхжинэ. `/admin`-д
 (`StripPrefix`-ээр, тул дотоод pattern нь `/api/v1/…` уншина) суурьшсан энгийн
 `http.ServeMux`. Энэ нь **RP OAuth2 client бүртгэл** болон **admin API key**-ийг
 удирдах ба **admin API key**-ээр баталгаажна — `Authorization: Bearer <key>`

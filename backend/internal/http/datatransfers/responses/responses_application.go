@@ -10,7 +10,7 @@ import (
 )
 
 // ApplicationResponse нь Application-ыг frontend-д буцаах хэлбэр. secret нь
-// зөвхөн үүсгэх/эргүүлэх хариунд дүүрнэ (reveal-once); дараа нь Hydra эзэмшинэ.
+// зөвхөн үүсгэх/эргүүлэх хариунд дүүрнэ (reveal-once); DB-д зөвхөн hash үлдэнэ.
 type ApplicationResponse struct {
 	ID           string     `json:"id"`
 	ClientID     string     `json:"client_id"`

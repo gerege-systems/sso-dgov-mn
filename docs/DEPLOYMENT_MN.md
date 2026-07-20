@@ -4,24 +4,22 @@
 
 **Government SSO** (sso.dgov.mn)-ийг нэг VPS дээр Docker Compose-оор,
 nginx-ийн ард deploy хийх заавар. Стек нь Postgres + Redis + Go API + Next.js
-BFF web + **Ory Hydra** (dan-ийг SSO provider болгодог OIDC issuer). Жишиг
-deployment-д ашигласан бодит runbook.
+BFF web; **OAuth2/OIDC provider нь Go backend дотроо хэрэгжсэн** (тусдаа issuer
+процесс байхгүй). Жишиг deployment-д ашигласан бодит runbook.
 
 ## Топологи
 
-Хост дээр гурван loopback port гаргана; nginx нь TLS-ыг төгсгөж, тус бүрийг
+Хост дээр хоёр loopback port гаргана; nginx нь TLS-ыг төгсгөж, тус бүрийг
 зөв контейнер руу reverse-proxy хийнэ. `db`, `redis` нь дотоод compose
-сүлжээнээс хэзээ ч гарахгүй, Hydra-гийн **admin** API нь зөвхөн loopback (хэзээ
-ч проксилохгүй).
+сүлжээнээс хэзээ ч гарахгүй. Compose-д яг таван service ажиллана: `db`,
+`migrate` (нэг удаа), `redis`, `api`, `web`.
 
 ```
 Internet ──► nginx (80/443, Let's Encrypt TLS)
    │
-   ├─ /oauth2/*, /.well-known/openid-configuration, /userinfo, /health/ready
-   │      ─────────────────────────► hydra  127.0.0.1:${HYDRA_PUBLIC_PORT}   (Ory Hydra — OIDC issuer, PUBLIC API)
-   │
-   ├─ /rp/sign/*  (3 дагч Relying Party-ийн eID sign relay)
-   │      ─────────────────────────► api    127.0.0.1:${API_RELAY_PORT}      (backend :8080, loopback relay)
+   ├─ /oauth2/*, /.well-known/openid-configuration, /.well-known/jwks.json, /userinfo
+   │  болон /rp/sign/*  (3 дагч Relying Party-ийн eID sign relay)
+   │      ─────────────────────────► api    127.0.0.1:${API_RELAY_PORT}      (backend :8080 — OIDC issuer + relay)
    │
    └─ бусад бүх зүйл — app, BFF /api/*, ба OIDC login/consent UI
       (/oauth/login, /oauth/consent, /oauth/logout, /oauth/error)
@@ -29,18 +27,37 @@ Internet ──► nginx (80/443, Let's Encrypt TLS)
                                        │ BACKEND_URL=http://api:8080
                                        ▼
    дотоод compose сүлжээ (нийтийн host port байхгүй):
-        api ──► db (Postgres 16 — gerege_template + hydra database) + redis (7)
-        hydra ──► db (hydra database)   admin :4445 = ЗӨВХӨН LOOPBACK, хэзээ ч проксилохгүй
-        hydra-migrate (нэг удаа), migrate (нэг удаа) — schema түрхээд гардаг
+        api ──► db (Postgres 16 — ганц gerege_template database) + redis (7)
+        migrate (нэг удаа) — SQL migration түрхээд гардаг
 ```
 
-Тэгэхээр `web` нь гадагш нээгддэг ЦОРЫН ГАНЦ контейнер **биш**: nginx нь Hydra-гийн
-public API (`:4444`) болон api sign relay (`:8091`)-ыг мөн урдаас барих ёстой.
-Browser нь app болон BFF-д `web`-ээр хүрнэ; OIDC протоколын endpoint-уудыг Hydra
-үйлчилнэ; OAuth *login/consent* хуудсууд (dan өөрөө иргэнийг eID-ээр
-баталгаажуулаад render хийдэг) нь `web` дээр `/oauth/*` дор байрлана. Нэг удаагийн
-`migrate` контейнер `up` бүр дээр SQL migration-уудыг түрхэнэ; `hydra-migrate` нь
-Hydra-гийн өөрийн schema-г тусдаа `hydra` database руу түрхээд гардаг.
+Тэгэхээр `web` нь гадагш нээгддэг ЦОРЫН ГАНЦ контейнер **биш**: nginx нь api-ийн
+loopback порт (`:8091`)-ыг мөн урдаас барих ёстой — тэр порт одоо OIDC
+протоколын endpoint болон sign relay хоёуланг үйлчилнэ. Browser нь app болон
+BFF-д `web`-ээр хүрнэ; OAuth *login/consent* хуудсууд (dan өөрөө иргэнийг
+eID-ээр баталгаажуулаад render хийдэг) нь `web` дээр `/oauth/*` дор байрлана.
+Нэг удаагийн `migrate` контейнер `up` бүр дээр SQL migration-уудыг түрхэнэ.
+
+api өөрөө үйлчилдэг endpoint-ууд (канон замууд нь
+`backend/internal/business/usecases/oidc/discovery.go`-д):
+
+| Endpoint | Зориулалт |
+|----------|-----------|
+| `/oauth2/auth` | authorization endpoint |
+| `/oauth2/token` | token endpoint |
+| `/oauth2/revoke` | токен цуцлах |
+| `/oauth2/introspect` | токен шалгах (introspection) |
+| `/oauth2/sessions/logout` | RP-ээс эхэлсэн logout (end session) |
+| `/userinfo` | UserInfo |
+| `/.well-known/openid-configuration` | discovery баримт |
+| `/.well-known/jwks.json` | id_token шалгах нийтийн түлхүүрүүд |
+
+Access token нь **opaque** хэвээр (RP-үүд `/oauth2/introspect`-ээр шалгана);
+id_token нь **RS256 JWT** бөгөөд `/.well-known/jwks.json`-оор офлайн шалгагдана.
+
+Хамгаалах шаардлагатай **тусдаа admin порт байхгүй боллоо**: client CRUD болон
+login/consent/logout цөм нь api дотоод дуудлага болж, ердийн route
+middleware-ээр хамгаалагдана.
 
 ## Шаардлага
 
@@ -59,13 +76,11 @@ cd /srv/dan
 
 ### `./.env` — compose interpolation
 
-Compose-ийн interpolate хийдэг бүхэн энд байна. **REQUIRED** гэж тэмдэглэсэн
-Hydra нууцууд `docker-compose.yml`-д `${VAR:?}` хэлбэртэй тул тэдгээрийг
-тохируулаагүй/хоосон бол **compose асахаас татгалзана**.
+Compose-ийн interpolate хийдэг бүхэн энд байна.
 
 ```env
 # --- Postgres / Redis ---
-POSTGRES_USER=postgres            # superuser — зөвхөн migrate + hydra-migrate хэрэглэнэ
+POSTGRES_USER=postgres            # superuser — зөвхөн migrate хэрэглэнэ
 POSTGRES_PASSWORD=<санамсаргүй>
 POSTGRES_DB=gerege_template
 APP_DB_USER=app_user              # api-ийн холбогддог хамгийн бага эрхт role
@@ -76,16 +91,8 @@ REDIS_PASS=<санамсаргүй>
 # --- App / origin ---
 APP_ORIGIN=https://sso.dgov.mn    # яг нийтийн origin (CSRF origin шалгалт)
 WEB_PORT=3007                     # nginx app руу проксилдог loopback port
-API_RELAY_PORT=8091               # nginx /rp/sign-ыг проксилдог loopback port (api :8080)
-
-# --- Ory Hydra (OIDC issuer) ---
-HYDRA_PUBLIC_PORT=4444            # nginx OIDC public API руу проксилдог loopback port
-HYDRA_ADMIN_PORT=4445             # Hydra admin API — loopback дээр, ХЭЗЭЭ Ч проксилохгүй
-HYDRA_PUBLIC_URL=https://sso.dgov.mn          # REQUIRED — OIDC issuer / self URL
-HYDRA_POST_LOGOUT_REDIRECT=https://sso.dgov.mn/   # заавал биш; default нь HYDRA_PUBLIC_URL/
-HYDRA_SYSTEM_SECRET=<≥32 санамсаргүй тэмдэгт>  # REQUIRED — Hydra system secret
-HYDRA_COOKIE_SECRET=<≥32 санамсаргүй тэмдэгт>  # REQUIRED — Hydra cookie secret
-HYDRA_PAIRWISE_SALT=<санамсаргүй>              # REQUIRED — pairwise subject salt
+API_RELAY_PORT=8091               # nginx OIDC endpoint болон /rp/sign-ыг проксилдог
+                                  # loopback port (api :8080)
 
 # --- web BFF-ийн хэрэглэдэг OAuth client ID/secret (хоосон = тэр товч/карт идэвхгүй) ---
 GOOGLE_CLIENT_ID=<…>              # Google account холболт (backend.env-д мөн тавина)
@@ -149,11 +156,12 @@ SSO_CLIENT_ID=<…>
 SSO_CLIENT_SECRET=<…>
 SSO_REDIRECT_URI=https://sso.dgov.mn/sso/callback
 SSO_SCOPE=openid profile email
-SSO_NATIVE_CLIENT_ID=dan-dgov-mn-ios   # mobile PKCE урсгалын Hydra client_id
+SSO_NATIVE_CLIENT_ID=dan-dgov-mn-ios   # mobile PKCE урсгалын provider client_id
 
-# --- OIDC PROVIDER тал (dan нь Ory Hydra-г SSO issuer болгож урдаа тавина) ---
-HYDRA_ADMIN_URL=http://hydra:4445      # admin API (client CRUD + login/consent/logout)
-HYDRA_PUBLIC_URL=https://sso.dgov.mn   # redirect байгуулахад ашиглах issuer
+# --- OIDC PROVIDER тал (dan нь ӨӨРӨӨ OAuth2/OIDC issuer — api үйлчилнэ) ---
+OAUTH_ISSUER=https://sso.dgov.mn       # issuer: id_token-ий `iss`, discovery баримт
+                                       # болон зарлагдах бүх endpoint URL үүнээс
+                                       # гарна. RP-үүдийн тохируулсантай ЯГ таарна.
 SSO_STATE_KEY=<≥32 санамсаргүй тэмдэгт> # login/consent state cookie HMAC түлхүүр
 SSO_FIRSTPARTY_CLIENTS=<csv client_id>    # эдгээрт consent дэлгэц алгасна
 SSO_ADMIN_API_KEYS=<csv bootstrap key>    # /admin гадаргуугийн bootstrap key
@@ -173,7 +181,9 @@ GSPACE_BASE_PATH=gerege-space
 GSPACE_QUOTA_BYTES=2097152             # хэрэглэгч тус бүр 2 MB
 
 # --- Шифрлэлт / гарын үсэг / observability ---
-INTEGRATION_ENC_KEY=<≥32 санамсаргүй тэмдэгт> # хадгалсан OAuth токенд AES-256-GCM түлхүүр
+INTEGRATION_ENC_KEY=<≥32 санамсаргүй тэмдэгт> # хадгалсан OAuth токен БОЛОН id_token-ий
+                                       # RSA гарын үсгийн түлхүүрийг (`oauth_signing_keys`)
+                                       # шифрлэх AES-256-GCM түлхүүр — "Нууцын эрүүл ахуй"-г үз
 SIGN_RELAY_TOKEN=<shared token>        # 3 дагч RP-д /rp/sign relay-г идэвхжүүлнэ (хоосон = унтраалттай)
 SIGN_SIGNER_CERT_FILE=/app/certs/signer.crt   # PAdES document-signer гэрчилгээ (prod: REQUIRED,
 SIGN_SIGNER_KEY_FILE=/app/certs/signer.key    #  fail-closed; dev-д self-signed руу шилжинэ)
@@ -192,50 +202,51 @@ GEMINI_API_KEY=<AIza…>                 # AI боломжууд; хоосон �
 Row-Level Security-г superuser **чимээгүй алгасдаг**. Тиймээс стек хоёр role
 ашиглана:
 
-- `migrate` (болон `hydra-migrate`) нь `POSTGRES_USER`-ээр (superuser —
-  `CREATE EXTENSION`, RLS DDL, `hydra` database үүсгэхэд хэрэгтэй) холбогдоно.
+- `migrate` нь `POSTGRES_USER`-ээр (superuser — `CREATE EXTENSION`, RLS DDL-д
+  хэрэгтэй) холбогдоно.
 - `api` нь `APP_DB_USER`-ээр (`NOSUPERUSER NOBYPASSRLS`) холбогдоно —
   **хоосон data volume-ийн анхны init дээр**
-  `backend/deploy/initdb/10-create-app-user.sh` автоматаар үүсгэдэг. Хоёр дахь
-  initdb script `20-create-hydra-db.sh` нь Ory Hydra-д зориулж тусдаа `hydra`
-  database үүсгэдэг.
+  `backend/deploy/initdb/10-create-app-user.sh` автоматаар үүсгэдэг.
 
 api үүнийг **boot үед шалгадаг**: role нь superuser/BYPASSRLS бол production горимд
 асахаас татгалзаж, development горимд warning логдоно. *Одоо байгаа* DB рүү deploy
 хийж байгаа бол app role + grant-уудыг гараар үүсгээд (initdb script-ийг үз),
-`hydra` database-ыг үүсгээд
-(`docker compose exec db psql -U "$POSTGRES_USER" -c 'CREATE DATABASE hydra;'`),
 `APP_DB_DSN`-ийг app role руу заа.
+
+OAuth2/OIDC протоколын төлөв — authorization code, access/refresh token,
+login/consent challenge болон хадгалсан consent — мөн энэ л `gerege_template`
+database дотор RLS-тэйгээр (service/admin/self бодлого) байрлана, тиймээс хоёр
+дахь database бэлдэх шаардлагагүй. Code болон token нь **зөвхөн sha256 hash**
+хэлбэрээр хадгалагдана; ил утга нь client руу буцаах хормыг л оршино.
 
 ## 4. Анхны deploy
 
 ```bash
-docker compose up -d --build      # api+web бүтээж, хоёр migrate job-ыг ажиллуулж, бүгдийг асаана
-docker compose ps                 # db/redis/api/web/hydra healthy эсвэл running,
-                                  # migrate + hydra-migrate Exited (0) байх ёстой
+docker compose up -d --build      # api+web бүтээж, migrate job-ыг ажиллуулж, бүгдийг асаана
+docker compose ps                 # db/redis/api/web healthy эсвэл running,
+                                  # migrate Exited (0) байх ёстой
 ```
 
 ### nginx vhost (хост дээр)
 
-OIDC issuer замууд Hydra руу, `/rp/sign` нь api relay руу, бусад бүхэн `web` руу
-очно. Hydra admin port (`:4445`)-ыг энд **хэзээ ч** бичихгүй.
+OIDC issuer замууд болон `/rp/sign` хоёулаа api-ийн loopback порт руу, бусад
+бүхэн `web` руу очно.
 
 ```nginx
-upstream dan_web   { server 127.0.0.1:3007; }   # = WEB_PORT
-upstream dan_hydra { server 127.0.0.1:4444; }   # = HYDRA_PUBLIC_PORT
-upstream dan_relay { server 127.0.0.1:8091; }   # = API_RELAY_PORT (api :8080)
+upstream dan_web { server 127.0.0.1:3007; }   # = WEB_PORT
+upstream dan_api { server 127.0.0.1:8091; }   # = API_RELAY_PORT (api :8080)
 
 server {
     server_name sso.dgov.mn;
 
-    # OIDC протоколын endpoint → Ory Hydra public API
-    location /oauth2/                         { proxy_pass http://dan_hydra; include /etc/nginx/proxy_params; }
-    location = /userinfo                      { proxy_pass http://dan_hydra; include /etc/nginx/proxy_params; }
-    location /.well-known/openid-configuration { proxy_pass http://dan_hydra; include /etc/nginx/proxy_params; }
-    location = /.well-known/jwks.json         { proxy_pass http://dan_hydra; include /etc/nginx/proxy_params; }
+    # OIDC протоколын endpoint → api (энэ backend нь ӨӨРӨӨ issuer)
+    location /oauth2/                         { proxy_pass http://dan_api; include /etc/nginx/proxy_params; }
+    location = /userinfo                      { proxy_pass http://dan_api; include /etc/nginx/proxy_params; }
+    location /.well-known/openid-configuration { proxy_pass http://dan_api; include /etc/nginx/proxy_params; }
+    location = /.well-known/jwks.json         { proxy_pass http://dan_api; include /etc/nginx/proxy_params; }
 
-    # 3 дагч Relying Party-ийн eID sign relay → api loopback relay
-    location /rp/sign/                        { proxy_pass http://dan_relay; include /etc/nginx/proxy_params; }
+    # 3 дагч Relying Party-ийн eID sign relay → мөн ижил api upstream
+    location /rp/sign/                        { proxy_pass http://dan_api; include /etc/nginx/proxy_params; }
 
     # App, BFF /api/*, ба /oauth/login|consent|logout UI → web BFF
     location / {
@@ -249,10 +260,16 @@ server {
 
 (Хуваалцсан `proxy_set_header` мөрүүдийг `/etc/nginx/proxy_params`-д хийж
 `include` хий, эсвэл block бүрт давт.) Дараа нь TLS:
-`certbot --nginx -d sso.dgov.mn`. Compose файл `COOKIE_SECURE=true` тавьдаг ба
-Hydra нь `SERVE_COOKIES_SAME_SITE_MODE=None` (Secure шаарддаг)-оор ажилладаг тул
+`certbot --nginx -d sso.dgov.mn`. Compose файл `COOKIE_SECURE=true` тавьдаг тул
 сайт **заавал HTTPS-ээр** үйлчлэх ёстой — эс бөгөөс browser auth болон OIDC
 cookie-г хадгалахгүй.
+
+> **Одоо байгаа vhost-ыг шинэчлэх.** Location блокууд өөрчлөгдөөгүй — backend
+> дотоод provider нь яг ижил замуудыг үйлчилнэ. Зөвхөн upstream солигдоно:
+> `upstream dan_hydra { server 127.0.0.1:4444; }`-ыг устгаад дөрвөн OIDC блокыг
+> api upstream руу заа. `4444` / `4445` портууд байхаа больсон бөгөөд "admin
+> портыг хэзээ ч проксилохгүй" гэсэн хуучин дүрэм ч утгагүй болсон — admin порт
+> гэж байхгүй.
 
 ## 5. Ажиллаж буй deployment-ийг шинэчлэх
 
@@ -260,13 +277,26 @@ cookie-г хадгалахгүй.
 cd /srv/dan
 git pull --ff-only origin main
 docker compose build              # api + web + migrate
-docker compose up -d              # өөрчлөгдсөн контейнеруудыг сэргээнэ; migrate + hydra-migrate
-                                  # дахин ажиллана (түрхэгдсэн migration-уудыг алгасна)
+docker compose up -d              # өөрчлөгдсөн контейнеруудыг сэргээнэ; migrate дахин
+                                  # ажиллана (түрхэгдсэн migration-уудыг алгасна)
 ```
 
 `db`, `redis` хэвээр ажиллана — өгөгдөл хөндөгдөхгүй. Зөвхөн тохиргоо өөрчилсөн
-бол: `backend.env` / `.env`-ээ засаад `docker compose up -d api web` (хэрэв
-`HYDRA_*` утга өөрчилсөн бол `hydra`-г мөн дахин асаа).
+бол: `backend.env` / `.env`-ээ засаад `docker compose up -d api web`.
+
+### Өмнөх Ory Hydra стекээс шилжих (cutover)
+
+Хэрэв сервер өмнө нь Hydra-д суурилсан стекээр ажиллаж байсан бол бүртгэлтэй
+OAuth2 client-уудыг cutover-ийн **ӨМНӨ** api-ийн өөрийн `oauth_clients` руу зөө:
+
+```bash
+./scripts/migrate-hydra-clients.sh    # DRY_RUN=1 … бол зөвхөн уншиж шалгана
+```
+
+Client secret нь хэвээрээ зөөгддөг тул relying party-ууд тохиргоогоо огт
+өөрчлөхгүйгээр үргэлжлүүлэн ажиллана. Үүний дараа `hydra` / `hydra-migrate`
+контейнер, тусдаа `hydra` database болон бүх `HYDRA_*` хувьсагчийг устгаж,
+nginx vhost-ыг дахин чиглүүлж болно (§4-ийг үз).
 
 ### Автомат deploy (CI/CD)
 
@@ -307,11 +337,17 @@ deploy хийнэ), эсвэл сервер дээр `bash deploy/deploy.sh`-и�
 ```bash
 docker compose ps                                       # бүгд healthy / migrate job Exited(0)
 docker logs dan-dgov-mn-migrate-1 | tail -3             # "migration [up] success"
-docker logs dan-dgov-mn-hydra-migrate-1 | tail -3       # Hydra schema түрхэгдсэн
 docker logs dan-dgov-mn-api-1 2>&1 | grep -i error      # хоосон байх ёстой
 curl -s -o /dev/null -w '%{http_code}\n' https://sso.dgov.mn/   # 200
 curl -s https://sso.dgov.mn/.well-known/openid-configuration | head -c 80   # OIDC issuer JSON
+curl -s https://sso.dgov.mn/.well-known/jwks.json | head -c 80              # RS256 нийтийн түлхүүр(үүд)
 ```
+
+Discovery-гийн `issuer` нь `OAUTH_ISSUER`-тэй ЯГ таарах ёстой ба `jwks.json` нь
+дор хаяж нэг RS256 түлхүүр буцаана. Түлхүүр бэлтгэх нь fail-closed: api эхний
+ажиллагаанд гарын үсгийн түлхүүрээ үүсгэдэг бөгөөд чадахгүй бол **асахаас
+татгалзана** (api лог дотроос `oidc: ensure signing key`-г хай — ихэвчлэн буруу
+`INTEGRATION_ENC_KEY`).
 
 ## 7. Буцаах (Rollback)
 
@@ -328,8 +364,19 @@ docker compose build && docker compose up -d
 
 - `.env`, `backend.env` gitignored — хэзээ ч commit хийхгүй.
 - `JWT_SECRET` солих = бүх хэрэглэгчийг хүчээр logout хийнэ (бүх токен хүчингүй).
-- `HYDRA_SYSTEM_SECRET` / `HYDRA_COOKIE_SECRET` солих нь одоо байгаа OIDC session
-  болон consent-ыг хүчингүй болгоно — доод талын relying party-уудтай зохицуул.
+- `SSO_STATE_KEY` солих нь дундаа явж буй login/consent state-ыг хүчингүй
+  болгоно — тэр үед authorization хийж байсан browser урсгалаа дахин эхлүүлнэ.
+- **`INTEGRATION_ENC_KEY` одоо хоёр дахь үүрэгтэй.** Гуравдагч OAuth токеныг
+  битүүмжлэхээс гадна id_token-ий гарын үсгийн түлхүүрийг (RSA-2048, эхний
+  ажиллагаанд үүсдэг) `oauth_signing_keys`-д AES-256-GCM-ээр шифрлэдэг. Үүнийг
+  сольсон тохиолдолд хадгалсан гарын үсгийн түлхүүр **задрахаа болино** — api нь
+  өөрөө засахгүй (идэвхтэй түлхүүрийн мөр хэвээр байгаа тул), улмаар түлхүүрийг
+  солих хүртэл id_token гаргах нь бүтэлгүйтнэ. Сэргээхийн тулд `oauth_signing_keys`
+  дэх идэвхтэй мөрийг retire/устгавал дараагийн boot дээр шинэ түлхүүр үүснэ;
+  `kid` өөрчлөгдөх тул relying party-ууд `/.well-known/jwks.json`-оо дахин татах
+  ба хадгалсан интеграцийн токенуудыг дахин холбох шаардлагатай болно.
+  `INTEGRATION_ENC_KEY` солихыг ердийн нууц солилт биш, зарлаж хийх issuer
+  түлхүүрийн rollover гэж төлөвлө.
 - `GEMINI_API_KEY` болон OAuth / `EID_RP_SECRET` / `CORE_API_TOKEN` креденшлүүдийг
   консолоос нь rotate хийгээд `backend.env` / `.env`-д сольж
   `docker compose up -d api web` хийнэ.

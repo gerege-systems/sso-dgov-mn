@@ -31,15 +31,13 @@ type clientStore interface {
 }
 
 // serviceScopeResolver нь gateway service id ↔ OAuth scope хооронд хөрвүүлнэ
-// (gateway_services хүснэгт). Апп-ыг Hydra эзэмшдэг тул DB-ээс зөвхөн service
-// scope-ийг л резолв хийнэ (application-ийн бусад өгөгдлийг DB-д хадгалахаа больсон).
+// (gateway_services хүснэгт).
 type serviceScopeResolver interface {
 	ServiceScopes(ctx context.Context, serviceIDs []string) ([]string, error)
 	ServiceIDsForScopes(ctx context.Context, scopes []string) ([]string, error)
 }
 
-// Гараар оноох client secret-ийн урт (Hydra-д хязгаар байхгүй ч сул secret-ыг
-// бид зөвшөөрөхгүй).
+// Гараар оноох client secret-ийн зөвшөөрөгдөх урт — сул secret-ыг хүлээж авахгүй.
 const (
 	minSecretLen = 16
 	maxSecretLen = 128
@@ -298,7 +296,7 @@ func filterSvcScopes(scopes []string) []string {
 	return out
 }
 
-// grantsFor нь апп төрлөөр Hydra grant_types / response_types / auth method-ыг өгнө.
+// grantsFor нь апп төрлөөр grant_types / response_types / auth method-ыг өгнө.
 func grantsFor(appType string) (grants, responseTypes []string, authMethod string) {
 	switch appType {
 	case "m2m":
