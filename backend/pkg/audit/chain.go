@@ -32,6 +32,16 @@ type ChainEntry struct {
 // хувиргана. occurred_at-г unix nano болгож тогтворжуулна (TZ/формат хамаарахгүй);
 // metadata нь string түлхүүртэй map тул json.Marshal нь түлхүүрийг эрэмбэлдэг тул
 // тогтвортой. Талбарын дараалал нь struct тэгийн дарааллаар тогтоогдоно.
+//
+// ЧУХАЛ: цагийг hash хийхээс ӨМНӨ МИКРОСЕКУНД болгож таслана. Postgres-ийн
+// timestamptz нь микросекунд нарийвчлалтай тул наносекундын үлдэгдэл
+// хадгалагдахдаа алдагддаг. Таслахгүй бол Append нь ns-ээр hash хийж, DB нь
+// µs-ээр хадгалж, VerifyChain нь буцааж уншаад ӨӨР hash тооцоолох тул
+// гэмтээгүй гинж "эвдэрсэн" гэж гарна.
+//
+// Энэ нь платформыг ажиллуулдаг Linux дээр л илэрдэг: тэнд time.Now() ns
+// нарийвчлалтай байдаг бол macOS дээр ихэвчлэн µs-т тэгширсэн байдаг тул
+// локал тест өнгөрч, зөвхөн production дээр audit баталгаа ажиллахгүй байв.
 func canonicalJSON(e ChainEntry) ([]byte, error) {
 	type canon struct {
 		OccurredAtNS int64          `json:"occurred_at_ns"`
@@ -43,7 +53,7 @@ func canonicalJSON(e ChainEntry) ([]byte, error) {
 		Metadata     map[string]any `json:"metadata"`
 	}
 	return json.Marshal(canon{
-		OccurredAtNS: e.OccurredAt.UTC().UnixNano(),
+		OccurredAtNS: e.OccurredAt.UTC().Truncate(time.Microsecond).UnixNano(),
 		ActorUserID:  e.ActorUserID,
 		Action:       e.Action,
 		Category:     e.Category,
