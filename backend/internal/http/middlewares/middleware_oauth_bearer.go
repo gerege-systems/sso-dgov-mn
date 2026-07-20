@@ -64,7 +64,7 @@ func (m *OAuthBearerMiddleware) Handle(next http.Handler) http.Handler {
 		}
 
 		// Token хайлт нь нэвтрэхээс ӨМНӨ явагдана — RLS-ийн service identity дор.
-		info := m.oidc.Introspect(rls.WithService(ctx), token)
+		info := m.oidc.Introspect(ctx, "", token)
 		if !info.Active {
 			_ = V1Handler.NewAbortResponse(w, r, "invalid or expired token")
 			return
@@ -76,7 +76,7 @@ func (m *OAuthBearerMiddleware) Handle(next http.Handler) http.Handler {
 		}
 
 		if m.requiredServiceScope != "" {
-			client, err := m.clients.Get(rls.WithService(ctx), info.ClientID)
+			client, err := m.clients.Get(ctx, info.ClientID)
 			if err != nil {
 				logger.ErrorWithContext(ctx, "OAuth: client-ийн олголтыг уншиж чадсангүй", logger.Fields{
 					"middleware": "OAuthBearerMiddleware", "error": err.Error(), "client_id": info.ClientID,

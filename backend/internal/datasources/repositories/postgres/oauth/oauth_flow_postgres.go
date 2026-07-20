@@ -57,11 +57,21 @@ const challengeColumns = ` challenge, kind, client_id, subject, requested_scopes
 	redirect_uri, state, nonce, response_type, code_challenge, code_challenge_method,
 	prompt, post_logout_redirect_uri, skip, decided_at, expires_at, created_at`
 
+// scanChallenge нь challenge мөрийг уншина. client_id болон subject нь NULL
+// байж БОЛНО (login challenge-д subject хараахан мэдэгдээгүй; logout challenge-д
+// client_id байхгүй байж болно) тул тэдгээрийг заагчаар уншаад хоосон мөр болгоно.
 func scanChallenge(row pgx.Row) (domain.OAuthChallenge, error) {
 	var c domain.OAuthChallenge
-	err := row.Scan(&c.Challenge, &c.Kind, &c.ClientID, &c.Subject, &c.RequestedScopes, &c.GrantedScopes,
+	var clientID, subject *string
+	err := row.Scan(&c.Challenge, &c.Kind, &clientID, &subject, &c.RequestedScopes, &c.GrantedScopes,
 		&c.RedirectURI, &c.State, &c.Nonce, &c.ResponseType, &c.CodeChallenge, &c.CodeChallengeMethod,
 		&c.Prompt, &c.PostLogoutRedirectURI, &c.Skip, &c.DecidedAt, &c.ExpiresAt, &c.CreatedAt)
+	if clientID != nil {
+		c.ClientID = *clientID
+	}
+	if subject != nil {
+		c.Subject = *subject
+	}
 	return c, err
 }
 

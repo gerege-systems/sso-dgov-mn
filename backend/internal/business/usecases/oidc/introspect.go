@@ -27,15 +27,22 @@ type TokenInfo struct {
 
 // Introspect нь access token-ыг шалгана (RFC 7662).
 //
-// Танигдаагүй/дууссан/цуцлагдсан token бүхэнд `{"active": false}` буцаана —
-// шалтгааныг нь ялгаж хэлэхгүй (энэ нь token-ийн оршин байдлыг таамаглах
-// сувгийг хаана).
-func (s *Service) Introspect(ctx context.Context, token string) TokenInfo {
+// caller нь дуудаж буй client-ийн ID. ӨӨР client-ийн token-ыг шалгах боломжгүй
+// (RFC 7662 §2.1) — эс бөгөөс token-ыг хаанаас нэгээс олсон хэн ч түүний эзэн
+// иргэний тогтвортой `sub`, аль RP-д харьяалагдахыг нь болон хүчинтэй эсэхийг
+// мэдэх болно. caller хоосон бол ДОТООД дуудлага (bearer middleware) гэж үзнэ.
+//
+// Танигдаагүй/дууссан/цуцлагдсан/өөр client-ийн token бүхэнд ялгаагүй
+// `{"active": false}` буцаана — шалтгааныг нь ялгаж хэлэхгүй.
+func (s *Service) Introspect(ctx context.Context, caller, token string) TokenInfo {
 	if token == "" {
 		return TokenInfo{Active: false}
 	}
-	at, err := s.flow.AccessToken(ctx, hashToken(token))
+	at, err := s.flow.AccessToken(flowCtx(ctx), hashToken(token))
 	if err != nil {
+		return TokenInfo{Active: false}
+	}
+	if caller != "" && at.ClientID != caller {
 		return TokenInfo{Active: false}
 	}
 	return TokenInfo{
@@ -51,7 +58,8 @@ func (s *Service) Introspect(ctx context.Context, token string) TokenInfo {
 
 // Userinfo нь access token-ий эзэн иргэний claims-ыг буцаана (OIDC Core §5.3).
 func (s *Service) Userinfo(ctx context.Context, token string) (map[string]any, error) {
-	info := s.Introspect(ctx, token)
+	// Дотоод дуудлага: userinfo-г token өөрөө эрхшээдэг тул caller хоосон.
+	info := s.Introspect(ctx, "", token)
 	if !info.Active {
 		return nil, apperror.Unauthorized("invalid or expired access token")
 	}
@@ -95,9 +103,9 @@ func (s *Service) Revoke(ctx context.Context, client domain.OAuthClient, token, 
 		var found bool
 		var err error
 		if kind == "access_token" {
-			found, err = s.flow.RevokeAccessToken(ctx, h, client.ClientID)
+			found, err = s.flow.RevokeAccessToken(flowCtx(ctx), h, client.ClientID)
 		} else {
-			found, err = s.flow.RevokeRefreshToken(ctx, h, client.ClientID)
+			found, err = s.flow.RevokeRefreshToken(flowCtx(ctx), h, client.ClientID)
 		}
 		if err != nil {
 			return err

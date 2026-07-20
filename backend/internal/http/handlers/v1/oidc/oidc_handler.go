@@ -232,10 +232,9 @@ func (h Handler) Introspect(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	_ = client // танигдсан client л дуудаж чадна; хариу нь token-ийнх
-
+	// Зөвхөн ӨӨРИЙН token-ыг шалгана — өөр client-ийнх бол active:false.
 	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, r, http.StatusOK, h.svc.Introspect(r.Context(), r.PostFormValue("token")))
+	writeJSON(w, r, http.StatusOK, h.svc.Introspect(r.Context(), client.ClientID, r.PostFormValue("token")))
 }
 
 // Revoke godoc
@@ -295,6 +294,15 @@ func (h Handler) authenticateCaller(w http.ResponseWriter, r *http.Request) (dom
 	if err != nil {
 		w.Header().Set("WWW-Authenticate", `Basic realm="oauth2"`)
 		writeError(w, r, http.StatusUnauthorized, "invalid_client", "client authentication failed")
+		return domain.OAuthClient{}, false
+	}
+	// Public client (auth method = none) нь ЮУ Ч батлаагүй — түүний client_id нь
+	// SPA/мобайл багцад ил байдаг. Token endpoint дээр PKCE нөхдөг ч энд нөхөх
+	// зүйл байхгүй тул introspect/revoke-д хүлээж авахгүй.
+	if client.IsPublic() {
+		w.Header().Set("WWW-Authenticate", `Basic realm="oauth2"`)
+		writeError(w, r, http.StatusUnauthorized, "invalid_client",
+			"this endpoint requires a client that authenticates with a secret")
 		return domain.OAuthClient{}, false
 	}
 	return client, true
