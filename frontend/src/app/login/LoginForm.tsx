@@ -55,7 +55,7 @@ type Phase = 'idle' | 'starting' | 'waiting' | 'expired' | 'refused' | 'error' |
 
 const POLL_INTERVAL_MS = 2500;
 
-export default function LoginForm({ next, notice, googleLink, googleError, mfaGate }: { next: string; notice?: string; googleLink?: boolean; googleError?: boolean; mfaGate?: boolean }) {
+export default function LoginForm({ next, notice, googleLink, googleError, mfaGate, autoFocus = true }: { next: string; notice?: string; googleLink?: boolean; googleError?: boolean; mfaGate?: boolean; autoFocus?: boolean }) {
   const { T } = useT();
 
   const [method, setMethod] = useState<Method>('id');
@@ -77,6 +77,16 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
   const mounted = useRef(true);
   // Сүүлд эхлүүлсэн арга — terminal төлөвт retry хийхэд ашиглана.
   const lastMethod = useRef<Method>('id');
+  const idInputRef = useRef<HTMLInputElement | null>(null);
+
+  // РД талбарт фокус тавина. autoFocus атрибутын оронд preventScroll-той гараар
+  // хийж байгаа шалтгаан: landing (нүүр) дээр энэ карт hero-гийн ДООД талд
+  // байрладаг тул mobile-д browser фокустай элемент рүү автоматаар гүйлгэж,
+  // хуудас өөрөө hero/цэсийг алгасаад дунднаас нээгддэг байсан.
+  useEffect(() => {
+    if (!autoFocus) return;
+    idInputRef.current?.focus({ preventScroll: true });
+  }, [autoFocus]);
 
   const noticeText =
     notice === 'verified' ? 'Бүртгэл баталгаажлаа. Одоо нэвтэрнэ үү.'
@@ -330,7 +340,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
             placeholder={T('auth.eid.nationalIdPlaceholder')}
             aria-invalid={idError ? 'true' : undefined}
             autoComplete="off"
-            autoFocus
+            ref={idInputRef}
           />
           {idError && <span className="field__error">{idError}</span>}
           <button className="btn btn--eid btn--lg btn--block" type="submit" style={{ marginTop: 6 }}>

@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Inbox, X, Copy, Check, Settings2, RefreshCw, Pencil, KeyRound } from 'lucide-react';
+import { Plus, Trash2, Inbox, X, Copy, Check, Settings2, RefreshCw, Pencil, KeyRound, Download } from 'lucide-react';
 import { getJSON, sendJSON, postJSON } from '@/lib/client';
 import type { GwService } from '@/lib/gatewayTypes';
 import type { Application, AppType } from '@/lib/applicationTypes';
-import { APP_TYPES, needsRedirect, isConfidential } from '@/lib/applicationTypes';
+import { APP_TYPES, needsRedirect, isConfidential, downloadClientConfig } from '@/lib/applicationTypes';
 import { useT } from '@/lib/lang';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Loading, EnabledChip, Tags, splitList } from '../gateway/gwShared';
@@ -194,10 +194,12 @@ function ServiceChecklist({ services, loading, checked, onToggle, emptyLabel }: 
   );
 }
 
-// SecretBox нь client_id + secret-ийг НЭГ удаагийн тод хайрцагт (copy-той) харуулна.
+// SecretBox нь client_id + secret-ийг НЭГ удаагийн тод хайрцагт (copy + JSON
+// татах-тай) харуулна. Secret дахин харагдахгүй тул JSON-ыг ЯГ ОДОО татна.
 function SecretBox({ app, onClose, clientIdLabel, secretLabel }: {
   app: Application; onClose: () => void; clientIdLabel: string; secretLabel: string;
 }) {
+  const { T } = useT();
   const [copied, setCopied] = useState('');
   const copy = (val: string, which: string) => {
     navigator.clipboard?.writeText(val).then(() => setCopied(which)).catch(() => {});
@@ -221,6 +223,12 @@ function SecretBox({ app, onClose, clientIdLabel, secretLabel }: {
             <button className="btn btn--ghost btn--sm" type="button" onClick={() => copy(app.secret!, 'secret')}>{copied === 'secret' ? <Check size={14} /> : <Copy size={14} />}</button>
           </div>
         )}
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <button className="btn btn--primary btn--sm" type="button" onClick={() => downloadClientConfig(app)}>
+          <Download size={14} /> {T('apps.downloadJson')}
+        </button>
+        <span className="muted" style={{ fontSize: 12, marginLeft: 10 }}>{T('apps.downloadJsonHint')}</span>
       </div>
     </div>
   );
@@ -322,6 +330,10 @@ function EditDialog({ app, services, servicesLoading, onClose, onChanged, onSetS
               <button className="btn btn--ghost btn--sm" type="button" onClick={onSetSecret}><KeyRound size={14} /> {T('apps.setSecret')}</button>
             </>
           )}
+          {/* secret-гүй тохиргоо (endpoint + client_id) — хэдийд ч татаж болно. */}
+          <button className="btn btn--ghost btn--sm" type="button" onClick={() => downloadClientConfig(app)} title={T('apps.downloadJsonNoSecret')}>
+            <Download size={14} /> {T('apps.downloadJson')}
+          </button>
           <button className="btn btn--ghost btn--sm" type="button" onClick={onClose}><X size={14} /> {T('apps.close')}</button>
         </div>
       </DialogContent>
@@ -339,7 +351,9 @@ function SecretDialog({ app, onClose, onChanged }: {
   const [secret, setSecret] = useState('');
   const [show, setShow] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // Амжилттай хадгалсны дараа тохиргоог JSON-оор татах боломж олгохын тулд
+  // үр дүнгийн апп-ыг (secret-тэй нь) хадгална.
+  const [saved, setSaved] = useState<Application | null>(null);
   const [err, setErr] = useState('');
 
   const tooShort = secret.trim().length > 0 && secret.trim().length < MIN_SECRET_LEN;
@@ -353,10 +367,10 @@ function SecretDialog({ app, onClose, onChanged }: {
   };
 
   const submit = async () => {
-    setErr(''); setSaved(false); setSaving(true);
-    const res = await sendJSON(`/api/applications/${app.id}/secret`, 'PUT', { secret: secret.trim() });
+    setErr(''); setSaved(null); setSaving(true);
+    const res = await sendJSON<Application>(`/api/applications/${app.id}/secret`, 'PUT', { secret: secret.trim() });
     setSaving(false);
-    if (res.ok) { setSaved(true); onChanged(); }
+    if (res.ok) { setSaved(res.data ?? { ...app, secret: secret.trim() }); onChanged(); }
     else setErr(res.message || T('apps.setSecretErr'));
   };
 
@@ -369,7 +383,14 @@ function SecretDialog({ app, onClose, onChanged }: {
         </DialogHeader>
 
         {err && <div className="alert alert--danger" role="alert">{err}</div>}
-        {saved && <div className="alert alert--success" role="status">{T('apps.secretSaved')}</div>}
+        {saved && (
+          <>
+            <div className="alert alert--success" role="status">{T('apps.secretSaved')}</div>
+            <button className="btn btn--primary btn--sm" type="button" onClick={() => downloadClientConfig(saved)}>
+              <Download size={14} /> {T('apps.downloadJson')}
+            </button>
+          </>
+        )}
 
         <div className="alert" role="note" style={{ fontSize: 13 }}>{T('apps.setSecretHint')}</div>
 

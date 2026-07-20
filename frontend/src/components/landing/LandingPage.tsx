@@ -7,6 +7,7 @@ import {
   Fingerprint, Sparkles, ShieldCheck, Network, Waypoints, Users,
   Terminal, Layers, Bot, CheckCircle2, ArrowRight, ChevronRight,
   LogIn, Languages, KeyRound, ScrollText, Globe, Gauge, ShieldAlert,
+  Menu, X,
 } from 'lucide-react';
 import { useLang } from '@/lib/lang';
 import LoginForm from '@/app/login/LoginForm';
@@ -35,6 +36,8 @@ interface Props {
  */
 export default function LandingPage({ next, notice, googleLink, googleError, themeLanding }: Props) {
   const { lang, setLang } = useLang();
+  // Mobile (<900px)-д цэсний холбоосууд hamburger доор нээгдэнэ.
+  const [menuOpen, setMenuOpen] = React.useState(false);
   // Идэвхтэй theme-ийн текст байвал copy.ts default дээр гүн merge хийнэ.
   const override = themeLanding?.[lang];
   const t = override ? deepMerge(landingCopy[lang], override) : landingCopy[lang];
@@ -72,8 +75,28 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
               <LogIn size={16} strokeWidth={2} />
               <span>{t.nav.login}</span>
             </a>
+            <button
+              type="button"
+              className="lp-burger"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? 'Цэс хаах' : 'Цэс нээх'}
+              aria-expanded={menuOpen}
+              aria-controls="lp-mobile-menu"
+            >
+              {menuOpen ? <X size={19} strokeWidth={2} /> : <Menu size={19} strokeWidth={2} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile цэс — hamburger дарахад nav-ийн доор задарна (≥900px-д CSS нуана). */}
+        {menuOpen && (
+          <nav className="lp-mobile-menu" id="lp-mobile-menu" aria-label="Хэсгүүд">
+            <a href="#features" onClick={() => setMenuOpen(false)}>{t.nav.features}</a>
+            <a href="#security" onClick={() => setMenuOpen(false)}>{t.nav.security}</a>
+            <a href="#tech" onClick={() => setMenuOpen(false)}>{t.nav.tech}</a>
+            <a href={DOCS_URL} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>{t.nav.docs}</a>
+          </nav>
+        )}
       </header>
 
       <main id="top">
@@ -116,11 +139,14 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
             {/* ОДОО БАЙГАА нэвтрэх карт — hero-ийн баруун талд шигтгэв */}
             <div className="lp-hero__visual">
               <section id="login" className="signin-card lp-hero__login" aria-labelledby="login-title">
+                {/* Нүүр дээр автомат фокус хийхгүй — энэ нь маркетингийн хуудас
+                    бөгөөд карт нь mobile-д hero-гийн доор байрладаг. */}
                 <LoginForm
                   next={next}
                   notice={notice}
                   googleLink={googleLink}
                   googleError={googleError}
+                  autoFocus={false}
                 />
               </section>
             </div>
