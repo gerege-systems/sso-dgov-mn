@@ -7,6 +7,7 @@ import { Loader2, Plus, Save, X, Building2, ChevronRight } from 'lucide-react';
 import { useT } from '@/lib/lang';
 import type { DictKey } from '@/lib/i18n';
 import { getJSON, postJSON } from '@/lib/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Дүрийн орчуулгын түлхүүр: owner → org.roleOwner г.м.
 function roleKey(role: string): DictKey {
@@ -75,40 +76,43 @@ export default function OrgList() {
     <div className="orgs">
       {error && <div className="alert alert--danger" role="alert">{error}</div>}
 
+      {/* Товч нь toggle биш — үргэлж харагдаж, popup нээнэ. */}
       <div className="users__head">
-        {!adding && (
-          <button className="btn btn--primary" type="button" onClick={() => { setAdding(true); setActionError(''); }}>
-            <Plus size={16} strokeWidth={2} />
-            <span>{T('org.create')}</span>
-          </button>
-        )}
+        <button className="btn btn--primary" type="button" onClick={() => { setAdding(true); setActionError(''); }}>
+          <Plus size={16} strokeWidth={2} />
+          <span>{T('org.create')}</span>
+        </button>
       </div>
 
-      {adding && (
-        <div className="card" style={{ padding: 16, marginBottom: 16, display: 'grid', gap: 12 }}>
-          <div className="field">
-            <label className="field__label" htmlFor="o-reg">{T('org.regNo')}</label>
-            <input id="o-reg" className="input mono" value={form.reg_no} onChange={(e) => setForm({ ...form, reg_no: e.target.value })} placeholder={T('org.regNoPh')} />
+      {/* Байгууллага нэмэх форм нь popup дотор. */}
+      <Dialog open={adding} onOpenChange={(o) => { if (!o) setAdding(false); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{T('org.create')}</DialogTitle></DialogHeader>
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div className="field">
+              <label className="field__label" htmlFor="o-reg">{T('org.regNo')}</label>
+              <input id="o-reg" className="input mono" value={form.reg_no} onChange={(e) => setForm({ ...form, reg_no: e.target.value })} placeholder={T('org.regNoPh')} />
+            </div>
+            <div className="field">
+              <label className="field__label" htmlFor="o-name">{T('org.name')}</label>
+              <input id="o-name" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={T('org.namePh')} />
+            </div>
+            <div className="field">
+              <label className="field__label" htmlFor="o-name-latin">{T('org.nameLatin')}</label>
+              <input id="o-name-latin" className="input" value={form.name_latin} onChange={(e) => setForm({ ...form, name_latin: e.target.value })} placeholder={T('org.nameLatinPh')} />
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn--primary" type="button" onClick={create} disabled={saving}>
+                {saving ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <Save size={16} strokeWidth={2} />}
+                <span>{T('common.create')}</span>
+              </button>
+              <button className="btn btn--secondary" type="button" onClick={() => setAdding(false)}>
+                <X size={16} strokeWidth={2} /><span>{T('common.cancel')}</span>
+              </button>
+            </div>
           </div>
-          <div className="field">
-            <label className="field__label" htmlFor="o-name">{T('org.name')}</label>
-            <input id="o-name" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={T('org.namePh')} />
-          </div>
-          <div className="field">
-            <label className="field__label" htmlFor="o-name-latin">{T('org.nameLatin')}</label>
-            <input id="o-name-latin" className="input" value={form.name_latin} onChange={(e) => setForm({ ...form, name_latin: e.target.value })} placeholder={T('org.nameLatinPh')} />
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn--primary" type="button" onClick={create} disabled={saving}>
-              {saving ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <Save size={16} strokeWidth={2} />}
-              <span>{T('common.create')}</span>
-            </button>
-            <button className="btn btn--secondary" type="button" onClick={() => setAdding(false)}>
-              <X size={16} strokeWidth={2} /><span>{T('common.cancel')}</span>
-            </button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {orgsQuery.isPending && (
         <div className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 16 }}>

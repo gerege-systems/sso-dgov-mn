@@ -81,14 +81,14 @@ export default function ApplicationsView() {
       {created && <SecretBox app={created} onClose={() => setCreated(null)} clientIdLabel={T('apps.clientId')} secretLabel={T('apps.secretOnce')} />}
 
       <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="btn btn--primary btn--sm" type="button" onClick={() => setAdding((a) => !a)}>
-          {adding ? <><X size={14} /> {T('apps.cancel')}</> : <><Plus size={14} /> {T('apps.add')}</>}
+        <button className="btn btn--primary btn--sm" type="button" onClick={() => { resetForm(); setAdding(true); }}>
+          <Plus size={14} /> {T('apps.add')}
         </button>
       </div>
 
-      {adding && (
-        <section className="card" style={{ padding: 18, marginBottom: 16 }}>
-          <div className="card__head"><div className="card__title"><h2>{T('apps.new')}</h2></div></div>
+      <Dialog open={adding} onOpenChange={(o) => { if (!o) setAdding(false); }}>
+        <DialogContent style={{ maxWidth: 720 }}>
+          <DialogHeader><DialogTitle>{T('apps.new')}</DialogTitle></DialogHeader>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 12 }}>
             <label>{T('apps.name')}
               <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="mobile-app" />
@@ -117,11 +117,12 @@ export default function ApplicationsView() {
             <ServiceChecklist services={services} loading={svcQ.isPending} checked={pickedServices} onToggle={togglePick} emptyLabel={T('apps.noServices')} />
           </div>
 
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn--primary btn--sm" type="button" onClick={create} disabled={!form.name}>{T('apps.save')}</button>
+            <button className="btn btn--ghost btn--sm" type="button" onClick={() => setAdding(false)}><X size={14} /> {T('apps.cancel')}</button>
           </div>
-        </section>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {q.isPending && <Loading />}
       {!q.isPending && items.length === 0 && (
