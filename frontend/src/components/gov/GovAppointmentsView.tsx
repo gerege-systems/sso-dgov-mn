@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Plus, X, Inbox, Loader2 } from 'lucide-react';
 import { getJSON, postJSON } from '@/lib/client';
 import type { GovAppointment, GovService } from '@/lib/govTypes';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loading, fmtDateTime } from './govShared';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -53,14 +54,20 @@ export default function GovAppointmentsView() {
       {err && <div className="alert alert--danger" role="alert" style={{ marginBottom: 14 }}>{err}</div>}
 
       <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="btn btn--primary" type="button" onClick={() => setAdding((a) => !a)}>
-          {adding ? <><X size={16} /> Болих</> : <><Plus size={16} /> Цаг захиалах</>}
+        {/* Товч нь toggle биш — үргэлж "Цаг захиалах" бөгөөд popup нээнэ. */}
+        <button className="btn btn--primary" type="button" onClick={() => setAdding(true)}>
+          <Plus size={16} /> Цаг захиалах
         </button>
       </div>
 
-      {adding && (
-        <section className="card" style={{ margin: '0 0 16px', padding: 18 }}>
-          <div className="card__head"><div className="card__title"><CalendarClock size={18} style={{ color: 'var(--dan-blue-text)' }} /><h2>Шинэ цаг захиалга</h2></div></div>
+      {/* Шинэ цаг захиалгын форм нь popup дотор. */}
+      <Dialog open={adding} onOpenChange={(o) => { if (!o) setAdding(false); }}>
+        <DialogContent style={{ maxWidth: 720 }}>
+          <DialogHeader>
+            <DialogTitle>
+              <CalendarClock size={18} style={{ color: 'var(--dan-blue-text)' }} /> Шинэ цаг захиалга
+            </DialogTitle>
+          </DialogHeader>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 12 }}>
             <label>Үйлчилгээ (сонголттой)
               <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
@@ -71,13 +78,16 @@ export default function GovAppointmentsView() {
             <label>Огноо, цаг<input className="input" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} /></label>
             <label>Байршил<input className="input" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Дүүрэг, хороо" /></label>
           </div>
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn--primary" type="button" onClick={book} disabled={busy || !when}>
               {busy ? <><Loader2 size={16} className="spin" /> Захиалж буй…</> : 'Захиалах'}
             </button>
+            <button className="btn btn--secondary" type="button" onClick={() => setAdding(false)}>
+              <X size={16} /> Болих
+            </button>
           </div>
-        </section>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {apptQ.isPending && <Loading />}
       {!apptQ.isPending && items.length === 0 && (

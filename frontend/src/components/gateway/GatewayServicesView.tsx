@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Power, Inbox, X, Pencil } from 'lucide-react';
 import { getJSON, sendJSON } from '@/lib/client';
 import type { GwService } from '@/lib/gatewayTypes';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loading, EnabledChip, Tags, splitList } from './gwShared';
 
 const empty = { name: '', protocol: 'https', host: '', port: 443, path: '/', tags: '' };
@@ -74,14 +75,15 @@ export default function GatewayServicesView() {
       {err && <div className="alert alert--danger" role="alert">{err}</div>}
 
       <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'flex-end' }}>
-        <button className="btn btn--primary btn--sm" type="button" onClick={() => (adding ? closeForm() : setAdding(true))}>
-          {adding ? <><X size={14} /> Болих</> : <><Plus size={14} /> Сервис нэмэх</>}
+        <button className="btn btn--primary btn--sm" type="button" onClick={() => { setEditSvc(null); setForm(empty); setAdding(true); }}>
+          <Plus size={14} /> Сервис нэмэх
         </button>
       </div>
 
-      {adding && (
-        <section className="card" style={{ padding: 18, marginBottom: 16 }}>
-          <div className="card__head"><div className="card__title"><h2>{editSvc ? 'Сервис засах' : 'Шинэ сервис'}</h2></div></div>
+      {/* Нэмэх/засах форм нь popup — editSvc-ээс хамаарч гарчиг болон POST/PUT шийдэгдэнэ. */}
+      <Dialog open={adding} onOpenChange={(o) => { if (!o) closeForm(); }}>
+        <DialogContent style={{ maxWidth: 720 }}>
+          <DialogHeader><DialogTitle>{editSvc ? 'Сервис засах' : 'Шинэ сервис'}</DialogTitle></DialogHeader>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 12 }}>
             <label>Нэр<input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="payments" /></label>
             <label>Протокол
@@ -94,11 +96,12 @@ export default function GatewayServicesView() {
             <label>Зам<input className="input" value={form.path} onChange={(e) => setForm({ ...form, path: e.target.value })} placeholder="/v1" /></label>
             <label>Tag (зай/таслалаар)<input className="input" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="billing, core" /></label>
           </div>
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn--primary btn--sm" type="button" onClick={save} disabled={!form.name || !form.host}>Хадгалах</button>
+            <button className="btn btn--ghost btn--sm" type="button" onClick={closeForm}><X size={14} /> Болих</button>
           </div>
-        </section>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {q.isPending && <Loading />}
       {!q.isPending && items.length === 0 && (

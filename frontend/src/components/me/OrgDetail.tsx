@@ -7,6 +7,7 @@ import { Loader2, Plus, Save, X, Trash2, ArrowLeft, Building2 } from 'lucide-rea
 import { useT } from '@/lib/lang';
 import type { DictKey } from '@/lib/i18n';
 import { getJSON, postJSON, sendJSON } from '@/lib/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Organization {
   id: string;
@@ -138,7 +139,8 @@ export default function OrgDetail({ orgId, currentUserId }: Props) {
 
       <div className="users__head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h3 style={{ margin: 0 }}>{T('org.members')}</h3>
-        {canManage && !adding && (
+        {/* Товч нь toggle биш — эрхтэй хэрэглэгчид үргэлж харагдаж, popup нээнэ. */}
+        {canManage && (
           <button className="btn btn--primary btn--sm" type="button" onClick={() => { setAdding(true); setActionError(''); }}>
             <Plus size={14} strokeWidth={2} />
             <span>{T('org.addMember')}</span>
@@ -146,29 +148,33 @@ export default function OrgDetail({ orgId, currentUserId }: Props) {
         )}
       </div>
 
-      {canManage && adding && (
-        <div className="card" style={{ padding: 16, margin: '12px 0', display: 'grid', gap: 12 }}>
-          <div className="field">
-            <label className="field__label" htmlFor="m-uid">{T('org.userId')}</label>
-            <input id="m-uid" className="input mono" value={form.user_id} onChange={(e) => setForm({ ...form, user_id: e.target.value })} placeholder="00000000-0000-0000-0000-000000000000" />
+      {/* Гишүүн нэмэх форм нь popup дотор — зөвхөн удирдах эрхтэйд. */}
+      <Dialog open={canManage && adding} onOpenChange={(o) => { if (!o) setAdding(false); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{T('org.addMember')}</DialogTitle></DialogHeader>
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div className="field">
+              <label className="field__label" htmlFor="m-uid">{T('org.userId')}</label>
+              <input id="m-uid" className="input mono" value={form.user_id} onChange={(e) => setForm({ ...form, user_id: e.target.value })} placeholder="00000000-0000-0000-0000-000000000000" />
+            </div>
+            <div className="field">
+              <label className="field__label" htmlFor="m-role">{T('org.role')}</label>
+              <select id="m-role" className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                {ORG_ROLES.map((r) => <option key={r} value={r}>{T(roleKey(r))}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn--primary" type="button" onClick={addMember} disabled={saving}>
+                {saving ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <Save size={16} strokeWidth={2} />}
+                <span>{T('org.addMember')}</span>
+              </button>
+              <button className="btn btn--secondary" type="button" onClick={() => setAdding(false)}>
+                <X size={16} strokeWidth={2} /><span>{T('common.cancel')}</span>
+              </button>
+            </div>
           </div>
-          <div className="field">
-            <label className="field__label" htmlFor="m-role">{T('org.role')}</label>
-            <select id="m-role" className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-              {ORG_ROLES.map((r) => <option key={r} value={r}>{T(roleKey(r))}</option>)}
-            </select>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn--primary" type="button" onClick={addMember} disabled={saving}>
-              {saving ? <Loader2 size={16} strokeWidth={2} className="spin" /> : <Save size={16} strokeWidth={2} />}
-              <span>{T('org.addMember')}</span>
-            </button>
-            <button className="btn btn--secondary" type="button" onClick={() => setAdding(false)}>
-              <X size={16} strokeWidth={2} /><span>{T('common.cancel')}</span>
-            </button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {members !== null && members.length > 0 && (
         <div className="card users-table-wrap">
