@@ -135,12 +135,12 @@ export default function ApplicationsView() {
             <tbody>
               {items.map((a) => (
                 <tr key={a.id}>
-                  <td>{a.name}</td>
-                  <td className="mono muted" style={{ wordBreak: 'break-all' }}>{a.client_id}</td>
-                  <td><span className="badge badge--primary" style={{ fontSize: 11 }}>{typeLabel(a.app_type)}</span></td>
-                  <td><Tags tags={a.tags} /></td>
-                  <td><span className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Settings2 size={14} /> {a.service_ids.length}</span></td>
-                  <td><EnabledChip enabled={a.enabled} /></td>
+                  <td data-label={T('apps.name')}>{a.name}</td>
+                  <td className="mono muted" style={{ wordBreak: 'break-all' }} data-label={T('apps.clientId')}>{a.client_id}</td>
+                  <td data-label={T('apps.type')}><span className="badge badge--primary" style={{ fontSize: 11 }}>{typeLabel(a.app_type)}</span></td>
+                  <td data-label={T('apps.tags')}><Tags tags={a.tags} /></td>
+                  <td data-label={T('apps.services')}><span className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Settings2 size={14} /> {a.service_ids.length}</span></td>
+                  <td data-label={T('apps.status')}><EnabledChip enabled={a.enabled} /></td>
                   <td className="users-table__actions">
                     <button className="btn btn--ghost btn--sm" type="button" title={T('apps.edit')} onClick={() => setOpenId(a.id)}><Pencil size={14} /></button>
                     {isConfidential(a.app_type) && (

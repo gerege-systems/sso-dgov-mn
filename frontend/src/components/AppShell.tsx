@@ -238,11 +238,15 @@ export default function AppShell({ user, children }: Props) {
     if (typeof window !== 'undefined' && window.innerWidth <= 900) setCollapsed(true);
   }, []);
 
-  // Mobile (≤900px)-д sidepanel нь bottom sheet — навигаци эсвэл backdrop дээр
-  // дарахад хаагдана. Desktop-д (grid) энэ нөлөөлөхгүй.
+  // Mobile (≤900px)-д sidepanel нь зүүн талын drawer — навигаци эсвэл backdrop
+  // дээр дарахад хаагдана. Desktop-д (grid) энэ нөлөөлөхгүй.
   const closeMobileNav = () => {
     if (typeof window !== 'undefined' && window.innerWidth <= 900) setCollapsed(true);
   };
+
+  // Доод tab bar-аас систем рүү шилжих хаяг — тухайн системийн эрхээр
+  // шүүгдсэн ЭХНИЙ хуудас (visibleGroups нь хоосон бүлгийг аль хэдийн хассан).
+  const firstHref = (s: NavSystem) => visibleGroups(s)[0]?.items[0]?.href ?? '/';
 
   if (!activeSystem) {
     return (
@@ -357,30 +361,24 @@ export default function AppShell({ user, children }: Props) {
       />
 
       {/* Mobile bottom tab bar — iconrail-ийг орлож ЗӨВХӨН системүүдийг харуулна.
-          Товшиход тухайн системийн хуудсууд доороос (bottom sheet) дэлгэгдэнэ;
-          идэвхтэй системээ дахин товшивол хаагдана. */}
+          Товшиход тухайн системийн эхний хуудас руу шилжинэ; хуудсуудын жагсаалт
+          нь зүүн дээд буланд байрлах ☰ (topbar2__toggle) drawer-т байна. */}
       <nav className="bottombar" aria-label={T('shell.menu')}>
         {systems.map((s) => {
           const Icon = s.icon;
           const active = s.key === activeSystem.key;
           return (
-            <button
+            <Link
               key={s.key}
-              type="button"
+              href={firstHref(s)}
               className={`bottombar__tab${active ? ' is-active' : ''}`}
               aria-label={T(s.labelKey)}
               aria-current={active ? 'page' : undefined}
-              onClick={() => {
-                if (s.key === openKey && !collapsed) setCollapsed(true);
-                else {
-                  setOpenKey(s.key);
-                  setCollapsed(false);
-                }
-              }}
+              onClick={() => { setOpenKey(s.key); setCollapsed(true); }}
             >
               <Icon size={20} strokeWidth={2} />
               <span>{T(s.labelKey)}</span>
-            </button>
+            </Link>
           );
         })}
       </nav>

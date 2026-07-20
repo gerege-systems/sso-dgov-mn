@@ -239,21 +239,21 @@ export default function SuperadminManager({ currentUserId }: Props) {
                 const name = (lang === 'en' ? (u.full_name_en?.trim() || u.full_name?.trim()) : u.full_name?.trim());
                 return (
                   <tr key={u.id}>
-                    <td>
+                    <td data-label={T('users.col.name')}>
                       {name || u.username}
                       {isSelf && <span className="chip chip--neutral" style={{ marginLeft: 8 }}>{T('users.you')}</span>}
                       {name && <div className="muted mono" style={{ fontSize: 12 }}>@{u.username}</div>}
                     </td>
-                    <td className="mono">{u.email}</td>
-                    <td>
+                    <td className="mono" data-label={T('users.col.email')}>{u.email}</td>
+                    <td data-label={T('users.col.role')}>
                       <span className={isSuper ? 'chip chip--success' : 'chip chip--neutral'}>{roleLabel(u.role_id, lang)}</span>
                     </td>
-                    <td>
+                    <td data-label={T('users.col.status')}>
                       {u.active
                         ? <span className="chip chip--success">{T('users.active')}</span>
                         : <span className="chip chip--neutral">{T('users.inactive')}</span>}
                     </td>
-                    <td className="mono">{fmtDate(u.created_at)}</td>
+                    <td className="mono" data-label={T('users.col.created')}>{fmtDate(u.created_at)}</td>
                     <td className="users-table__actions">
                       {/* Super admin-г болон өөрийгөө хасахгүй. */}
                       {!isSuper && !isSelf && (
@@ -328,13 +328,13 @@ export default function SuperadminManager({ currentUserId }: Props) {
               <tbody>
                 {invites.map((inv) => (
                   <tr key={inv.email}>
-                    <td className="mono">{inv.email}</td>
-                    <td>
+                    <td className="mono" data-label={T('superadmin.email')}>{inv.email}</td>
+                    <td data-label={T('users.col.status')}>
                       {inv.pending
                         ? <span className="chip chip--pending">{T('superadmin.invitePending')}</span>
                         : <span className="chip chip--success">{T('superadmin.inviteAccepted')}</span>}
                     </td>
-                    <td className="mono">{fmtDate(inv.created_at)}</td>
+                    <td className="mono" data-label={T('users.col.created')}>{fmtDate(inv.created_at)}</td>
                     <td className="users-table__actions">
                       <button className="btn btn--ghost btn--sm" type="button" onClick={() => deleteInvite(inv.email)} title={T('superadmin.inviteDelete')}>
                         <Trash2 size={14} strokeWidth={2} />

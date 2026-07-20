@@ -1301,6 +1301,49 @@ html[lang="en"] .i18n-banner { display: block; }
 .users-table__role { min-width: 120px; padding: 6px 8px; font-size: 13px; }
 .users-table__actions { text-align: right; white-space: nowrap; }
 
+/* ---- Хүснэгт mobile дээр — мөр бүр "шошго: утга" хосуудын карт болно ----
+   Багана олонтой хүснэгтийг хэвтээ гүйлгэхийн оронд босоо задлана. Шошгыг
+   `td[data-label]`-ээс уншина (толгойн нүдтэй ижил текст) — тиймээс шинэ
+   хүснэгт нэмэхдээ td бүрд data-label өгнө. Үйлдлийн багана нь data-label-гүй
+   (эсвэл хоосон) тул шошгогүй, бүтэн өргөнтэй мөр болно. */
+@media (max-width: 640px) {
+  .users-table-wrap { overflow-x: visible; }
+  .users-table, .users-table tbody, .users-table tr, .users-table td { display: block; width: 100%; }
+  /* Толгойг зөвхөн нүдээр нуух — дэлгэц уншигчид хэвээр хүртээмжтэй. */
+  .users-table thead {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  .users-table tr { padding: 12px 2px; border-bottom: 1px solid var(--border); }
+  .users-table tbody tr:last-child { border-bottom: 0; }
+  .users-table td {
+    display: grid;
+    grid-template-columns: minmax(84px, 38%) 1fr;
+    gap: 10px;
+    align-items: baseline;
+    /* badge/chip нь баганаа дүүргэж сунахаас сэргийлнэ. */
+    justify-items: start;
+    padding: 6px 14px;
+    border-bottom: 0;
+  }
+  .users-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 11.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .03em;
+    overflow-wrap: anywhere;
+  }
+  /* Шошгогүй нүд (үйлдлийн багана) — бүтэн өргөн, зүүн тийш эгнэнэ. */
+  .users-table td:not([data-label]),
+  .users-table td[data-label=""] { display: block; }
+  .users-table td:not([data-label])::before,
+  .users-table td[data-label=""]::before { content: none; }
+  .users-table__actions { text-align: left; white-space: normal; padding-top: 10px; }
+  /* Урт таслагдашгүй утга (client_id, имэйл) мөрийг тэлэхээс сэргийлнэ. */
+  .users-table td .mono, .users-table td code { overflow-wrap: anywhere; }
+}
+
 .rbac-matrix { width: 100%; border-collapse: collapse; font-size: 13px; }
 .rbac-matrix th, .rbac-matrix td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: center; }
 .rbac-matrix th:first-child, .rbac-matrix td:first-child { text-align: left; }
@@ -1378,27 +1421,30 @@ html[lang="en"] .i18n-banner { display: block; }
     padding-bottom: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px) + 28px);
   }
   .iconrail { display: none; }
-  .topbar2__toggle { display: none; }
 
-  /* sidepanel → доороос гулсдаг bottom sheet */
+  /* sidepanel → зүүн дээд буланд байрлах ☰ (topbar2__toggle)-оор нээгддэг
+     зүүн талын drawer. Доод tab bar-ыг бүрхэхгүйн тулд доороосоо түүний
+     өндрөөр тасарна. */
   .sidepanel {
     position: fixed;
+    top: 0;
     left: 0;
-    right: 0;
-    top: auto;
-    width: auto;
-    bottom: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px));
-    max-height: 68vh;
+    right: auto;
+    bottom: auto;
+    /* Доод tab bar-аас дээш дүүрэн өндөр. base rule-ийн height:100vh-г дарж
+       бичнэ; top+bottom-оор сунгах нь grid item-ийн align-self:start-аас болж
+       ажиллахгүй тул өндрийг шууд тооцно. dvh нь mobile хаягийн мөрийг тооцно. */
+    height: calc(100vh - var(--bottombar-h) - env(safe-area-inset-bottom, 0px));
+    height: calc(100dvh - var(--bottombar-h) - env(safe-area-inset-bottom, 0px));
+    width: min(80vw, 288px);
     overflow-y: auto;
     z-index: 65;
-    border-right: 0;
-    border-top: 1px solid var(--border);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.16);
-    transform: translateY(120%);
+    border-right: 1px solid var(--border);
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.16);
+    transform: translateX(-100%);
     transition: transform 0.24s ease;
   }
-  .shell2:not(.is-collapsed) .sidepanel { transform: translateY(0); }
+  .shell2:not(.is-collapsed) .sidepanel { transform: translateX(0); }
   .shell2:not(.is-collapsed) .shell2__backdrop { display: block; }
 
   /* доод tab bar — фиксэд, viewport-ийн доод ирмэгт */

@@ -37,10 +37,10 @@ export default function GovApplicationsView() {
             <tbody>
               {items.map((a) => (
                 <tr key={a.id}>
-                  <td>{a.service_name}{a.note && <div className="muted" style={{ fontSize: 12 }}>{a.note}</div>}</td>
-                  <td className="mono">{a.reference_no}</td>
-                  <td><ApplicationStatus status={a.status} /></td>
-                  <td className="mono muted">{fmtDate(a.submitted_at)}</td>
+                  <td data-label="Үйлчилгээ">{a.service_name}{a.note && <div className="muted" style={{ fontSize: 12 }}>{a.note}</div>}</td>
+                  <td className="mono" data-label="Лавлах №">{a.reference_no}</td>
+                  <td data-label="Төлөв"><ApplicationStatus status={a.status} /></td>
+                  <td className="mono muted" data-label="Огноо">{fmtDate(a.submitted_at)}</td>
                   <td className="users-table__actions">
                     {canCancel(a.status) && (
                       <button className="btn btn--ghost btn--sm" type="button" title="Цуцлах" onClick={() => cancel(a)}><X size={14} /></button>
