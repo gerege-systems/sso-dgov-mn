@@ -35,11 +35,6 @@ type Usecase interface {
 	SetSecret(ctx context.Context, id, secret string) (domain.Application, error)
 	// SetServices нь апп-ын зөвшөөрсөн service-үүдийг (scope) сольж, Hydra-г шинэчилнэ.
 	SetServices(ctx context.Context, id string, serviceIDs []string) (domain.Application, error)
-	// ReconcileClients нь seed хийсэн RP overlay мөрүүд (created_by='seed-rp')-ийн
-	// Hydra client дутуу байвал үүсгэнэ (startup bootstrap). Үүсгэсэн тоог буцаана.
-	// Idempotent — байгаа client-ыг алгасна; устгасан RP-г дахин үүсгэхгүй (мөр
-	// байхгүй тул). Түр зуур Hydra бэлэн бус бол алдаа буцаана (дуудагч warn-лоно).
-	ReconcileClients(ctx context.Context) (int, error)
 }
 
 // Input нь апп үүсгэх/шинэчлэх талбарууд. AppType нь grant/auth-method-ыг тодорхойлно.

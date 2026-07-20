@@ -7,7 +7,8 @@ import (
 	"context"
 	"testing"
 
-	"template/pkg/hydra"
+	"template/internal/business/domain"
+	"template/pkg/secrethash"
 )
 
 // fakeRepo нь serviceScopeResolver-ийн санах-ой хувилбар (gateway service scope
@@ -24,34 +25,47 @@ func (f *fakeRepo) ServiceIDsForScopes(context.Context, []string) ([]string, err
 	return f.serviceIDs, nil
 }
 
-// fakeHydra нь hydraClients-ийн тест хувилбар — сүүлд илгээсэн body-г хадгална.
-type fakeHydra struct {
-	lastCreate hydra.ClientCreate
-	list       []hydra.ClientListEntry
-	getErr     error
+// fakeStore нь clientStore-ийн санах-ой хувилбар — сүүлд бичсэн client-ыг
+// хадгална. Hydra-гийн оронд oauth_clients хүснэгтийг орлоно.
+type fakeStore struct {
+	saved   domain.OAuthClient
+	list    []domain.OAuthClient
+	getErr  error
+	secrets map[string]string
 }
 
-func (h *fakeHydra) ListClients(context.Context) ([]hydra.ClientListEntry, error) {
-	return h.list, nil
+func (f *fakeStore) List(context.Context) ([]domain.OAuthClient, error) { return f.list, nil }
+
+func (f *fakeStore) Get(context.Context, string) (domain.OAuthClient, error) {
+	return f.saved, f.getErr
 }
-func (h *fakeHydra) CreateClient(_ context.Context, b hydra.ClientCreate) (*hydra.ClientCreate, error) {
-	h.lastCreate = b
-	out := b
-	out.ClientSecret = "s3cr3t-echoed"
-	return &out, nil
+
+func (f *fakeStore) Create(_ context.Context, c domain.OAuthClient) (domain.OAuthClient, error) {
+	f.saved = c
+	return c, nil
 }
-func (h *fakeHydra) GetClient(context.Context, string) (*hydra.ClientListEntry, error) {
-	return &hydra.ClientListEntry{}, h.getErr
+
+func (f *fakeStore) Update(_ context.Context, c domain.OAuthClient) (domain.OAuthClient, error) {
+	// Repo-гийн гэрээ: Update нь secret_hash-д хүрэхгүй.
+	c.SecretHash = f.saved.SecretHash
+	f.saved = c
+	return c, nil
 }
-func (h *fakeHydra) UpdateClient(_ context.Context, _ string, b hydra.ClientCreate) (*hydra.ClientCreate, error) {
-	h.lastCreate = b
-	return &b, nil
+
+func (f *fakeStore) SetSecretHash(_ context.Context, clientID, hash string) error {
+	if f.secrets == nil {
+		f.secrets = map[string]string{}
+	}
+	f.secrets[clientID] = hash
+	f.saved.SecretHash = hash
+	return nil
 }
-func (h *fakeHydra) DeleteClient(context.Context, string) error { return nil }
+
+func (f *fakeStore) Delete(context.Context, string) error { return nil }
 
 func TestCreateM2MProvisionsClientAndReturnsSecret(t *testing.T) {
 	repo := &fakeRepo{scopes: []string{"svc:eid-core"}}
-	fh := &fakeHydra{}
+	fh := &fakeStore{}
 	uc := NewUsecase(repo, fh)
 
 	app, err := uc.Create(context.Background(), Input{
@@ -66,31 +80,31 @@ func TestCreateM2MProvisionsClientAndReturnsSecret(t *testing.T) {
 	if app.ID == "" || app.ID != app.ClientID {
 		t.Fatalf("app id should equal client_id, got id=%q client_id=%q", app.ID, app.ClientID)
 	}
-	if got := fh.lastCreate.GrantTypes; len(got) != 1 || got[0] != "client_credentials" {
+	if got := fh.saved.GrantTypes; len(got) != 1 || got[0] != "client_credentials" {
 		t.Fatalf("m2m should use client_credentials grant, got %v", got)
 	}
-	if fh.lastCreate.Scope != "svc:eid-core" {
-		t.Fatalf("scope should come from allowed services, got %q", fh.lastCreate.Scope)
+	if len(fh.saved.Scopes) != 1 || fh.saved.Scopes[0] != "svc:eid-core" {
+		t.Fatalf("scope should come from allowed services, got %v", fh.saved.Scopes)
 	}
-	if len(fh.lastCreate.RedirectURIs) != 0 {
-		t.Fatalf("m2m must not carry redirect_uris, got %v", fh.lastCreate.RedirectURIs)
+	if len(fh.saved.RedirectURIs) != 0 {
+		t.Fatalf("m2m must not carry redirect_uris, got %v", fh.saved.RedirectURIs)
 	}
 	// Overlay (tags/enabled/app_type) нь Hydra metadata-д хадгалагдана.
-	if fh.lastCreate.Metadata["app_type"] != "m2m" || fh.lastCreate.Metadata["enabled"] != true {
-		t.Fatalf("overlay must be stored in metadata, got %v", fh.lastCreate.Metadata)
+	if fh.saved.AppType != "m2m" || !fh.saved.Enabled {
+		t.Fatalf("app_type/enabled are real columns now, got app_type=%q enabled=%v", fh.saved.AppType, fh.saved.Enabled)
 	}
 }
 
 func TestCreateWebRequiresRedirectAndBaseScopes(t *testing.T) {
 	repo := &fakeRepo{}
-	uc := NewUsecase(repo, &fakeHydra{})
+	uc := NewUsecase(repo, &fakeStore{})
 
 	// redirect дутуу → алдаа
 	if _, err := uc.Create(context.Background(), Input{Name: "portal", AppType: "web"}); err == nil {
 		t.Fatal("web app without redirect_uri should fail validation")
 	}
 
-	fh := &fakeHydra{}
+	fh := &fakeStore{}
 	uc = NewUsecase(&fakeRepo{}, fh)
 	app, err := uc.Create(context.Background(), Input{
 		Name: "portal", AppType: "web", RedirectURIs: []string{"https://rp.example.mn/cb"},
@@ -101,23 +115,23 @@ func TestCreateWebRequiresRedirectAndBaseScopes(t *testing.T) {
 	if app.Secret == "" {
 		t.Fatal("web (confidential) app should get a secret")
 	}
-	if got := fh.lastCreate.Scope; got == "" || got[:6] != "openid" {
+	if got := fh.saved.Scopes; len(got) == 0 || got[0] != "openid" {
 		t.Fatalf("RP app should include base OIDC scopes, got %q", got)
 	}
-	if len(fh.lastCreate.RedirectURIs) != 1 {
-		t.Fatalf("web app should carry its redirect_uri, got %v", fh.lastCreate.RedirectURIs)
+	if len(fh.saved.RedirectURIs) != 1 {
+		t.Fatalf("web app should carry its redirect_uri, got %v", fh.saved.RedirectURIs)
 	}
 }
 
 func TestValidateRejectsBadAppType(t *testing.T) {
-	uc := NewUsecase(&fakeRepo{}, &fakeHydra{})
+	uc := NewUsecase(&fakeRepo{}, &fakeStore{})
 	if _, err := uc.Create(context.Background(), Input{Name: "x", AppType: "nonsense"}); err == nil {
 		t.Fatal("invalid app_type should be rejected")
 	}
 }
 
 func TestSpaIsPublicNoSecret(t *testing.T) {
-	fh := &fakeHydra{}
+	fh := &fakeStore{}
 	uc := NewUsecase(&fakeRepo{}, fh)
 	app, err := uc.Create(context.Background(), Input{
 		Name: "spa", AppType: "spa", RedirectURIs: []string{"https://app.example.mn/cb"},
@@ -128,8 +142,8 @@ func TestSpaIsPublicNoSecret(t *testing.T) {
 	if app.Secret != "" {
 		t.Fatal("public (spa) client must not return a secret")
 	}
-	if fh.lastCreate.TokenEndpointAuthMethod != "none" {
-		t.Fatalf("spa should use token_endpoint_auth_method=none, got %q", fh.lastCreate.TokenEndpointAuthMethod)
+	if fh.saved.TokenEndpointAuthMethod != "none" {
+		t.Fatalf("spa should use token_endpoint_auth_method=none, got %q", fh.saved.TokenEndpointAuthMethod)
 	}
 }
 
@@ -138,19 +152,22 @@ func TestSpaIsPublicNoSecret(t *testing.T) {
 // metadata байхгүй бол grant-аас төрөл + идэвхтэй default.
 func TestListMapsHydraClients(t *testing.T) {
 	repo := &fakeRepo{serviceIDs: []string{"id-1"}}
-	fh := &fakeHydra{list: []hydra.ClientListEntry{
+	fh := &fakeStore{list: []domain.OAuthClient{
 		{
 			ClientID: "template-dgov-mn", ClientName: "template.dgov.mn",
 			GrantTypes: []string{"authorization_code", "refresh_token"}, TokenEndpointAuthMethod: "client_secret_basic",
 			RedirectURIs: []string{"https://template.dgov.mn/cb"},
-			Scope:        "openid profile email svc:eid-sign",
-			Metadata:     map[string]any{"tags": []any{"rp"}, "enabled": true, "app_type": "web"},
+			Scopes:       []string{"openid", "profile", "email", "svc:eid-sign"},
+			Tags:         []string{"rp"},
+			Enabled:      true,
+			AppType:      "web",
 		},
 		{
 			ClientID: "m2m-1", ClientName: "job",
 			GrantTypes: []string{"client_credentials"}, TokenEndpointAuthMethod: "client_secret_basic",
-			Scope: "svc:eid-core",
-			// metadata байхгүй → app_type grant-аас m2m, enabled default true
+			Scopes:  []string{"svc:eid-core"},
+			AppType: "m2m",
+			Enabled: true,
 		},
 	}}
 	apps, err := NewUsecase(repo, fh).List(context.Background())
@@ -179,7 +196,7 @@ func TestListMapsHydraClients(t *testing.T) {
 }
 
 func TestSetSecretWritesTheGivenSecretToHydra(t *testing.T) {
-	fh := &fakeHydra{}
+	fh := &fakeStore{}
 	uc := NewUsecase(&fakeRepo{}, fh)
 
 	const want = "my-preconfigured-rp-secret"
@@ -188,8 +205,13 @@ func TestSetSecretWritesTheGivenSecretToHydra(t *testing.T) {
 		t.Fatalf("SetSecret: %v", err)
 	}
 	// Rotate-ээс ялгаатай нь — санамсаргүй биш, ЯГ өгсөн утга очно.
-	if fh.lastCreate.ClientSecret != want {
-		t.Fatalf("hydra should receive the given secret, got %q", fh.lastCreate.ClientSecret)
+	// DB-д зөвхөн hash очно — түүхий secret хэзээ ч хадгалагдахгүй.
+	stored := fh.secrets["ring-dgov-mn"]
+	if stored == "" || stored == want {
+		t.Fatalf("the store must receive a hash, not the raw secret (got %q)", stored)
+	}
+	if ok, err := secrethash.Verify(stored, want); err != nil || !ok {
+		t.Fatalf("stored hash must verify against the given secret: ok=%v err=%v", ok, err)
 	}
 	if app.Secret != want {
 		t.Fatalf("response should echo the secret once, got %q", app.Secret)
@@ -197,13 +219,13 @@ func TestSetSecretWritesTheGivenSecretToHydra(t *testing.T) {
 }
 
 func TestSetSecretRejectsShortSecret(t *testing.T) {
-	fh := &fakeHydra{}
+	fh := &fakeStore{}
 	uc := NewUsecase(&fakeRepo{}, fh)
 
 	if _, err := uc.SetSecret(context.Background(), "ring-dgov-mn", "  short  "); err == nil {
 		t.Fatal("expected a bad-request error for a secret under the minimum length")
 	}
-	if fh.lastCreate.ClientSecret != "" {
-		t.Fatal("hydra must not be called when validation fails")
+	if len(fh.secrets) != 0 {
+		t.Fatal("the store must not be written when validation fails")
 	}
 }
