@@ -197,16 +197,9 @@ type GatewayRepository interface {
 
 // ApplicationRepository нь нэгдсэн Applications (Gateway consumer + SSO RP)
 // overlay-г хадгална: applications мөр + зөвшөөрсөн gateway service-үүд
-// (application_services). OAuth2 client өөрөө oauth_clients-д амьдардаг тул энд зөвхөн
+// OAuth2 client өөрөө oauth_clients-д амьдардаг тул энд зөвхөн
 // client_id болон overlay талбарууд. RLS-гүй нийтийн config.
 type ApplicationRepository interface {
-	List(ctx context.Context) ([]domain.Application, error)
-	Get(ctx context.Context, id string) (domain.Application, error)
-	Create(ctx context.Context, a *domain.Application) (domain.Application, error)
-	Update(ctx context.Context, a *domain.Application) (domain.Application, error)
-	Delete(ctx context.Context, id string) error
-	// SetServices нь апп-ын зөвшөөрсөн service-ийн жагсаалтыг бүхэлд нь орлуулна.
-	SetServices(ctx context.Context, appID string, serviceIDs []string) error
 	// ServiceScopes нь өгсөн service id-уудын OAuth scope нэрсийг буцаана.
 	ServiceScopes(ctx context.Context, serviceIDs []string) ([]string, error)
 	// ServiceIDsForScopes нь OAuth scope нэрсэд харгалзах service id-уудыг буцаана

@@ -152,8 +152,10 @@ func (r *gatewayRepository) Overview(ctx context.Context) (domain.GatewayOvervie
 	if err := r.pool.QueryRow(ctx, `
 		SELECT
 			(SELECT count(*) FROM gateway_services),
-			(SELECT count(*) FROM applications),
-			(SELECT count(*) FROM application_services),
+			(SELECT count(*) FROM oauth_clients),
+			-- Service олголт нь client-ийн scope дахь svc:* -ээр илэрхийлэгдэнэ
+			-- (хуучин application_services join хүснэгтийг орлов).
+			(SELECT count(*) FROM oauth_clients c, unnest(c.scopes) sc WHERE sc LIKE 'svc:%'),
 			COALESCE(count(*),0),
 			COALESCE(count(*) FILTER (WHERE status >= 500),0),
 			COALESCE(count(*) FILTER (WHERE status = 429),0),
