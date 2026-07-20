@@ -36,4 +36,9 @@ func (rt *oidcRoute) Routes() {
 	rt.router.Get(oidcuc.PathJWKS, rt.handler.JWKS)
 	rt.router.Get(oidcuc.PathAuthorize, rt.handler.Authorize)
 	rt.router.Post(oidcuc.PathToken, rt.handler.Token)
+	rt.router.Post(oidcuc.PathIntrospect, rt.handler.Introspect)
+	rt.router.Post(oidcuc.PathRevoke, rt.handler.Revoke)
+	rt.router.Get(oidcuc.PathEndSession, rt.handler.EndSession)
+	rt.router.Get(oidcuc.PathUserinfo, rt.handler.Userinfo)
+	rt.router.Post(oidcuc.PathUserinfo, rt.handler.Userinfo)
 }

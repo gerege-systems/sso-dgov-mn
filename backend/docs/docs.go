@@ -2598,6 +2598,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/oauth2/introspect": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OAuth2 token introspection (RFC 7662)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth2/revoke": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OAuth2 token revocation (RFC 7009)",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/oauth2/sessions/logout": {
+            "get": {
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "RP-initiated logout",
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    }
+                }
+            }
+        },
+        "/oauth2/token": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OAuth2 token endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "authorization_code | refresh_token | client_credentials",
+                        "name": "grant_type",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/site/appearance": {
             "get": {
                 "description": "Landing болон нийтийн хуудсанд хэрэглэх нийтийн харагдац (accent · font · style · theme). Нэвтрэлт шаардахгүй.",
@@ -2945,6 +3029,26 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/userinfo": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OIDC userinfo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }

@@ -79,6 +79,12 @@ func (noFlow) ConsumeRefreshToken(context.Context, []byte) (domain.OAuthRefreshT
 func (noFlow) RevokeFamily(context.Context, string) error                   { return nil }
 func (noFlow) RevokeForSubjectClient(context.Context, string, string) error { return nil }
 
+func (noFlow) AccessToken(context.Context, []byte) (domain.OAuthAccessToken, error) {
+	return domain.OAuthAccessToken{}, apperror.NotFound("token not found")
+}
+func (noFlow) RevokeAccessToken(context.Context, []byte, string) (bool, error)  { return false, nil }
+func (noFlow) RevokeRefreshToken(context.Context, []byte, string) (bool, error) { return false, nil }
+
 func newHandler(t *testing.T) oidchandler.Handler {
 	t.Helper()
 	km, err := oidcuc.NewKeyManager(&memKeys{}, "handler-test-encryption-key")

@@ -108,6 +108,18 @@ func (f *fakeFlow) RevokeFamily(context.Context, string) error { return nil }
 
 func (f *fakeFlow) RevokeForSubjectClient(context.Context, string, string) error { return nil }
 
+func (f *fakeFlow) AccessToken(context.Context, []byte) (domain.OAuthAccessToken, error) {
+	return domain.OAuthAccessToken{}, apperror.NotFound("token not found")
+}
+
+func (f *fakeFlow) RevokeAccessToken(context.Context, []byte, string) (bool, error) {
+	return false, nil
+}
+
+func (f *fakeFlow) RevokeRefreshToken(context.Context, []byte, string) (bool, error) {
+	return false, nil
+}
+
 const testSubject = "11111111-1111-4111-8111-111111111111"
 
 func webClient() domain.OAuthClient {

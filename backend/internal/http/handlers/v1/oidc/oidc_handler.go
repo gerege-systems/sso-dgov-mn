@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strings"
 
+	"template/internal/business/domain"
 	oidcuc "template/internal/business/usecases/oidc"
 	"template/pkg/logger"
 )
@@ -194,4 +195,117 @@ func basicClientAuth(r *http.Request) (clientID, clientSecret string, ok bool) {
 		decodedSecret = secret
 	}
 	return decodedID, decodedSecret, true
+}
+
+// Userinfo godoc
+// @Summary      OIDC userinfo
+// @Tags         oidc
+// @Produce      json
+// @Success      200  {object}  map[string]any
+// @Router       /userinfo [get]
+func (h Handler) Userinfo(w http.ResponseWriter, r *http.Request) {
+	token := bearerToken(r)
+	if token == "" {
+		w.Header().Set("WWW-Authenticate", `Bearer realm="userinfo"`)
+		writeError(w, r, http.StatusUnauthorized, "invalid_token", "a bearer access token is required")
+		return
+	}
+	claims, err := h.svc.Userinfo(r.Context(), token)
+	if err != nil {
+		w.Header().Set("WWW-Authenticate", `Bearer realm="userinfo", error="invalid_token"`)
+		writeError(w, r, http.StatusUnauthorized, "invalid_token", "the access token is not valid for userinfo")
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, r, http.StatusOK, claims)
+}
+
+// Introspect godoc
+// @Summary      OAuth2 token introspection (RFC 7662)
+// @Tags         oidc
+// @Accept       x-www-form-urlencoded
+// @Produce      json
+// @Success      200  {object}  map[string]any
+// @Router       /oauth2/introspect [post]
+func (h Handler) Introspect(w http.ResponseWriter, r *http.Request) {
+	client, ok := h.authenticateCaller(w, r)
+	if !ok {
+		return
+	}
+	_ = client // танигдсан client л дуудаж чадна; хариу нь token-ийнх
+
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, r, http.StatusOK, h.svc.Introspect(r.Context(), r.PostFormValue("token")))
+}
+
+// Revoke godoc
+// @Summary      OAuth2 token revocation (RFC 7009)
+// @Tags         oidc
+// @Accept       x-www-form-urlencoded
+// @Success      200
+// @Router       /oauth2/revoke [post]
+func (h Handler) Revoke(w http.ResponseWriter, r *http.Request) {
+	client, ok := h.authenticateCaller(w, r)
+	if !ok {
+		return
+	}
+	if err := h.svc.Revoke(r.Context(), client, r.PostFormValue("token"), r.PostFormValue("token_type_hint")); err != nil {
+		logger.ErrorWithContext(r.Context(), "OIDC: revoke амжилтгүй", logger.Fields{"error": err.Error()})
+		writeError(w, r, http.StatusInternalServerError, "server_error", "could not revoke the token")
+		return
+	}
+	// RFC 7009 §2.2 — амжилттай үед хоосон 200.
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+}
+
+// EndSession godoc
+// @Summary      RP-initiated logout
+// @Tags         oidc
+// @Success      302
+// @Router       /oauth2/sessions/logout [get]
+func (h Handler) EndSession(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	challenge, err := h.svc.StartLogout(r.Context(),
+		q.Get("client_id"), q.Get("post_logout_redirect_uri"), q.Get("state"))
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_request", "could not start logout")
+		return
+	}
+	http.Redirect(w, r, h.issuer+"/oauth/logout?logout_challenge="+url.QueryEscape(challenge), http.StatusFound)
+}
+
+// authenticateCaller нь introspect/revoke-ийг дуудаж буй client-ийг
+// баталгаажуулна. Эдгээр endpoint нээлттэй байвал дурын хүн token-ийн төлөвийг
+// шалгах (эсвэл цуцлах) боломжтой болно.
+func (h Handler) authenticateCaller(w http.ResponseWriter, r *http.Request) (domain.OAuthClient, bool) {
+	if err := r.ParseForm(); err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_request", "malformed request body")
+		return domain.OAuthClient{}, false
+	}
+	req := oidcuc.TokenRequest{
+		ClientID:     r.PostFormValue("client_id"),
+		ClientSecret: r.PostFormValue("client_secret"),
+	}
+	if id, secret, ok := basicClientAuth(r); ok {
+		req.ClientID, req.ClientSecret, req.SecretFromBasic = id, secret, true
+	}
+
+	client, err := h.svc.AuthenticateClient(r.Context(), req)
+	if err != nil {
+		w.Header().Set("WWW-Authenticate", `Basic realm="oauth2"`)
+		writeError(w, r, http.StatusUnauthorized, "invalid_client", "client authentication failed")
+		return domain.OAuthClient{}, false
+	}
+	return client, true
+}
+
+// bearerToken нь Authorization: Bearer <token>-ыг гаргаж авна.
+func bearerToken(r *http.Request) string {
+	const prefix = "Bearer "
+	h := r.Header.Get("Authorization")
+	if len(h) > len(prefix) && strings.EqualFold(h[:len(prefix)], prefix) {
+		return strings.TrimSpace(h[len(prefix):])
+	}
+	return ""
 }

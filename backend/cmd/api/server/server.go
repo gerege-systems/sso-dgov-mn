@@ -493,8 +493,8 @@ func NewApp() (*App, error) {
 			// Service тус бүрийн зөвшөөрөл нь client-ийн Hydra allowed scope дахь
 			// "svc:<service>"-ээр илэрхийлэгдэнэ (admin gateway UI-аас апп-д service
 			// олгоход нэмэгддэг). Олгогдоогүй апп 403 авна.
-			eidMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "svc:"+routes.EIDProxyServiceName)
-			eidOrgMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "svc:"+routes.EIDOrgProxyServiceName)
+			eidMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDProxyServiceName)
+			eidOrgMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDOrgProxyServiceName)
 			routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidMW, eidOrgMW).Routes()
 		}
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
