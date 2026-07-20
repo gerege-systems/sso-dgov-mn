@@ -853,8 +853,11 @@ html[lang="en"] .i18n-banner { display: block; }
 }
 .profile-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .profile-card__name { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.profile-card__name-text { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
-.profile-card__sub { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.profile-card__name-text { font-family: var(--font-display); font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+.profile-card__sub { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+/* Урт таслагдашгүй мөр (SSO имэйл sso_…@sso.local) mobile дээр хэвтээ гүйлгэлт
+   үүсгэхээс сэргийлж таслана. */
+.profile-card__sub .mono { overflow-wrap: anywhere; min-width: 0; }
 .profile-card__sub .dot::before { content: "·"; padding: 0 4px; color: var(--faint); }
 .profile-card__action { align-self: flex-start; }
 
@@ -1098,9 +1101,12 @@ html[lang="en"] .i18n-banner { display: block; }
   .field-row { grid-template-columns: 1fr; }
   .grid-2 { grid-template-columns: 1fr; }
   .card { padding: 20px; }
-  .profile-card { gap: 14px; }
+  /* avatar + нэр эхний мөрөнд, "Профайл харах" товч бүтэн өргөнтэй доор нь
+     буулгаж мобайл дээр эмх цэгцтэй харагдуулна. */
+  .profile-card { gap: 14px; flex-wrap: wrap; }
   .profile-card__avatar { width: 48px; height: 48px; font-size: 17px; border-radius: 12px; }
-  .profile-card__action { align-self: stretch; }
+  .profile-card__body { flex: 1 1 auto; }
+  .profile-card__action { flex: 1 1 100%; align-self: stretch; }
   .profile-card__action .btn { width: 100%; }
   .footer { flex-direction: column; align-items: flex-start; gap: 8px; }
   .signin-shell__nav { padding: 14px 20px; }
@@ -1236,6 +1242,9 @@ html[lang="en"] .i18n-banner { display: block; }
 .sidepanel__link.is-active { background: var(--surface-2); color: var(--dan-blue); font-weight: 600; }
 
 .maincol { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; }
+
+/* Mobile bottom-sheet-ийн backdrop — зөвхөн ≤900px дээр (доор), нээлттэй үед харагдана. */
+.shell2__backdrop { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.45); border: 0; padding: 0; cursor: pointer; }
 .topbar2 {
   display: flex; align-items: center; gap: 12px;
   height: var(--topbar-h, 60px); padding: 0 20px;
@@ -1322,9 +1331,91 @@ html[lang="en"] .i18n-banner { display: block; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---------- Mobile bottom tab bar (систем сэлгэгч) ---------- */
+/* Desktop дээр нуугдана — зөвхөн ≤900px үед iconrail-ийг орлоно. */
+:root { --bottombar-h: 60px; }
+.bottombar { display: none; }
+.bottombar__tab {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 7px 4px;
+  transition: color 0.15s ease;
+}
+.bottombar__tab.is-active { color: var(--dan-blue); }
+.bottombar__tab svg { flex: 0 0 auto; }
+.bottombar__tab span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
-  .shell2 { grid-template-columns: 64px 0 1fr; }
-  .shell2:not(.is-collapsed) { grid-template-columns: 64px 232px 1fr; }
+  /* Mobile: maincol нь бүтэн өргөн; iconrail-ийг доод tab bar орлоно, sidepanel
+     нь идэвхтэй системийн хуудсуудыг доороос дэлгэдэг bottom sheet болно —
+     контентыг шахахгүй (өмнө нь grid шахагдаж контент харагдахгүй болдог байсан).
+     .is-collapsed-ийн (0,2,0) specificity-г давахын тулд хоёуланг нь дурдана —
+     эс бол mobile дээр maincol нарийн зурвас болж контент шахагддаг. */
+  .shell2,
+  .shell2.is-collapsed { grid-template-columns: 1fr; }
+  /* Хэвтээ гүйлгэлтээс сэргийлэх сүүлчийн хамгаалалт — дотоод гүйлгэдэг сав
+     (жишээ нь .users-table-wrap) өөрийн overflow-x-оор ажиллана. Доод tab bar-т
+     дарагдахгүйн тулд доор нь зай үлдээнэ. */
+  .maincol .main {
+    overflow-x: clip;
+    padding-bottom: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px) + 28px);
+  }
+  .iconrail { display: none; }
+  .topbar2__toggle { display: none; }
+
+  /* sidepanel → доороос гулсдаг bottom sheet */
+  .sidepanel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: auto;
+    bottom: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px));
+    max-height: 68vh;
+    overflow-y: auto;
+    z-index: 65;
+    border-right: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.16);
+    transform: translateY(120%);
+    transition: transform 0.24s ease;
+  }
+  .shell2:not(.is-collapsed) .sidepanel { transform: translateY(0); }
+  .shell2:not(.is-collapsed) .shell2__backdrop { display: block; }
+
+  /* доод tab bar — фиксэд, viewport-ийн доод ирмэгт */
+  .bottombar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    height: calc(var(--bottombar-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    align-items: stretch;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+  }
 }
 
 /* ---- AI туслахын чат (/me/ai) ---- */
@@ -1659,6 +1750,7 @@ html[lang="en"] .i18n-banner { display: block; }
   font-family: var(--font-display);
   font-weight: 700; font-size: 16px; letter-spacing: -0.01em;
   color: var(--lp-on-navy); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
 .lp-nav__links { display: none; align-items: center; gap: 30px; }
 .lp-nav__links a {
@@ -1666,7 +1758,7 @@ html[lang="en"] .i18n-banner { display: block; }
   text-decoration: none; transition: color 0.14s ease;
 }
 .lp-nav__links a:hover { color: var(--lp-gold); }
-.lp-nav__actions { display: flex; align-items: center; gap: 12px; }
+.lp-nav__actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .lp-lang {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 11px;
@@ -1908,7 +2000,7 @@ html[lang="en"] .i18n-banner { display: block; }
 @media (max-width: 599px) {
   .lp { --lp-pad: 18px; }
   .lp-nav__inner { gap: 10px; }
-  .lp-nav__name { font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
+  .lp-nav__name { font-size: 15px; }
   .lp-nav__actions { gap: 8px; }
   /* Явцуу дэлгэцэд nav-ийн "Нэвтрэх" товч илүүц — hero-д том CTA бий. */
   .lp-nav__actions .lp-btn { display: none; }
