@@ -32,7 +32,8 @@ Internet ──► nginx (80/443, Let's Encrypt TLS)
 ```
 
 Тэгэхээр `web` нь гадагш нээгддэг ЦОРЫН ГАНЦ контейнер **биш**: nginx нь api-ийн
-loopback порт (`:8091`)-ыг мөн урдаас барих ёстой — тэр порт одоо OIDC
+loopback портыг (`API_RELAY_PORT`, энэ deployment-д `8081`) мөн урдаас барих
+ёстой — тэр порт одоо OIDC
 протоколын endpoint болон sign relay хоёуланг үйлчилнэ. Browser нь app болон
 BFF-д `web`-ээр хүрнэ; OAuth *login/consent* хуудсууд (dan өөрөө иргэнийг
 eID-ээр баталгаажуулаад render хийдэг) нь `web` дээр `/oauth/*` дор байрлана.
@@ -91,7 +92,7 @@ REDIS_PASS=<санамсаргүй>
 # --- App / origin ---
 APP_ORIGIN=https://sso.dgov.mn    # яг нийтийн origin (CSRF origin шалгалт)
 WEB_PORT=3007                     # nginx app руу проксилдог loopback port
-API_RELAY_PORT=8091               # nginx OIDC endpoint болон /rp/sign-ыг проксилдог
+API_RELAY_PORT=8081               # nginx-ийн барьдаг ГАНЦ api порт — OIDC,
                                   # loopback port (api :8080)
 
 # --- web BFF-ийн хэрэглэдэг OAuth client ID/secret (хоосон = тэр товч/карт идэвхгүй) ---
@@ -234,7 +235,10 @@ OIDC issuer замууд болон `/rp/sign` хоёулаа api-ийн loopbac
 
 ```nginx
 upstream dan_web { server 127.0.0.1:3007; }   # = WEB_PORT
-upstream dan_api { server 127.0.0.1:8091; }   # = API_RELAY_PORT (api :8080)
+upstream dan_api { server 127.0.0.1:8081; }   # = API_RELAY_PORT (api :8080).
+                                              # ГАНЦ api порт: OIDC, /rp/eid/ болон
+                                              # /rp/sign/ бүгд үүнийг хуваалцана —
+                                              # OIDC шинэ порт НЭМЭЭГҮЙ.
 
 server {
     server_name sso.dgov.mn;

@@ -33,7 +33,8 @@ Internet ──► nginx (80/443, TLS via Let's Encrypt)
 ```
 
 So `web` is **not** the only exposed container: nginx must also front the api
-loopback port (`:8091`), which now serves both the OIDC protocol endpoints and
+loopback port (`API_RELAY_PORT`, `8081` in this deployment), which now serves both
+the OIDC protocol endpoints and
 the sign relay. The browser reaches `web` for the app and its BFF; the OAuth
 *login/consent* pages (which dan renders itself, after authenticating the
 citizen with eID) live on `web` under `/oauth/*`. A one-off `migrate` container
@@ -93,7 +94,7 @@ REDIS_PASS=<random>
 # --- App / origin ---
 APP_ORIGIN=https://sso.dgov.mn    # exact public origin (CSRF origin check)
 WEB_PORT=3007                     # loopback port nginx proxies the app to
-API_RELAY_PORT=8091               # loopback port nginx proxies the OIDC endpoints
+API_RELAY_PORT=8081               # the ONE loopback api port nginx fronts — OIDC,
                                   # and /rp/sign to (api :8080)
 
 # --- OAuth client IDs/secrets used by the web BFF (empty = that button/card inert) ---
@@ -240,7 +241,10 @@ else goes to `web`.
 
 ```nginx
 upstream dan_web { server 127.0.0.1:3007; }   # = WEB_PORT
-upstream dan_api { server 127.0.0.1:8091; }   # = API_RELAY_PORT (api :8080)
+upstream dan_api { server 127.0.0.1:8081; }   # = API_RELAY_PORT (api :8080).
+                                              # ONE api port: OIDC, /rp/eid/ and
+                                              # /rp/sign/ all share it — the OIDC
+                                              # endpoints did not add a new port.
 
 server {
     server_name sso.dgov.mn;
