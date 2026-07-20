@@ -25,6 +25,7 @@ import (
 	oidcuc "template/internal/business/usecases/oidc"
 	usersuc "template/internal/business/usecases/users"
 	oauthpg "template/internal/datasources/repositories/postgres/oauth"
+	userspg "template/internal/datasources/repositories/postgres/users"
 	"template/internal/test/testenv"
 	"template/pkg/secrethash"
 )
@@ -36,15 +37,12 @@ const (
 	testIssuer   = "https://sso.dgov.mn"
 )
 
-// stubUsers нь id_token/userinfo-д хэрэгтэй иргэний бүртгэлийг өгнө.
-type stubUsers struct{ id string }
-
-func (s *stubUsers) GetByID(context.Context, usersuc.GetByIDRequest) (usersuc.GetByIDResponse, error) {
-	return usersuc.GetByIDResponse{User: domain.User{
-		ID: s.id, FirstName: "Бат", LastName: "Дорж", Email: "bat@example.mn",
-	}}, nil
-}
-
+// ЖИНХЭНЭ users usecase + repository-г ашиглана, stub БИШ.
+//
+// Эхний хувилбар нь stub ашигласан бөгөөд яг тэр нь production-ы алдааг нуусан:
+// token endpoint нэвтрээгүй дуудагддаг тул context-д RLS identity байхгүй, улмаас
+// RLS-тэй `users` хүснэгтээс уншихад "user not found" болж token гаргах бүрд 500
+// буцдаг байв. Stub нь DB-д огт хүрдэггүй тул тестүүд ногоон хэвээр байсан.
 // setup нь RLS хүчинтэй (non-superuser) pool дээр service-ийг угсарна.
 func setup(t *testing.T) (*oidcuc.Service, string) {
 	t.Helper()
@@ -72,8 +70,10 @@ func setup(t *testing.T) (*oidcuc.Service, string) {
 	require.NoError(t, err)
 	require.NoError(t, keys.EnsureKey(context.Background()))
 
+	users := usersuc.NewUsecase(userspg.NewUserRepository(app), nil, usersuc.Config{})
+
 	svc := oidcuc.NewService(clients, flow, testIssuer).
-		WithTokenIssuing(keys, &stubUsers{id: subject})
+		WithTokenIssuing(keys, users)
 	return svc, subject
 }
 
@@ -83,8 +83,8 @@ func seedUser(t *testing.T, admin *pgxpool.Pool) string {
 	// ийн адил хэв маяг.
 	const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 	_, err := admin.Exec(context.Background(),
-		`INSERT INTO users(id, username, active, role_id, created_at)
-		 VALUES ($1, 'oidc_test', true, 4, now())`, id)
+		`INSERT INTO users(id, username, email, first_name, last_name, active, role_id, created_at)
+		 VALUES ($1, 'oidc_test', 'bat@example.mn', 'Бат', 'Дорж', true, 4, now())`, id)
 	require.NoError(t, err)
 	return id
 }
@@ -166,7 +166,9 @@ func TestFullAuthorizationCodeFlowUnderRLS(t *testing.T) {
 	claims, err := svc.Userinfo(ctx, tok.AccessToken)
 	require.NoError(t, err)
 	require.Equal(t, subject, claims["sub"])
-	require.Equal(t, "Дорж Бат", claims["name"])
+	// Claims нь ЖИНХЭНЭ users хүснэгтээс RLS-ийн доор уншигдана.
+	require.Equal(t, "Дорж Бат", claims["name"], "profile claims must come from the real users table")
+	require.Equal(t, "bat@example.mn", claims["email"])
 
 	// Refresh нь эргэлт хийж, хуучныг хүчингүй болгоно.
 	refreshed, err := svc.Token(ctx, oidcuc.TokenRequest{

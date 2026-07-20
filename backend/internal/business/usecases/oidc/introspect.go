@@ -10,6 +10,7 @@ import (
 	"template/internal/apperror"
 	"template/internal/business/domain"
 	usersuc "template/internal/business/usecases/users"
+	"template/internal/datasources/rls"
 )
 
 var errUserLookupMissing = errors.New("oidc: userinfo requires a user lookup")
@@ -74,7 +75,9 @@ func (s *Service) Userinfo(ctx context.Context, token string) (map[string]any, e
 		return nil, apperror.InternalCause(errUserLookupMissing)
 	}
 
-	resp, err := s.users.GetByID(ctx, usersuc.GetByIDRequest{ID: info.Subject})
+	// mintIDToken-той ижил шалтгаан: userinfo нь access token-оор эрхшээгддэг тул
+	// context-д RLS identity байхгүй. Token-ий эзний ӨӨРИЙН мөрийг user үүргээр.
+	resp, err := s.users.GetByID(rls.WithUser(ctx, info.Subject), usersuc.GetByIDRequest{ID: info.Subject})
 	if err != nil {
 		return nil, apperror.InternalCause(err)
 	}
