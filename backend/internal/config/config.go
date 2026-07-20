@@ -152,18 +152,10 @@ type Config struct {
 	// томилно (API-аар үүсгэдэггүй). Хэрэглэгч эхлээд бүртгүүлсэн байх ёстой.
 	SuperAdminEmail string `mapstructure:"SUPERADMIN_EMAIL"`
 
-	// --- OIDC PROVIDER тал (sso.dgov.mn нь Ory Hydra-г урдаа тавьж SSO provider
-	// болно). Дээрх SSO_* нь RP (нэвтрэгч) тал; доорхи HYDRA_*/SSO_ADMIN_* нь
-	// PROVIDER (issuer) тал. ---
-	// HydraAdminURL нь Hydra admin API (client CRUD + login/consent/logout
-	// challenge). Compose дотор http://hydra:4445. Public-д ХЭЗЭЭ Ч гаргаж болохгүй.
-	HydraAdminURL string `mapstructure:"HYDRA_ADMIN_URL"`
-	// HydraPublicURL нь issuer (жишээ https://sso.dgov.mn) — login/consent redirect
-	// байгуулахад ашиглана. Хоосон бол provider урсгал inert.
-	HydraPublicURL string `mapstructure:"HYDRA_PUBLIC_URL"`
-	// OAuthIssuer нь өөрийн OIDC provider-ийн issuer (жишээ https://sso.dgov.mn).
-	// Discovery, id_token-ий `iss` болон бүх endpoint URL үүнээс гарна. Хоосон
-	// бол HydraPublicURL-ээс уналаа авна (Hydra-аас шилжих шилжилтийн үе).
+	// --- OIDC PROVIDER тал (sso.dgov.mn нь ӨӨРӨӨ SSO provider). Дээрх SSO_* нь
+	// RP (нэвтрэгч) тал; доорхи OAUTH_*/SSO_ADMIN_* нь PROVIDER (issuer) тал. ---
+	// OAuthIssuer нь OIDC issuer (жишээ https://sso.dgov.mn). Discovery, id_token-
+	// ий `iss` болон бүх endpoint URL үүнээс гарна.
 	OAuthIssuer string `mapstructure:"OAUTH_ISSUER"`
 	// SSOStateKey нь login/consent урсгалын transient state cookie HMAC түлхүүр
 	// (>=32 bytes).
@@ -187,22 +179,17 @@ func (c *Config) SSOAdminAPIKeysList() []string { return splitCSVConfig(c.SSOAdm
 // SSOAdminSubsList нь SSO_ADMIN_SUBS-г таслалаар салгаж slice болгоно.
 func (c *Config) SSOAdminSubsList() []string { return splitCSVConfig(c.SSOAdminSubs) }
 
-// ProviderConfigured нь dan-ийг OIDC provider болгох гол тохиргоо (Hydra)
-// бүрдсэн эсэхийг мэдээлнэ.
-// Issuer нь OIDC issuer-ийг буцаана. OAUTH_ISSUER тохируулаагүй бол шилжилтийн
-// үеийн уналт болгож HYDRA_PUBLIC_URL-ийг ашиглана (хоёул ижил хаяг байсан).
-// Сүүлийн slash-ыг ХАСНА — issuer нь id_token-ий `iss`-тэй ЯГ таарах ёстой тул
-// "https://sso.dgov.mn/" ба "https://sso.dgov.mn" хоёр өөр утга болно.
+// Issuer нь OIDC issuer-ийг буцаана. Сүүлийн slash-ыг ХАСНА — issuer нь
+// id_token-ий `iss`-тэй ЯГ таарах ёстой тул "https://sso.dgov.mn/" ба
+// "https://sso.dgov.mn" хоёр өөр утга болно.
 func (c *Config) Issuer() string {
-	iss := strings.TrimSpace(c.OAuthIssuer)
-	if iss == "" {
-		iss = strings.TrimSpace(c.HydraPublicURL)
-	}
-	return strings.TrimRight(iss, "/")
+	return strings.TrimRight(strings.TrimSpace(c.OAuthIssuer), "/")
 }
 
+// ProviderConfigured нь OIDC provider-ийн гол тохиргоо бүрдсэн эсэхийг мэдээлнэ.
+
 func (c *Config) ProviderConfigured() bool {
-	return c.HydraAdminURL != "" && c.HydraPublicURL != "" && len(c.SSOStateKey) >= 32
+	return c.Issuer() != "" && len(c.SSOStateKey) >= 32
 }
 
 // splitCSVConfig нь таслалаар салгаж, хоосон/зайг арилгаж slice болгоно.
@@ -279,10 +266,8 @@ func InitializeAppConfig() error {
 	_ = viper.BindEnv("GSPACE_BASE_PATH")
 	_ = viper.BindEnv("GSPACE_QUOTA_BYTES")
 	_ = viper.BindEnv("GSPACE_HOST_KEY")
-	// OIDC PROVIDER тал (sso.dgov.mn нь Hydra-г урдаа тавьж SSO болно) — нууц/
-	// орчин-тусгай тул ил bind хийнэ.
-	_ = viper.BindEnv("HYDRA_ADMIN_URL")
-	_ = viper.BindEnv("HYDRA_PUBLIC_URL")
+	// OIDC PROVIDER тал (sso.dgov.mn нь өөрөө SSO) — нууц/орчин-тусгай тул
+	// ил bind хийнэ.
 	_ = viper.BindEnv("OAUTH_ISSUER")
 	_ = viper.BindEnv("SSO_STATE_KEY")
 	_ = viper.BindEnv("SSO_FIRSTPARTY_CLIENTS")
@@ -453,10 +438,6 @@ func applyDefaults() {
 	}
 	if AppConfig.GSpaceQuota == 0 {
 		AppConfig.GSpaceQuota = 2 << 20 // 2 MB
-	}
-	// OIDC provider тал: Hydra admin URL default нь compose доторх hydra:4445.
-	if AppConfig.HydraAdminURL == "" {
-		AppConfig.HydraAdminURL = "http://hydra:4445"
 	}
 	// OTel-ийн sample ratio нь зөвхөн exporter тохируулагдсан БА оператор
 	// ratio-г тодорхой зааж өгөөгүй үед 1.0 утгыг анхдагчаар авна. Exporter
