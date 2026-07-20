@@ -38,6 +38,11 @@ const (
 	argonThreads uint8  = 4
 	argonKeyLen  uint32 = 32
 	saltLen             = 16
+	// Хадгалагдсан hash-аас уншсан түлхүүрийн зөвшөөрөгдөх урт.
+	minKeyLen = 16
+	maxKeyLen = 64
+	// PBKDF2-ийн давталтын дээд хязгаар (Ory нь 25000 ашигладаг).
+	maxIterations = 1_000_000
 )
 
 // ErrUnknownFormat нь hash мөрийг таних боломжгүй үед буцна. Дуудагч үүнийг
@@ -95,7 +100,7 @@ func verifyPBKDF2(encoded, secret string) (bool, error) {
 	if err != nil {
 		return false, ErrUnknownFormat
 	}
-	if keyLen != len(want) {
+	if keyLen != len(want) || keyLen < minKeyLen || keyLen > maxKeyLen {
 		return false, ErrUnknownFormat
 	}
 	got := pbkdf2.Key([]byte(secret), salt, iter, keyLen, sha256.New)
@@ -120,7 +125,9 @@ func parsePBKDF2Params(s string) (iter, keyLen int, err error) {
 			keyLen = n
 		}
 	}
-	if iter == 0 || keyLen == 0 {
+	// Давталтын тоог дээрээс хязгаарлана — hash мөр нь итерацийг тодорхойлдог
+	// тул гэмтсэн/хорлонтой утга (i=10^9) CPU-г шавхах боломжтой.
+	if iter == 0 || keyLen == 0 || iter > maxIterations {
 		return 0, 0, ErrUnknownFormat
 	}
 	return iter, keyLen, nil
@@ -150,9 +157,15 @@ func verifyArgon2id(encoded, secret string) (bool, error) {
 		return false, ErrUnknownFormat
 	}
 	want, err := unb64(parts[5])
-	if err != nil || len(want) == 0 {
+	if err != nil {
 		return false, ErrUnknownFormat
 	}
+	// Уртыг хязгаарлана — hash мөр гэмтсэн/хорлонтой бол argon2-д асар том
+	// keyLen дамжуулж санах ой шавхахаас сэргийлнэ.
+	if len(want) < minKeyLen || len(want) > maxKeyLen {
+		return false, ErrUnknownFormat
+	}
+	//nolint:gosec // G115: len(want) дээрх мөрөнд [minKeyLen, maxKeyLen] муж руу хязгаарлагдсан тул хөрвүүлэлт аюулгүй
 	got := argon2.IDKey([]byte(secret), salt, time, memory, threads, uint32(len(want)))
 	return subtle.ConstantTimeCompare(got, want) == 1, nil
 }

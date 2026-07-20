@@ -105,3 +105,21 @@ func TestVerifyRejectsMalformed(t *testing.T) {
 		}
 	}
 }
+
+// Hash мөр нь өөрөө KDF-ийн зардлыг тодорхойлдог тул гэмтсэн/хорлонтой утга
+// CPU эсвэл санах ойг шавхаж болзошгүй — хязгаараас хэтэрсэн бол ажиллуулахгүй
+// шууд татгалзана.
+func TestVerifyRejectsAbsurdCostParameters(t *testing.T) {
+	cases := []string{
+		// Тэрбум давталт — хүлээн авбал хүсэлт бүр CPU-г түгжинэ.
+		"$pbkdf2-sha256$i=1000000000,l=32$Xk3NjhYzw2vo0iHb0dENsw$85qvQUf5V71AmArvdGdczye399QcGfByVrEhTAIX4XU",
+		// Түлхүүрийн урт хэт богино (l нь бодит hash-тай таарсан ч).
+		"$pbkdf2-sha256$i=25000,l=8$Xk3NjhYzw2vo0iHb0dENsw$AAAAAAAAAAA",
+	}
+	for _, h := range cases {
+		ok, err := Verify(h, "anything")
+		if ok || err == nil {
+			t.Fatalf("Verify(%.40q…) must refuse absurd cost parameters", h)
+		}
+	}
+}

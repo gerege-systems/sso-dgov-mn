@@ -7,6 +7,8 @@
 // мэдээллийг клиент рүү алдалгүйгээр логдох зорилгоор Cause-ийг хавсаргадаг.
 package apperror
 
+import "errors"
+
 // ErrorType нь domain алдааны ангиллыг илэрхийлнэ.
 type ErrorType int
 
@@ -56,6 +58,17 @@ func Forbidden(msg string) *DomainError    { return New(ErrTypeForbidden, msg) }
 func Conflict(msg string) *DomainError     { return New(ErrTypeConflict, msg) }
 func BadRequest(msg string) *DomainError   { return New(ErrTypeBadRequest, msg) }
 func Internal(msg string) *DomainError     { return New(ErrTypeInternal, msg) }
+
+// Is нь алдааны гинжин дэх DomainError тухайн төрлийнх эсэхийг шалгана.
+// Wrap/InternalCause-аар боосон алдаанд ч ажиллана (errors.As).
+func Is(err error, t ErrorType) bool {
+	var d *DomainError
+	return errors.As(err, &d) && d.Type == t
+}
+
+// IsNotFound нь Is(err, ErrTypeNotFound)-ийн товчлол — "байхгүй бол алгас"
+// хэлбэрийн идемпотент урсгалуудад түгээмэл.
+func IsNotFound(err error) bool { return Is(err, ErrTypeNotFound) }
 
 // InternalCause нь тогтсон, ерөнхий, хэрэглэгчид харагдах мессежтэй дотоод
 // алдаа үүсгэж, бодит cause-ийг логдох зорилгоор хадгалдаг. Доод түвшний алдаа
