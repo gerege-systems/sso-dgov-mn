@@ -491,7 +491,7 @@ func TestIntrospectRevealsNothingForUnknownTokens(t *testing.T) {
 		t.Fatalf("Token: %v", err)
 	}
 
-	live := s.Introspect(ctx, resp.AccessToken)
+	live := s.Introspect(ctx, "", resp.AccessToken)
 	if !live.Active || live.Subject != testSubject || live.ClientID != "ring-dgov-mn" {
 		t.Fatalf("a live token should introspect as active: %+v", live)
 	}
@@ -499,7 +499,7 @@ func TestIntrospectRevealsNothingForUnknownTokens(t *testing.T) {
 	// Танигдаагүй, хоосон, гуйвуулсан token бүгд ижилхэн "active: false" —
 	// шалтгааныг нь ялгаж хэлэхгүй.
 	for _, tok := range []string{"", "not-a-token", resp.AccessToken + "x"} {
-		if got := s.Introspect(ctx, tok); got.Active || got.Subject != "" || got.ClientID != "" {
+		if got := s.Introspect(ctx, "", tok); got.Active || got.Subject != "" || got.ClientID != "" {
 			t.Fatalf("introspecting %q leaked state: %+v", tok, got)
 		}
 	}
@@ -581,7 +581,7 @@ func TestRevokeOnlyAffectsTheOwningClient(t *testing.T) {
 	if err := s.Revoke(ctx, other, resp.AccessToken, "access_token"); err != nil {
 		t.Fatalf("Revoke: %v", err)
 	}
-	if !s.Introspect(ctx, resp.AccessToken).Active {
+	if !s.Introspect(ctx, "", resp.AccessToken).Active {
 		t.Fatal("another client must not be able to revoke this token")
 	}
 
@@ -589,7 +589,7 @@ func TestRevokeOnlyAffectsTheOwningClient(t *testing.T) {
 	if err := s.Revoke(ctx, c, resp.AccessToken, "access_token"); err != nil {
 		t.Fatalf("Revoke: %v", err)
 	}
-	if s.Introspect(ctx, resp.AccessToken).Active {
+	if s.Introspect(ctx, "", resp.AccessToken).Active {
 		t.Fatal("the owning client's revocation must take effect")
 	}
 }
@@ -600,5 +600,32 @@ func TestRevokeUnknownTokenSucceeds(t *testing.T) {
 	s, _ := tokenService(t, c)
 	if err := s.Revoke(context.Background(), c, "never-existed", ""); err != nil {
 		t.Fatalf("revoking an unknown token must not error: %v", err)
+	}
+}
+
+// Өөр client-ийн token-ыг шалгах боломжгүй — эс бөгөөс token-ыг хаанаас нэгээс
+// олсон хэн ч эзний тогтвортой `sub`-ыг мэдэх болно (RFC 7662 §2.1).
+func TestIntrospectIsScopedToTheCallingClient(t *testing.T) {
+	s, flow := tokenService(t, confidentialClient(t))
+	ctx := context.Background()
+	code, verifier := issueCode(t, s, flow, "openid")
+
+	resp, err := s.Token(ctx, codeRequest(code, verifier))
+	if err != nil {
+		t.Fatalf("Token: %v", err)
+	}
+
+	if got := s.Introspect(ctx, "ring-dgov-mn", resp.AccessToken); !got.Active {
+		t.Fatal("the owning client must be able to introspect its own token")
+	}
+
+	other := s.Introspect(ctx, "some-other-app", resp.AccessToken)
+	if other.Active || other.Subject != "" || other.ClientID != "" || other.Scope != "" {
+		t.Fatalf("another client learned something about this token: %+v", other)
+	}
+
+	// Дотоод дуудагч (bearer middleware) caller хоосноор бүрэн хариу авна.
+	if got := s.Introspect(ctx, "", resp.AccessToken); !got.Active || got.Subject != testSubject {
+		t.Fatalf("the internal caller should still resolve the token: %+v", got)
 	}
 }

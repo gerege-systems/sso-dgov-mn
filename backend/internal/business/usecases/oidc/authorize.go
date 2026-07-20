@@ -16,6 +16,7 @@ import (
 	"template/internal/apperror"
 	"template/internal/business/domain"
 	usersuc "template/internal/business/usecases/users"
+	"template/internal/datasources/rls"
 )
 
 // Хугацаанууд. Authorization code нь боломжийн хэрээр богино байх ёстой —
@@ -117,6 +118,21 @@ func (s *Service) WithTokenIssuing(keys *KeyManager, users userLookup) *Service 
 	return s
 }
 
+// flowCtx нь протоколын төлөвийн (challenge / code / token / consent) query-д
+// RLS-ийн "service" үүргийг тавина.
+//
+// ЯАГААД ЭНД, route дээр БИШ: эдгээр хүснэгтэд хандах нь дуудагчаас үл хамаарна.
+// `/oauth2/*` нь нэвтрээгүй дуудагдана, харин `/api/v1/provider/*/accept` нь
+// authMiddleware-ийн ард ажилладаг бөгөөд тэр нь identity-г "user" болгож дардаг
+// тул route-д суулгасан ServiceRLSContext чимээгүй хүчингүй болно. Хамаарлыг
+// хэрэгцээтэй газарт нь тавьснаар route-ын дараалал өөрчлөгдөхөд эвдрэхгүй.
+//
+// Энэ нь эрхийг ӨРГӨТГӨХГҮЙ: протоколын шалгалтууд (challenge-ийн subject,
+// client-ийн эзэмшил, PKCE) нь Go давхаргад хийгддэг; RLS нь энд өөр иргэний
+// мөрийг хамгаалах хэрэгсэл биш, харин эдгээр хүснэгт рүү зөвхөн энэ урсгал
+// хандаж байгааг батлах давхарга юм.
+func flowCtx(ctx context.Context) context.Context { return rls.WithService(ctx) }
+
 // Authorize нь `/oauth2/auth`-ийн хүсэлтийг шалгаж, login challenge үүсгээд
 // нэвтрэх хуудас руу чиглүүлэх challenge-ыг буцаана.
 //
@@ -170,7 +186,7 @@ func (s *Service) Authorize(ctx context.Context, req AuthorizeRequest) (challeng
 	}
 
 	challenge = randomToken()
-	if err := s.flow.CreateChallenge(ctx, domain.OAuthChallenge{
+	if err := s.flow.CreateChallenge(flowCtx(ctx), domain.OAuthChallenge{
 		Challenge:           challenge,
 		Kind:                domain.ChallengeLogin,
 		ClientID:            client.ClientID,
@@ -191,34 +207,34 @@ func (s *Service) Authorize(ctx context.Context, req AuthorizeRequest) (challeng
 
 // LoginChallenge нь хүчинтэй login challenge-ыг буцаана.
 func (s *Service) LoginChallenge(ctx context.Context, challenge string) (domain.OAuthChallenge, error) {
-	return s.flow.Challenge(ctx, domain.ChallengeLogin, challenge)
+	return s.flow.Challenge(flowCtx(ctx), domain.ChallengeLogin, challenge)
 }
 
 // ConsentChallenge нь хүчинтэй consent challenge-ыг буцаана.
 func (s *Service) ConsentChallenge(ctx context.Context, challenge string) (domain.OAuthChallenge, error) {
-	return s.flow.Challenge(ctx, domain.ChallengeConsent, challenge)
+	return s.flow.Challenge(flowCtx(ctx), domain.ChallengeConsent, challenge)
 }
 
 // AcceptLogin нь иргэнийг тухайн login challenge-д баталгаажуулж, consent
 // challenge үүсгэнэ. Аль хэдийн санагдсан зөвшөөрөл байвал Skip=true болно.
 func (s *Service) AcceptLogin(ctx context.Context, challenge, subject string) (consentChallenge string, skip bool, err error) {
-	login, err := s.flow.Challenge(ctx, domain.ChallengeLogin, challenge)
+	login, err := s.flow.Challenge(flowCtx(ctx), domain.ChallengeLogin, challenge)
 	if err != nil {
 		return "", false, err
 	}
-	if err := s.flow.DecideChallenge(ctx, challenge, subject, login.RequestedScopes); err != nil {
+	if err := s.flow.DecideChallenge(flowCtx(ctx), challenge, subject, login.RequestedScopes); err != nil {
 		return "", false, err
 	}
 
 	// Өмнө нь олгосон зөвшөөрөл хүссэн scope-ыг БҮРЭН хамарч байвал л алгасна.
-	remembered, err := s.flow.Consent(ctx, subject, login.ClientID)
+	remembered, err := s.flow.Consent(flowCtx(ctx), subject, login.ClientID)
 	if err != nil {
 		return "", false, err
 	}
 	skip = coversAll(remembered, login.RequestedScopes)
 
 	consentChallenge = randomToken()
-	if err := s.flow.CreateChallenge(ctx, domain.OAuthChallenge{
+	if err := s.flow.CreateChallenge(flowCtx(ctx), domain.OAuthChallenge{
 		Challenge:           consentChallenge,
 		Kind:                domain.ChallengeConsent,
 		ClientID:            login.ClientID,
@@ -245,7 +261,7 @@ func (s *Service) AcceptLogin(ctx context.Context, challenge, subject string) (c
 // subject нь challenge дээрх subject-тэй ТААРАХ ёстой — өөр иргэний нээлттэй
 // challenge-ыг өөрийн session-ээр дуусгах боломжийг хаана.
 func (s *Service) AcceptConsent(ctx context.Context, challenge, subject string, grantScope []string) (string, error) {
-	c, err := s.flow.Challenge(ctx, domain.ChallengeConsent, challenge)
+	c, err := s.flow.Challenge(flowCtx(ctx), domain.ChallengeConsent, challenge)
 	if err != nil {
 		return "", err
 	}
@@ -262,15 +278,15 @@ func (s *Service) AcceptConsent(ctx context.Context, challenge, subject string, 
 		return "", apperror.BadRequest("no scope was granted")
 	}
 
-	if err := s.flow.DecideChallenge(ctx, challenge, subject, granted); err != nil {
+	if err := s.flow.DecideChallenge(flowCtx(ctx), challenge, subject, granted); err != nil {
 		return "", err
 	}
-	if err := s.flow.SaveConsent(ctx, subject, c.ClientID, granted, ConsentTTL); err != nil {
+	if err := s.flow.SaveConsent(flowCtx(ctx), subject, c.ClientID, granted, ConsentTTL); err != nil {
 		return "", err
 	}
 
 	code := randomToken()
-	if err := s.flow.CreateCode(ctx, domain.OAuthAuthCode{
+	if err := s.flow.CreateCode(flowCtx(ctx), domain.OAuthAuthCode{
 		CodeHash:            hashToken(code),
 		ClientID:            c.ClientID,
 		Subject:             subject,
@@ -290,11 +306,11 @@ func (s *Service) AcceptConsent(ctx context.Context, challenge, subject string, 
 
 // Reject нь урсгалыг зогсоож, алдааг RP руу буцаах URL-ыг үүсгэнэ.
 func (s *Service) Reject(ctx context.Context, kind, challenge, reason string) (string, error) {
-	c, err := s.flow.Challenge(ctx, kind, challenge)
+	c, err := s.flow.Challenge(flowCtx(ctx), kind, challenge)
 	if err != nil {
 		return "", err
 	}
-	if err := s.flow.DecideChallenge(ctx, challenge, c.Subject, nil); err != nil {
+	if err := s.flow.DecideChallenge(flowCtx(ctx), challenge, c.Subject, nil); err != nil {
 		return "", err
 	}
 	if reason == "" {
@@ -419,7 +435,7 @@ func (s *Service) StartLogout(ctx context.Context, clientID, postLogoutRedirectU
 	}
 
 	challenge := randomToken()
-	if err := s.flow.CreateChallenge(ctx, domain.OAuthChallenge{
+	if err := s.flow.CreateChallenge(flowCtx(ctx), domain.OAuthChallenge{
 		Challenge:             challenge,
 		Kind:                  domain.ChallengeLogout,
 		ClientID:              clientID,
@@ -435,11 +451,11 @@ func (s *Service) StartLogout(ctx context.Context, clientID, postLogoutRedirectU
 // AcceptLogout нь logout challenge-ыг дуусгаж, буцах хаягийг өгнө. Бүртгэгдсэн
 // post_logout_redirect_uri байхгүй бол issuer-ийн нүүр рүү буцаана.
 func (s *Service) AcceptLogout(ctx context.Context, challenge string) (string, error) {
-	c, err := s.flow.Challenge(ctx, domain.ChallengeLogout, challenge)
+	c, err := s.flow.Challenge(flowCtx(ctx), domain.ChallengeLogout, challenge)
 	if err != nil {
 		return "", err
 	}
-	if err := s.flow.DecideChallenge(ctx, challenge, c.Subject, nil); err != nil {
+	if err := s.flow.DecideChallenge(flowCtx(ctx), challenge, c.Subject, nil); err != nil {
 		return "", err
 	}
 	if c.PostLogoutRedirectURI == "" {
@@ -450,5 +466,12 @@ func (s *Service) AcceptLogout(ctx context.Context, challenge string) (string, e
 
 // LogoutChallenge нь хүчинтэй logout challenge-ыг буцаана.
 func (s *Service) LogoutChallenge(ctx context.Context, challenge string) (domain.OAuthChallenge, error) {
-	return s.flow.Challenge(ctx, domain.ChallengeLogout, challenge)
+	return s.flow.Challenge(flowCtx(ctx), domain.ChallengeLogout, challenge)
+}
+
+// S256Challenge нь code_verifier-ээс PKCE-ийн S256 challenge-ыг гаргана.
+// RP-ийн тал хийдэг тооцоо; тест болон хэрэгслүүдэд хэрэгтэй.
+func S256Challenge(verifier string) string {
+	sum := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
 }

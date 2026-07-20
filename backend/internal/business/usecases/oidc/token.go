@@ -148,7 +148,7 @@ func (s *Service) exchangeCode(ctx context.Context, client domain.OAuthClient, r
 		return nil, &TokenError{Code: "invalid_request", Description: "code is required", Status: 400}
 	}
 
-	code, alreadyUsed, err := s.flow.ConsumeCode(ctx, hashToken(req.Code))
+	code, alreadyUsed, err := s.flow.ConsumeCode(flowCtx(ctx), hashToken(req.Code))
 	if err != nil {
 		if apperror.IsNotFound(err) {
 			return nil, badGrant("authorization code is invalid")
@@ -166,7 +166,7 @@ func (s *Service) exchangeCode(ctx context.Context, client domain.OAuthClient, r
 		if code.Subject != "" {
 			// Код ямар token гаргасныг холбосон бичлэг байхгүй (гэр бүл нь
 			// гаргах мөчид үүсдэг) тул тухайн иргэн+апп-ийн бүхнийг цуцална.
-			_ = s.flow.RevokeForSubjectClient(ctx, code.Subject, code.ClientID)
+			_ = s.flow.RevokeForSubjectClient(flowCtx(ctx), code.Subject, code.ClientID)
 		}
 		return nil, badGrant("authorization code has already been used")
 	}
@@ -195,7 +195,7 @@ func (s *Service) refresh(ctx context.Context, client domain.OAuthClient, req To
 		return nil, &TokenError{Code: "invalid_request", Description: "refresh_token is required", Status: 400}
 	}
 
-	rt, reused, err := s.flow.ConsumeRefreshToken(ctx, hashToken(req.RefreshToken))
+	rt, reused, err := s.flow.ConsumeRefreshToken(flowCtx(ctx), hashToken(req.RefreshToken))
 	if err != nil {
 		if apperror.IsNotFound(err) {
 			return nil, badGrant("refresh token is invalid")
@@ -210,11 +210,11 @@ func (s *Service) refresh(ctx context.Context, client domain.OAuthClient, req To
 	// нь цуцална: хууль ёсны эзэн ч, халдагч ч дахин нэвтрэх шаардлагатай болно
 	// (RFC 9700 §4.14.2).
 	if reused {
-		_ = s.flow.RevokeFamily(ctx, rt.FamilyID)
+		_ = s.flow.RevokeFamily(flowCtx(ctx), rt.FamilyID)
 		return nil, badGrant("refresh token has already been used")
 	}
 	if rt.ClientID != client.ClientID {
-		_ = s.flow.RevokeFamily(ctx, rt.FamilyID)
+		_ = s.flow.RevokeFamily(flowCtx(ctx), rt.FamilyID)
 		return nil, badGrant("refresh token was issued to another client")
 	}
 
@@ -250,7 +250,7 @@ func (s *Service) clientCredentials(ctx context.Context, client domain.OAuthClie
 
 	access := randomToken()
 	expires := time.Now().Add(AccessTokenTTL)
-	if err := s.flow.StoreTokens(ctx, domain.OAuthAccessToken{
+	if err := s.flow.StoreTokens(flowCtx(ctx), domain.OAuthAccessToken{
 		TokenHash: hashToken(access),
 		ClientID:  client.ClientID,
 		Scopes:    scopes,
@@ -307,7 +307,7 @@ func (s *Service) issue(ctx context.Context, client domain.OAuthClient, subject 
 		}
 	}
 
-	if err := s.flow.StoreTokens(ctx, at, rt); err != nil {
+	if err := s.flow.StoreTokens(flowCtx(ctx), at, rt); err != nil {
 		return nil, err
 	}
 
