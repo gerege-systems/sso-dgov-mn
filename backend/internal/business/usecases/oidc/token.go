@@ -14,6 +14,7 @@ import (
 	"template/internal/apperror"
 	"template/internal/business/domain"
 	usersuc "template/internal/business/usecases/users"
+	"template/internal/datasources/rls"
 	"template/pkg/secrethash"
 )
 
@@ -337,7 +338,13 @@ func (s *Service) mintIDToken(ctx context.Context, client domain.OAuthClient, su
 	}
 	// Хэрэглэгчийг заавал уншина — уншиж чадахгүй бол token гаргахгүй
 	// (fail-closed). Эс бөгөөс RP claims-гүй token авч хэрэглэгчийг таньж чадахгүй.
-	resp, err := s.users.GetByID(ctx, usersuc.GetByIDRequest{ID: subject})
+	//
+	// Token endpoint нь нэвтрээгүй дуудагдана (client итгэмжлэлээр) тул context-д
+	// RLS identity байхгүй. `users` хүснэгт RLS-тэй учир identity-гүйгээр уншвал
+	// бүх мөр хаагдаж "user not found" болно. Токеныг ЯГ энэ subject-д гаргаж
+	// байгаа тул түүний ӨӨРИЙН мөрийг user үүргээр уншина (users_self бодлого) —
+	// service үүрэг өгвөл бүх хэрэглэгч нээгдэх тул хэрэггүй өргөн эрх болно.
+	resp, err := s.users.GetByID(rls.WithUser(ctx, subject), usersuc.GetByIDRequest{ID: subject})
 	if err != nil {
 		return "", apperror.InternalCause(fmt.Errorf("oidc: load user for id_token: %w", err))
 	}
