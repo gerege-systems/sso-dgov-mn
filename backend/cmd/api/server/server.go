@@ -30,6 +30,7 @@ import (
 	"template/internal/business/usecases/gov"
 	"template/internal/business/usecases/gspace"
 	"template/internal/business/usecases/integrations"
+	oidcuc "template/internal/business/usecases/oidc"
 	"template/internal/business/usecases/org"
 	provideruc "template/internal/business/usecases/provider"
 	"template/internal/business/usecases/rbac"
@@ -401,6 +402,17 @@ func NewApp() (*App, error) {
 		oauthpostgres.NewClientRepository(pool),
 	)
 
+	// Өөрийн OIDC provider-ийн гарын үсгийн түлхүүр. Эхний ажиллагаанд RSA
+	// түлхүүр үүсгэж, INTEGRATION_ENC_KEY-ээр шифрлэн хадгална. Түлхүүр бэлэн
+	// биш бол id_token гаргах боломжгүй тул boot зогсоно (fail-closed).
+	oidcKeys, err := oidcuc.NewKeyManager(oauthpostgres.NewKeyRepository(pool), config.AppConfig.IntegrationEncKey)
+	if err != nil {
+		return nil, fmt.Errorf("oidc signing keys: %w", err)
+	}
+	if err := oidcKeys.EnsureKey(ctx); err != nil {
+		return nil, fmt.Errorf("oidc: ensure signing key: %w", err)
+	}
+
 	// Гуравдагч талын RP-ийн gateway хүсэлтийг (/rp/sign, /api/v1/provider) API
 	// Gateway-ийн лог руу async бичих middleware (detached ctx тул хоцролтгүй;
 	// best-effort). DAN-ий өөрийн first-party API трафикийг лог-лохгүй —
@@ -431,6 +443,11 @@ func NewApp() (*App, error) {
 	})
 
 	// API Route-ууд
+	// Өөрийн OIDC provider-ийн НИЙТИЙН endpoint-ууд. /api бүлгээс ГАДУУР, үндэс
+	// дээр — замыг нь OIDC стандарт (/.well-known/*) болон nginx-ийн одоо байгаа
+	// Hydra-руу-заадаг дүрмүүд (/oauth2/*, /userinfo) тогтоосон.
+	routes.NewOIDCRoute(r, oidcKeys, config.AppConfig.Issuer()).Routes()
+
 	r.Route("/api", func(api chi.Router) {
 		api.Use(gwLogMW)
 
@@ -447,9 +464,7 @@ func NewApp() (*App, error) {
 		routes.NewAssetsRoute(api, assetsUC, authMiddleware, govWriteRateLimiter).Routes()
 		routes.NewGSpaceRoute(api, gspaceUC, authMiddleware, govWriteRateLimiter).Routes()
 		routes.NewGatewayRoute(api, gatewayUC, rbacUC, authMiddleware).Routes()
-		if applicationsUC != nil {
-			routes.NewApplicationsRoute(api, applicationsUC, rbacUC, authMiddleware).Routes()
-		}
+		routes.NewApplicationsRoute(api, applicationsUC, rbacUC, authMiddleware).Routes()
 		routes.NewCoreRoute(api, coreUC, rbacUC, authMiddleware).Routes()
 		routes.NewAdminRoute(api, usersUC, rbacUC, aiUC, authMiddleware).Routes()
 		routes.NewSuperAdminRoute(api, superadminUC, authMiddleware).Routes()

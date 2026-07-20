@@ -1362,6 +1362,32 @@ info:
   title: Government Template Platform V3.0 API
   version: "1.0"
 paths:
+  /.well-known/jwks.json:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: id_token шалгах нийтийн түлхүүрүүд (JWK Set)
+      tags:
+      - oidc
+  /.well-known/openid-configuration:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: OpenID Connect discovery баримт
+      tags:
+      - oidc
   /admin/ai/prompts:
     get:
       description: Тохируулдаг prompt давхаргуудыг (scope — хамрах хүрээ, instructions
