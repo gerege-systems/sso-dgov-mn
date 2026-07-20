@@ -3,7 +3,7 @@
 
 // Package applications нь нэгдсэн Applications overlay-ийн Postgres gateway —
 // applications мөр + зөвшөөрсөн gateway service-үүд (application_services).
-// Hydra client өөрөө Hydra-д амьдардаг тул энд зөвхөн client_id + overlay.
+// OAuth2 client өөрөө oauth_clients-д амьдардаг тул энд зөвхөн client_id + overlay.
 // Хэрэглэгч-тус-бүрийн биш config өгөгдөл тул RLS-гүй, plain pool query.
 package applications
 
@@ -168,7 +168,7 @@ func (r *applicationRepository) ServiceScopes(ctx context.Context, serviceIDs []
 }
 
 // ServiceIDsForScopes нь өгсөн OAuth scope нэрсэд харгалзах gateway service
-// id-уудыг буцаана (ServiceScopes-ийн урвуу). Hydra client-ийн scope-оос апп-ын
+// id-уудыг буцаана (ServiceScopes-ийн урвуу). Client-ийн scope-оос апп-ын
 // зөвшөөрсөн service-үүдийг сэргээхэд ашиглана.
 func (r *applicationRepository) ServiceIDsForScopes(ctx context.Context, scopes []string) ([]string, error) {
 	if len(scopes) == 0 {

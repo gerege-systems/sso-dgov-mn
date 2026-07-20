@@ -43,6 +43,11 @@ Every response uses one envelope:
 - `data` — present on success (omitted/null on error)
 - `request_id` — correlation id (also echoed in the `X-Request-ID` header)
 
+> **One exception.** The root-mounted OAuth2/OIDC protocol endpoints
+> (`/oauth2/*`, `/userinfo`, `/.well-known/*` — see *Non-`/api` mounts*) answer
+> with bare **RFC-shaped JSON**, *not* this envelope, because RP libraries parse
+> them directly.
+
 ### Status codes
 
 | Code | Meaning | When |
@@ -256,10 +261,11 @@ is now real: a middleware records every actual `/api` request
 
 Unified OAuth2 **client registry** — the merged replacement for the old gateway
 "consumers + API keys" and the separate SSO RP registration. Each application is
-an **Ory Hydra OAuth2 client**; its per-service access is expressed as OAuth
-**scopes** (`application_services` → `gateway_services.scope`). Every endpoint
-requires 🔒 + 🛡️ `gateway.manage`, and the group is **registered only when Hydra
-is configured** (`ProviderConfigured()`).
+an **OAuth2 client** in the built-in provider (a row in `oauth_clients`); its
+per-service access is expressed as OAuth **scopes** (`application_services` →
+`gateway_services.scope`). Every endpoint requires 🔒 + 🛡️ `gateway.manage`, and
+the group is **registered only when the provider is configured**
+(`ProviderConfigured()`).
 
 `app_type` selects the grant + auth method:
 
@@ -276,10 +282,10 @@ the create / rotate response — and never again.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/applications` | List applications. |
-| POST | `/applications` | Create; provisions a Hydra OAuth2 client and returns the app incl. the one-time `secret` (confidential types). |
+| POST | `/applications` | Create; provisions an OAuth2 client and returns the app incl. the one-time `secret` (confidential types). |
 | GET | `/applications/{id}` | Get one application. |
-| PUT | `/applications/{id}` | Update the overlay + the Hydra client's desired state. |
-| DELETE | `/applications/{id}` | Delete the Hydra client + overlay. |
+| PUT | `/applications/{id}` | Update the OAuth2 client's desired state. |
+| DELETE | `/applications/{id}` | Delete the OAuth2 client. |
 | POST | `/applications/{id}/rotate-secret` | Issue a new client secret, returned once (confidential only). |
 | PUT | `/applications/{id}/secret` | Set a specific client secret (confidential only); body `{ secret }`, 16–128 chars. |
 | PUT | `/applications/{id}/services` | Replace the allowed gateway services — they become the client's OAuth scopes. |
@@ -313,9 +319,10 @@ service RLS identity (the callback upserts into `users`).
 
 ## OIDC provider — login/consent/logout (`/api/v1/provider`)
 
-Active **only when Hydra is configured** (`ProviderConfigured()`). This is
-sso.dgov.mn acting as an OIDC **provider** with Ory Hydra in front; the Next.js
-BFF `/login`, `/consent`, `/logout` pages call these. Body-capped (4 KiB). The
+Active **only when the provider is configured** (`ProviderConfigured()`). This is
+sso.dgov.mn acting as an OIDC **provider**; these endpoints drive the browser
+side of the flow whose protocol endpoints are listed under *Non-`/api` mounts*
+below. The Next.js BFF `/login`, `/consent`, `/logout` pages call these. Body-capped (4 KiB). The
 `get`/`reject`/`logout-accept` endpoints are challenge-authenticated (no
 bearer); the `accept` endpoints require a logged-in citizen (subject = dan user
 ID).
@@ -344,7 +351,7 @@ ID).
 | PUT | `/admin/ai/prompts/{key}` | 🛡️ `settings.manage` | Update a prompt layer (`key` ∈ `scope` \| `instructions`). |
 
 > **Naming note.** This in-app `/api/v1/admin` group is unrelated to the
-> top-level `/admin` Hydra operator surface documented under *Non-`/api`
+> top-level `/admin` OIDC-provider operator surface documented under *Non-`/api`
 > mounts* below — same word, different mount.
 
 ## Super admin (`/api/v1/superadmin`) 🔒
@@ -463,9 +470,42 @@ recorded segments here.
 
 ## Non-`/api` mounts
 
+### OAuth2 / OIDC protocol endpoints (root)
+
+Active **only when the provider is configured** (`ProviderConfigured()` —
+`OAUTH_ISSUER` + `SSO_STATE_KEY`). These are served by the OAuth2/OIDC provider
+built into this backend (`usecases/oidc`) and are mounted at the **root**, not
+under `/api/v1`, because OIDC fixes their paths.
+
+> ⚠️ **No envelope.** Unlike every `/api/v1` endpoint, these answer with bare
+> **RFC-shaped JSON** (`{ "access_token": … }`, `{ "error": "invalid_grant", … }`,
+> the discovery/JWKS documents), because RP libraries parse them directly.
+> They are public — client authentication happens inside each endpoint, per the
+> relevant RFC.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/oauth2/auth` | Authorization endpoint — validates the request, then drives the login/consent challenge flow and redirects back with `code`. |
+| POST | `/oauth2/token` | Token endpoint — `authorization_code` exchange, `refresh_token` (rotating), `client_credentials`. |
+| POST | `/oauth2/introspect` | RFC 7662 token introspection. |
+| POST | `/oauth2/revoke` | RFC 7009 token revocation. |
+| GET | `/oauth2/sessions/logout` | RP-initiated logout (end-session endpoint). |
+| GET, POST | `/userinfo` | OIDC UserInfo — claims for the access token's subject. |
+| GET | `/.well-known/openid-configuration` | OIDC discovery document. |
+| GET | `/.well-known/jwks.json` | Public RS256 signing keys (JWKS) for id_token verification. |
+
+**Supported:** `authorization_code` + PKCE (**S256 only**), `refresh_token`
+(rotating, with reuse detection), `client_credentials`, discovery / JWKS /
+userinfo, introspection, revocation, RP-initiated logout. Access tokens are
+**opaque** (introspect them); id_tokens are **RS256 JWTs**.
+
+**Not supported** (deliberately — production never used them): pairwise subject
+types, DPoP, the device grant, back-channel and front-channel logout, the
+implicit and hybrid flows, and JAR/PAR request objects.
+
 ### OIDC provider admin surface — `/admin` (operator)
 
-Active **only when Hydra is configured** (`ProviderConfigured()`). A plain
+Active **only when the provider is configured** (`ProviderConfigured()`). A plain
 `http.ServeMux` mounted at `/admin` (via `StripPrefix`, so its internal patterns
 read `/api/v1/…`). It manages **RP OAuth2 client registration** and **admin API
 keys**, and is authenticated by an **admin API key** —
