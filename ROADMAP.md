@@ -6,7 +6,7 @@
 > харуулна. Дэлгэрэнгүй баримт: [README.md](README.md#documentation).
 
 **Одоогийн байдал:** eID нэвтрэлт, Google холболт, dgov SSO consumer, DAN-ий
-өөрийн OIDC provider (Hydra), байгууллага/гишүүнчлэл, төрийн үйлчилгээ, API
+өөрийн OIDC provider (Go backend дотор хэрэгжсэн), байгууллага/гишүүнчлэл, төрийн үйлчилгээ, API
 gateway, PAdES гарын үсэг, интеграци, audit, RBAC/superadmin, сайтын харагдац —
 бүгд production-д ([sso.dgov.mn](https://sso.dgov.mn)) ажиллаж байгаа (CI ногоон).
 
@@ -46,7 +46,9 @@ gateway, PAdES гарын үсэг, интеграци, audit, RBAC/superadmin, 
 - **Gerege Core find** — user/org лавлагааны wrap (`/core/*`)
 
 ### DAN нь OIDC provider (SSO issuer)
-- **Ory Hydra** урдтай login/consent/logout цөм (`/provider/*`) — зөвхөн Hydra тохируулагдсан үед идэвхжинэ
+- **Өөрийн OAuth2/OIDC provider** Go backend дотор (`usecases/oidc`, `pkg/secrethash`, migration `5_oauth_provider`) — `/oauth2/{auth,token,introspect,revoke,sessions/logout}`, `/userinfo`, `/.well-known/{openid-configuration,jwks.json}`; authorization_code + PKCE (S256), эргэлддэг refresh (дахин ашиглалт илрүүлэлттэй), client_credentials; access token opaque, id_token RS256. Зөвхөн `OAUTH_ISSUER` тохируулагдсан үед идэвхжинэ
+- **Ory Hydra-г буулгасан** — `pkg/hydra`, `hydra`/`hydra-migrate` compose service, тусдаа `hydra` DB устсан; бүх `HYDRA_*` хувьсагч ганц `OAUTH_ISSUER` болсон. `pkg/secrethash` нь Ory-гийн `$pbkdf2-sha256$` форматыг шалгадаг тул нүүсэн client-ууд хуучин secret-ээ хэвээр хэрэглэнэ
+- login/consent/logout цөм (`/provider/*`) — интерфэйсээ хадгалж `oidc` service рүү шилжсэн тул frontend `/oauth/*` ба BFF `/api/provider/*` өөрчлөгдөөгүй
 - RP OAuth2 client бүртгэл/удирдлагын `/admin` гадаргуу + admin API key
 - First-party client-д consent алгасах; consent-ийг сануулах (эхний удаад л асуух)
 - RP-д Google linkage claim (`google_sub/email/name/picture`) release; RP-нэрийг login дэлгэцэнд харуулах
@@ -77,7 +79,7 @@ gateway, PAdES гарын үсэг, интеграци, audit, RBAC/superadmin, 
 - Admin (нийтийн хуудас) ба per-user (апп) scope-ыг тусгаарласан
 
 ### Deploy
-- [sso.dgov.mn](https://sso.dgov.mn) дээр production deploy (docker compose: db + redis + migrate + api + web + Hydra)
+- [sso.dgov.mn](https://sso.dgov.mn) дээр production deploy (docker compose: db + migrate + redis + api + web)
 - Бүх док EN/MN хосоор шинэчлэгдсэн; DEPLOYMENT(_MN).md, AI_PIPELINE(_MN).md, CLAUDE.md
 
 ---

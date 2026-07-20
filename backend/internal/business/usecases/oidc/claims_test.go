@@ -1,7 +1,7 @@
 // eID based AI enabled Government Template Platform V3.0
 // Gerege Systems Development Team болон Claude AI хамтран бүтээв, 2026.
 
-package provider
+package oidc
 
 import (
 	"testing"
@@ -18,7 +18,7 @@ func TestClaimsForScopes(t *testing.T) {
 		CivilID:    "9999",
 	}
 
-	id, at := claimsForScopes([]string{"profile", "email", "nationalid"}, u)
+	id := ClaimsForScopes([]string{"profile", "email", "nationalid"}, u)
 	if id["name"] != "Дорж Бат" {
 		t.Fatalf("name claim = %v", id["name"])
 	}
@@ -32,12 +32,9 @@ func TestClaimsForScopes(t *testing.T) {
 	if _, ok := id["sub"]; ok {
 		t.Fatal("sub must not be set in claims")
 	}
-	if len(at) != 0 {
-		t.Fatalf("access token claims should be empty, got %v", at)
-	}
 
 	// scope-gated: without nationalid scope, no national_id claim.
-	id2, _ := claimsForScopes([]string{"profile"}, u)
+	id2 := ClaimsForScopes([]string{"profile"}, u)
 	if _, ok := id2["national_id"]; ok {
 		t.Fatal("national_id leaked without nationalid scope")
 	}
@@ -47,13 +44,18 @@ func TestClaimsForScopes(t *testing.T) {
 }
 
 func TestIntersect(t *testing.T) {
+	// Дараалал нь ЭХНИЙ (хүсэгдсэн) жагсаалтынхаар хадгалагдана — RP-д буцаах
+	// scope мөр хүсэлтийнхтэй ижил дарааллаар харагдана.
 	got := intersect([]string{"openid", "profile", "email"}, []string{"email", "phone", "openid"})
-	// keeps want order, only values present in allow
-	want := []string{"email", "openid"}
+	want := []string{"openid", "email"}
 	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
 		t.Fatalf("intersect = %v, want %v", got, want)
 	}
+	// Хүсээгүй зүйлийг "олгосон" гэж дамжуулсан ч гарч ирэхгүй.
 	if len(intersect(nil, []string{"x"})) != 0 {
-		t.Fatal("intersect with empty allow should be empty")
+		t.Fatal("intersect with nothing requested must stay empty")
+	}
+	if len(intersect([]string{"openid"}, nil)) != 0 {
+		t.Fatal("intersect with nothing granted must stay empty")
 	}
 }

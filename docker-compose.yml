@@ -144,55 +144,5 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  # --- OIDC provider (sso.dgov.mn нь Ory Hydra-г урдаа тавьж SSO болно) ---
-  # Hydra нь жинхэнэ OAuth2/OIDC серверийн үүрэг гүйцэтгэнэ; dan-ийн backend
-  # (api) нь login/consent/logout challenge-уудыг зохицуулж, eID-ээр иргэнийг
-  # баталгаажуулаад Hydra-д subject-ыг өгнө. Hydra нь тусдаа `hydra` DB
-  # ашиглана (initdb 20-create-hydra-db.sh). Public :4444-ийг nginx урдаас
-  # reverse-proxy хийнэ; admin :4445 нь ЗӨВХӨН loopback (public-д гаргаж болохгүй).
-  hydra-migrate:
-    image: oryd/hydra:v2.2.0
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/hydra?sslmode=disable
-    command: migrate sql -e --yes
-    restart: "no"
-
-  hydra:
-    image: oryd/hydra:v2.2.0
-    depends_on:
-      db:
-        condition: service_healthy
-      hydra-migrate:
-        condition: service_completed_successfully
-    ports:
-      - "127.0.0.1:${HYDRA_PUBLIC_PORT:-4444}:4444"   # public — nginx reverse-proxies
-      - "127.0.0.1:${HYDRA_ADMIN_PORT:-4445}:4445"    # admin — internal only
-    environment:
-      DSN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/hydra?sslmode=disable
-      URLS_SELF_ISSUER: ${HYDRA_PUBLIC_URL:?set in env}
-      URLS_SELF_PUBLIC: ${HYDRA_PUBLIC_URL}
-      # Тусдаа /oauth/* зам — dan-ийн өөрийн /login хуудастай мөргөлдөхгүй.
-      URLS_LOGIN: ${HYDRA_PUBLIC_URL}/oauth/login
-      URLS_CONSENT: ${HYDRA_PUBLIC_URL}/oauth/consent
-      URLS_LOGOUT: ${HYDRA_PUBLIC_URL}/oauth/logout
-      URLS_ERROR: ${HYDRA_PUBLIC_URL}/oauth/error
-      URLS_POST_LOGOUT_REDIRECT: ${HYDRA_POST_LOGOUT_REDIRECT:-${HYDRA_PUBLIC_URL}/}
-      SECRETS_SYSTEM: ${HYDRA_SYSTEM_SECRET:?set in env}
-      SECRETS_COOKIE: ${HYDRA_COOKIE_SECRET:?set in env}
-      OIDC_SUBJECT_IDENTIFIERS_SUPPORTED_TYPES: "public,pairwise"
-      OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT: ${HYDRA_PAIRWISE_SALT:?set in env}
-      # SameSite=None нь eID App2App cross-context буцалтад cookie амьд үлдэхэд
-      # шаардлагатай (Secure заавал — nginx TLS-ыг урдаас барина).
-      SERVE_COOKIES_SAME_SITE_MODE: None
-      SERVE_TLS_ALLOW_TERMINATION_FROM: "127.0.0.0/8,172.16.0.0/12,10.0.0.0/8"
-      LOG_LEVEL: info
-      LOG_FORMAT: json
-      LOG_LEAK_SENSITIVE_VALUES: "false"
-    command: serve all
-    restart: unless-stopped
-
 volumes:
   dbdata:

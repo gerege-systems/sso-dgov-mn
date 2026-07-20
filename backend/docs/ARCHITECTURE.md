@@ -9,8 +9,8 @@ the stack is **chi (net/http) + pgx (pgxpool) + PostgreSQL + Redis + Gemini AI**
 organized along Clean Architecture lines and fronted by a Next.js BFF.
 
 Government SSO is both an **eID Relying Party** (users log in with eID) and an
-**OIDC Identity Provider** (other government apps log in *through* dan via Ory
-Hydra). Row-Level Security in PostgreSQL is the load-bearing per-user isolation
+**OIDC Identity Provider** (other government apps log in *through* dan, against
+an OAuth2/OIDC provider implemented inside this backend). Row-Level Security in PostgreSQL is the load-bearing per-user isolation
 boundary — see [Row-Level Security](#row-level-security-rls).
 
 > **Origin.** The Clean-Architecture layering, pgx data layer, caching,
@@ -60,10 +60,11 @@ the platform adds the eID/SSO/government-service surface:
 | `org`          | Organizations + memberships (eID-linked; **RLS**). |
 | `gov`          | Citizen "Government services" portal — applications, references, notifications, payments, appointments (per-user, **RLS**) over a public service catalogue. |
 | `gateway`      | API gateway — services / routes / policies + telemetry (each service carries an OAuth `scope`). |
-| `applications` | Unified OAuth2 **client registry** (RP + m2m) backed by **Ory Hydra** — merges the old gateway consumers/API-keys and the SSO RP registration; per-service access = OAuth scopes (`application_services` → `gateway_services.scope`). Admin-managed (`gateway.manage`), gated on Hydra. |
+| `applications` | Unified OAuth2 **client registry** (RP + m2m) backed by the `oauth_clients` table — merges the old gateway consumers/API-keys and the SSO RP registration; per-service access = OAuth scopes (`application_services` → `gateway_services.scope`). Admin-managed (`gateway.manage`), gated on the provider being configured. |
 | `core`         | Gerege Core (`core.dgov.mn`) USER FIND / ORG FIND lookup wrapper. |
 | `sso`          | **dgov SSO** OIDC consumer (`sso.dgov.mn`) — a second login option alongside eID. |
-| `provider`     | **OIDC Provider** — login/consent/logout core in front of **Ory Hydra**; dan is itself an SSO IdP. |
+| `oidc`         | **OAuth2/OIDC protocol core** — authorize + challenge state machine, token endpoint (code exchange, refresh rotation, `client_credentials`, id_token minting), introspect / userinfo / revoke, RS256 signing keys + JWKS, discovery, claims. |
+| `provider`     | **OIDC Provider** — login/consent/logout core; delegates to the `oidc` service. dan is itself an SSO IdP. |
 | `integrations` | User third-party OAuth (Google Drive/Meet, Dropbox); tokens stored **AES-256-GCM encrypted** (**RLS**). |
 | `assets`       | Personal signature image + organization stamp (images to Google Drive, URL in DB). |
 | `gspace`       | Gerege Space — the app's own SFTP storage, per-user quota (default 2 MB). |
@@ -112,7 +113,7 @@ the platform adds the eID/SSO/government-service surface:
 │       └── signrelay/              #   /rp/sign relay for downstream RPs
 ├── migrations/                     # Numbered SQL migrations (N_name.up.sql + .down.sql)
 ├── pkg/                            # Framework-agnostic clients & utilities (15 packages)
-│   ├── eid/ google/ oidc/ hydra/   # Identity: eID RP, Google OAuth, OIDC consumer, Hydra admin
+│   ├── eid/ google/ secrethash/    # Identity: eID RP, Google OAuth, client-secret hashing
 │   ├── xyp/ gspace/ verify/        # XYP org registry, SFTP storage, GeregeCloud Verify OTP
 │   ├── gemini/                     # SDK-free Gemini REST (function calling, audio, PCM→WAV)
 │   ├── jwt/ logger/ clock/         # JWT, Zap logging, time abstraction
@@ -151,7 +152,7 @@ all three layers to carry per-request RLS identity without an import cycle.
 
 **Composition root:** `cmd/api/server/server.go` — the single manual-DI wiring
 point. Read it end-to-end to see every mount. It:
-- Initializes tracing, the pgx pool (with the RLS boot guard), Redis/Ristretto, the JWT service, and every external client (eID, Google, XYP, OIDC/Hydra, Gemini, GeregeCloud Verify, Gerege Space, Gerege Core).
+- Initializes tracing, the pgx pool (with the RLS boot guard), Redis/Ristretto, the JWT service, and every external client (eID, Google, XYP, dgov SSO/OIDC consumer, Gemini, GeregeCloud Verify, Gerege Space, Gerege Core).
 - Wires repositories → usecases → routes by hand (no global singletons, no DI container).
 - Builds the chi router, installs the global middleware stack, and mounts each route module under `/api/v1`.
 - Conditionally mounts the OIDC-provider surfaces (`/admin`, `/rp/sign`) only when their config is present.
@@ -358,23 +359,55 @@ connecting role at startup:
 - If the role has `rolsuper` or `rolbypassrls`: **production fails closed** (boot aborts, pool closed); **development logs a warning** and continues (migrate/tests may run as superuser).
 - The api must therefore connect as a least-privilege non-superuser role (e.g. `app_user`) in production. (The compose stack runs `ENVIRONMENT=development` on purpose, so the guard only hard-fails in production.)
 
-## OIDC Provider (Ory Hydra)
+## OIDC Provider (built in)
 
 Government SSO is itself an **Identity Provider**: other government apps
-delegate login to dan via **Ory Hydra**. This surface activates only when
-`ProviderConfigured()` is true (`HYDRA_ADMIN_URL` + `HYDRA_PUBLIC_URL` +
-`SSO_STATE_KEY ≥ 32 bytes`); otherwise it is inert and its routes are never
-registered.
+delegate login to dan. The OAuth2/OIDC provider is **implemented in this
+backend** — there is no external issuer process. This surface activates only when
+`ProviderConfigured()` is true (`OAUTH_ISSUER` + `SSO_STATE_KEY ≥ 32 bytes`);
+otherwise it is inert and its routes are never registered.
 
-- **Login / consent / logout core** — `usecases/provider` + `pkg/hydra` handle Hydra's challenges; first-party clients (`SSO_FIRSTPARTY_CLIENTS`) skip the consent UI. Mounted under `/api/v1/provider`.
-- **Applications (unified client registry)** — `usecases/applications` (mounted at `/api/v1/applications`, guarded by `gateway.manage`) is the current way to register OAuth2 clients: RP "Login with Government SSO" apps (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` are public, PKCE, no secret) and m2m clients (`client_credentials`). Each is a Hydra OAuth2 client whose scopes are the allowed gateway services (`application_services` → `gateway_services.scope`); the confidential `client_secret` is revealed once on create/rotate.
+> **History.** This used to be **Ory Hydra** running as its own container against
+> its own `hydra` database. Hydra and `pkg/hydra` are gone; compose is now exactly
+> `db`, `migrate`, `redis`, `api`, `web`, and all the `HYDRA_*` variables collapsed
+> into the single `OAUTH_ISSUER`.
+
+### Code layout
+
+| Path | Role |
+|------|------|
+| `internal/business/usecases/oidc/` | Protocol logic: `authorize.go` (authorize + challenge state machine), `token.go` (code exchange, refresh rotation, `client_credentials`, id_token minting), `introspect.go` (introspect / userinfo / revoke), `keys.go` (RS256 signing keys + JWKS), `discovery.go`, `claims.go`. |
+| `internal/datasources/repositories/postgres/oauth/` | Client store, signing keys, flow state. |
+| `internal/http/handlers/v1/oidc/` + `internal/http/routes/route_oidc.go` | The public endpoints, mounted at the **root** (not under `/api/v1`) because OIDC fixes their paths. |
+| `pkg/secrethash` | Client-secret hashing. Verifies Ory's `$pbkdf2-sha256$` format so clients migrated from Hydra keep their existing secrets; new secrets are written as **argon2id**. |
+| `migrations/5_oauth_provider.up.sql` | `oauth_clients`, `oauth_signing_keys`, `oauth_auth_codes`, `oauth_access_tokens`, `oauth_refresh_tokens`, `oauth_challenges`, `oauth_consents`. |
+
+### Public endpoints
+
+`GET /oauth2/auth` · `POST /oauth2/token` · `POST /oauth2/revoke` ·
+`POST /oauth2/introspect` · `GET /oauth2/sessions/logout` · `GET|POST /userinfo` ·
+`GET /.well-known/openid-configuration` · `GET /.well-known/jwks.json`
+
+**Supported:** `authorization_code` + PKCE (**S256 only**), `refresh_token`
+(rotating, with reuse detection), `client_credentials`, OIDC discovery / JWKS /
+userinfo, introspection, revocation, RP-initiated logout. Access tokens are
+**opaque**; id_tokens are **RS256 JWTs**.
+
+**Deliberately not supported** (production never used them): pairwise subject
+types, DPoP, the device grant, back-channel and front-channel logout, the
+implicit and hybrid flows, and JAR/PAR request objects.
+
+### Surfaces on top
+
+- **Login / consent / logout core** — `usecases/provider` handles the challenges and now delegates to the `oidc` service; it kept its interface, so the frontend `/oauth/*` pages and `/api/provider/*` BFF routes are unchanged. First-party clients (`SSO_FIRSTPARTY_CLIENTS`) skip the consent UI. Mounted under `/api/v1/provider`.
+- **Applications (unified client registry)** — `usecases/applications` (mounted at `/api/v1/applications`, guarded by `gateway.manage`) is the current way to register OAuth2 clients: RP "Login with Government SSO" apps (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` are public, PKCE, no secret) and m2m clients (`client_credentials`). Each is a row in `oauth_clients` whose scopes are the allowed gateway services (`application_services` → `gateway_services.scope`); the confidential `client_secret` is revealed once on create/rotate.
 - **Operator surface (legacy)** — `internal/provider/adminapi` is mounted at **`/admin`** (via `http.StripPrefix`) for RP OAuth2-client registration/management, backed by the `devapps` (`developer_apps`) store and `adminkeys` (bootstrap keys from `SSO_ADMIN_API_KEYS`, SHA-256 matched). This admin-API-key operator surface and the `developer_apps` overlay still exist but are **superseded by the unified Applications model for new work**.
 - **Sign relay** — `internal/provider/signrelay` is mounted at **`/rp/sign/*`**, a reverse proxy that lets downstream RPs perform eID PDF signing *through* dan using dan's eidmongolia RP credentials (enabled by `SIGN_RELAY_TOKEN` + `EID_RP_SECRET`).
 
 > **Enforcement caveat.** Assigning services to an application sets that client's
 > OAuth **scopes** — this is registration/config only. *Runtime* per-request
 > enforcement would require a gateway proxy that introspects the presented token
-> (`hydra.Admin.Introspect` exists) against each route's service scope, and that
+> (the `/oauth2/introspect` endpoint exists) against each route's service scope, and that
 > proxy **does not exist yet**. So today the service assignment is not live
 > authorization — don't mistake it for enforced authz.
 
@@ -453,9 +486,10 @@ reconnaissance.
 All API routes live under `/api/v1`; each module mounts `/v1/<module>`:
 `auth`, `users`, `users/me/eid`, `rbac`, `org`, `gov`, `integrations`, `assets`,
 `gspace`, `gateway`, `core`, `sso`, `admin`, `superadmin`, `ai`, `audit`,
-`security`, `site`, `sign`, and (when Hydra is configured) `provider` +
+`security`, `site`, `sign`, and (when the provider is configured) `provider` +
 `applications`. Infra endpoints
-(`/health`, `/ready`, `/metrics`, `/swagger`) and the provider surfaces (`/admin`,
+(`/health`, `/ready`, `/metrics`, `/swagger`), the OIDC protocol endpoints
+(`/oauth2/*`, `/userinfo`, `/.well-known/*`) and the provider surfaces (`/admin`,
 `/rp/sign`) sit at the root. **Full endpoint tables live in
 [API_CONTRACT.md](API_CONTRACT.md)** and the generated OpenAPI spec (`/swagger`).
 
@@ -513,7 +547,7 @@ Loaded from `.env` / environment by Viper (`internal/config/config.go`; see
 | **Gerege Core** | `CORE_API_BASE` (`https://core.dgov.mn`), `CORE_API_TOKEN` |
 | **Integrations** | `INTEGRATION_ENC_KEY` (AES-256-GCM; prod required) |
 | **dgov SSO (consumer)** | `SSO_ISSUER` (`https://sso.dgov.mn`), `SSO_CLIENT_ID`, `SSO_CLIENT_SECRET`, `SSO_REDIRECT_URI`, `SSO_SCOPE` (`openid profile email`), `SSO_NATIVE_CLIENT_ID` |
-| **OIDC Provider (Hydra)** | `HYDRA_ADMIN_URL` (`http://hydra:4445`), `HYDRA_PUBLIC_URL`, `SSO_STATE_KEY` (≥32), `SSO_FIRSTPARTY_CLIENTS`, `SSO_ADMIN_API_KEYS`, `SSO_ADMIN_SUBS` |
+| **OIDC Provider (built in)** | `OAUTH_ISSUER` (e.g. `https://sso.dgov.mn`), `SSO_STATE_KEY` (≥32), `SSO_FIRSTPARTY_CLIENTS`, `SSO_ADMIN_API_KEYS`, `SSO_ADMIN_SUBS` |
 | **Observability** | `OTEL_EXPORTER` (``/`stdout`/`otlp`), `OTEL_SAMPLE_RATIO`, `OBSERVABILITY_TOKEN` |
 | **Networking** | `ALLOWED_ORIGINS` (prod required), `TRUSTED_PROXIES` |
 | **Bootstrap** | `SUPERADMIN_EMAIL` |

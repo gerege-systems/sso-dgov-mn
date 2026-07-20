@@ -51,7 +51,7 @@ dan-dgov-mn/
 - **Байгууллага ба гишүүнчлэл** — байгууллага үүсгэх/хайх (улсын бүртгэлээс Gerege Verify/XYP-ээр лавлах) + гишүүд/эрх удирдах, хэрэглэгч тус бүрт RLS-ээр хамгаалагдсан.
 - **Төрийн үйлчилгээний портал** — иргэн рүү харсан `Төрийн үйлчилгээ` гадаргуу: үйлчилгээний каталог, хүсэлт, лавлагаа, мэдэгдэл, төлбөр, цаг захиалга.
 - **API gateway** — админ удирддаг services / routes / consumers / API key / policy + хүсэлтийн телеметр (overview + logs).
-- **OIDC provider (SSO)** — Government SSO өөрөө identity provider болно: [Ory Hydra](https://www.ory.sh/hydra/) урдаа тавьж login/consent/logout урсгалыг жолоодох тул relying party-ууд `Sign in with Government SSO` хийж чадна. Зөвхөн Hydra тохируулагдсан үед идэвхжинэ.
+- **OIDC provider (SSO)** — Government SSO өөрөө identity provider болно: Go backend дотор хэрэгжсэн өөрийн OAuth2/OIDC provider (`usecases/oidc`) нь `/oauth2/*`, `/userinfo` болон `.well-known` баримтуудыг үйлчилж, login/consent/logout урсгалыг жолоодох тул relying party-ууд `Sign in with Government SSO` хийж чадна. Authorization code + PKCE (S256), эргэлддэг refresh token (дахин ашиглалт илрүүлэлттэй), `client_credentials`; access token нь opaque, id_token нь RS256. `OAUTH_ISSUER` тохируулагдсан үед идэвхжинэ.
 - **Баримт бичгийн гарын үсэг (PAdES)** — eID Mongolia `/v3`-ээр PDF-д server талаас гарын үсэг зурна, байнгын Document-Signer гэрчилгээтэй; sign-relay нь 3 дагч RP-уудыг Government SSO-ийн eID креденшлээр дамжуулан гарын үсэг зурах боломж олгоно.
 - **Гуравдагч этгээдийн интеграци** — хэрэглэгч тус бүрийн OAuth холболт (Google Drive/Meet, Dropbox), токеныг шифрлэн (AES-256-GCM) хадгална; мөн **Gerege Space** апп-ын өөрийн SFTP хадгалалт.
 - **AI pipeline (Gemini)** — SDK-гүй REST client + function calling: текст/дуут чат, яриа→текст (STT), текст→яриа (TTS), шууд орчуулга. Давхаргат system prompt (кодод хатуу суурь дүрэм + админ DB-ээс тохируулдаг хамрах хүрээ/заавар) туслахыг зөвхөн заасан хүрээнд барина; `search_knowledge` tool нь хариултыг `ai_knowledge` хүснэгтийн өгөгдөлд тулгуурлуулна.
@@ -79,7 +79,7 @@ npm install
 npm run dev
 ```
 
-Эсвэл бүтэн стекийг өргө (db + redis + migrate + api + web, OIDC-provider горимд Hydra):
+Эсвэл бүтэн стекийг өргө (db + migrate + redis + api + web — OIDC provider нь `api` дотор ажилладаг тул тусдаа issuer контейнер байхгүй):
 
 ```bash
 docker compose up -d --build
@@ -96,7 +96,7 @@ docker compose up -d --build
 | [backend/docs/API_CONTRACT_MN.md](../backend/docs/API_CONTRACT_MN.md) | REST endpoint, request/response |
 | [backend/docs/AI_PIPELINE_MN.md](../backend/docs/AI_PIPELINE_MN.md) | AI туслахын дотоод бүтэц: урсгал, prompt давхарга, tools, voice, өргөтгөх заавар |
 | [backend/docs/SECURITY.md](../backend/docs/SECURITY.md) | Хэрэгжсэн хяналт + ASVS roadmap |
-| [docs/DEPLOYMENT_MN.md](DEPLOYMENT_MN.md) | VPS deploy runbook (compose, env файлууд, nginx, Hydra, шинэчлэх, rollback) |
+| [docs/DEPLOYMENT_MN.md](DEPLOYMENT_MN.md) | VPS deploy runbook (compose, env файлууд, nginx, шинэчлэх, rollback) |
 | [ROADMAP.md](../ROADMAP.md) | Юу хийгдсэн, юу дараагийнх |
 | [SECURITY.md](../SECURITY.md) | Эмзэг байдлыг хэрхэн мэдээлэх |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Хэрхэн хувь нэмэр оруулах |

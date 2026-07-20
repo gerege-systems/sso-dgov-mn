@@ -10,7 +10,8 @@ Gemini AI).
 - Токен browser-т хэзээ ч ил гарахгүй — httpOnly cookie + server прокси.
 - Нэвтрэлт: **eID Mongolia** (QR / mobile deep-link / РД push + long-poll),
   **Google OAuth** (eID-ээр эхлээд холбоно), **dgov SSO** (OIDC consumer). Мөн энэ
-  апп нь **OIDC provider (RP-facing)** хуудсуудыг хангадаг (Ory Hydra урдаа).
+  апп нь **OIDC provider (RP-facing)** хуудсуудыг хангадаг (backend дотоод
+  OAuth2/OIDC provider-ийн урдаа).
 - Хэмжээ: ~48 хуудас route, ~100 route handler (`/api/*` + `/sso/callback`).
 
 > Нууц үг / имэйл / OTP-аар нэвтрэх, бүртгүүлэх, нууц үг сэргээх урсгал **байхгүй**.
@@ -115,9 +116,9 @@ refresh cookie байхгүй бол `/login?next=…` руу чиглүүлнэ
 | `/oauth/error` 🅟 | OIDC provider: алдааны дэлгэц |
 | `/profile`, `/settings` | legacy — `/me/profile`, `/me/settings` руу redirect |
 
-🅟 = OIDC provider (RP-facing). Ory Hydra browser-ыг `login_challenge` /
-`consent_challenge`-тэй энд чиглүүлж, DAN өөрийн дизайнаар иргэнийг eID-ээр
-баталгаажуулаад Hydra-д subject-ыг өгнө (BFF: `api/provider/*`).
+🅟 = OIDC provider (RP-facing). Backend-ийн `/oauth2/auth` нь browser-ыг
+`login_challenge` / `consent_challenge`-тэй энд чиглүүлж, DAN өөрийн дизайнаар
+иргэнийг eID-ээр баталгаажуулаад subject-ыг буцаана (BFF: `api/provider/*`).
 
 ### Миний систем (`/me/*`) 🔒
 
@@ -181,7 +182,7 @@ refresh cookie байхгүй бол `/login?next=…` руу чиглүүлнэ
 | Бүлэг | Route-ууд | Зорилго |
 |-------|-----------|---------|
 | **auth** | `auth/eid/{start,start-id,poll}` · `auth/google/{start,callback}` · `auth/sso/{start,native}` · `auth/logout` · `auth/expired` · `auth/change-password` | eID/Google/dgov SSO нэвтрэлт, гарах |
-| **provider** | `provider/login{,/accept,/reject}` · `provider/consent{,/accept,/reject}` · `provider/logout/accept` | OIDC provider (Hydra) challenge зохицуулалт |
+| **provider** | `provider/login{,/accept,/reject}` · `provider/consent{,/accept,/reject}` · `provider/logout/accept` | OIDC provider challenge зохицуулалт |
 | **me** | `me` · `me/latin-name` · `me/signature` · `me/eid/{summary,certificates,devices,activity}` · `me/eid/organizations/*` | Профайл, eID/PKI, латин нэр, гарын үсэг |
 | **org** | `org` · `org/[id]` · `org/[id]/members[/userID]` · `org/lookup/[regNo]` | Байгууллага ба гишүүд |
 | **gov** | `gov/{overview,services,applications,appointments,payments,notifications,references}` (+ `/[id]/cancel`, `/[id]/pay`, `/[id]/read`, `/read-all`) | Төрийн үйлчилгээ |
@@ -230,10 +231,12 @@ cookie. iOS native апп нь `api/auth/sso/native`-аар (ASWebAuthentication
 PKCE, public client) кодоо солино.
 
 ### OIDC provider (RP-facing)
-DAN нь Ory Hydra-гийн урд login/consent/logout challenge-уудыг зохицуулна:
-`/oauth/login` дээр иргэнийг eID-ээр нэвтрүүлээд `provider/login/accept`,
-`/oauth/consent` дээр scope зөвшөөрөөд `provider/consent/accept` хийж Hydra руу
-subject-ыг өгнө.
+DAN нь backend дотоод OAuth2/OIDC provider-ийн урд login/consent/logout
+challenge-уудыг зохицуулна: `/oauth/login` дээр иргэнийг eID-ээр нэвтрүүлээд
+`provider/login/accept`, `/oauth/consent` дээр scope зөвшөөрөөд
+`provider/consent/accept` хийж subject-ыг өгнө. Эдгээр хуудас, BFF route-ууд нь
+Hydra-г буулгасны дараа ч ӨӨРЧЛӨГДӨӨГҮЙ — `provider` usecase нь интерфэйсээ
+хадгалж, доор нь `oidc` service рүү шилжсэн.
 
 ---
 

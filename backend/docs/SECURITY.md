@@ -29,10 +29,13 @@ what remains for later phases. To report a vulnerability, see the repository
 | Crypto | Integration tokens encrypted at rest — third-party OAuth tokens sealed with **AES-256-GCM** before storage; key from `INTEGRATION_ENC_KEY` | `usecases/integrations/integrations_crypto.go`, `migrations/21_user_integrations` | §7.3 |
 | Audit | Hash-chained, append-only audit log — `chain_hash = SHA-256(prev_hash ‖ canonical-json(entry))`, writers serialized by `pg_advisory_xact_lock`; tamper-evident `VerifyChain` | `pkg/audit/chain.go`, `usecases/audit`, `migrations/15_audit_log` | §9 |
 | AuthZ | Dynamic RBAC (roles + permissions), SuperAdmin/Admin/Manager/User; `RequirePermission` / `RequireAdmin` route middleware; admin auto-resolves the full permission catalogue | `middleware_rbac.go`, `domain_users.go`, `migrations/8_rbac_roles_permissions`, `migrations/23_superadmin_role` | §2 |
-| AuthZ | OIDC **provider** surface — sso.dgov.mn acts as an OIDC provider via **Ory Hydra** (login / consent / logout core); consent gates which citizen claims each scope releases; the `developer_apps` RP registry is the client-ownership authority | `usecases/provider`, `pkg/hydra`, `migrations/26_sso_provider` | §2 |
+| AuthZ | OIDC **provider** surface — sso.dgov.mn is **itself** the OAuth2/OIDC issuer (no third-party issuer process): authorize / token / revoke / introspect / userinfo / end-session / discovery / JWKS are served by the backend; consent gates which citizen claims each scope releases; the `developer_apps` RP registry is the client-ownership authority | `usecases/oidc`, `usecases/provider`, `migrations/5_oauth_provider` | §2 |
+| AuthZ | OAuth2 protocol hardening — PKCE `S256` only (`plain` never advertised, RFC 9700 §2.1.1), authorization codes single-use with replay detection (used codes are marked, not deleted), no `request` / `request_uri` (JAR) surface | `usecases/oidc/discovery.go`, `migrations/5_oauth_provider` | §2/§5.1 |
+| Crypto | OAuth2 secrets never stored in the clear — authorization codes and access/refresh tokens are persisted as **sha256 hashes** only; access tokens stay opaque, id_tokens are RS256 JWTs verifiable offline via JWKS | `usecases/oidc`, `repositories/postgres/oauth`, `migrations/5_oauth_provider` | §7.3 |
+| Crypto | id_token signing key (RSA-2048) generated on first boot and stored **encrypted with AES-256-GCM** (`INTEGRATION_ENC_KEY`) in `oauth_signing_keys`; one active key at a time (unique partial index), retired keys stay in the JWKS so old id_tokens keep verifying; boot is fail-closed if the key cannot be provisioned | `usecases/oidc/keys.go`, `repositories/postgres/oauth/oauth_keys_postgres.go`, `cmd/api/server` | §7.3 |
 | DB | Parameterized queries only (pgx) | `datasources/repositories/postgres` | §3.1 |
 | DB | `INSERT … RETURNING` single round-trip; pgconn 23505 → Conflict | `repositories/postgres/users`, `driver_pgx.go` | §3 |
-| DB | Row-Level Security on every per-user table (ENABLE + **FORCE**): `users` plus `organizations` / `organization_memberships`, the `gov_*` citizen tables, and `user_integrations` — self/admin/service policies driven by `app.user_id`/`app.user_role` GUCs set per-transaction with `SET LOCAL` inside `withRLS`; no identity ⇒ zero rows (fail-closed) | `migrations/7_enable_rls_users`, `migrations/14`, `migrations/20`, `migrations/21`, `datasources/rls`, `repositories/postgres/*` | §2.4/§3.3 |
+| DB | Row-Level Security on every per-user table (ENABLE + **FORCE**): `users` plus `organizations` / `organization_memberships`, the `gov_*` citizen tables, `user_integrations`, and the OAuth2 protocol-state tables (`oauth_auth_codes`, `oauth_access_tokens`, `oauth_refresh_tokens`, `oauth_challenges`, `oauth_consents`) — self/admin/service policies driven by `app.user_id`/`app.user_role` GUCs set per-transaction with `SET LOCAL` inside `withRLS`; no identity ⇒ zero rows (fail-closed) | `migrations/7_enable_rls_users`, `migrations/14`, `migrations/20`, `migrations/21`, `migrations/5_oauth_provider`, `datasources/rls`, `repositories/postgres/*` | §2.4/§3.3 |
 | API | Mass-assignment safe (explicit request DTOs) | `http/datatransfers/requests` | API3 §5.1 |
 | API | Body size limit (global + 4 KiB on `/auth`) | `middleware.bodysizelimit`, `routes` | §5.3 |
 | Web | Security headers: CSP `default-src 'none'`, HSTS (prod), nosniff, X-Frame DENY, Referrer-Policy, Permissions-Policy, COOP/CORP/COEP | `middleware_security.go` | §4.7 |
@@ -86,7 +89,19 @@ what remains for later phases. To report a vulnerability, see the repository
    `pg_roles` for its own role on startup; a superuser or `BYPASSRLS` role
    fails boot in production and logs a warning in development, so a
    misprovisioned DSN can no longer silently disable RLS.
-10. **AI guardrails** — the Gemini assistant runs on a layered prompt whose
+10. **OAuth2/OIDC provider brought in-house** — the third-party issuer (Ory
+    Hydra), its container pair, its admin API port and its separate `hydra`
+    database were removed; the backend now serves `/oauth2/*`, `/userinfo` and
+    the `/.well-known/*` documents itself. Security consequences: **no admin API
+    to expose** (client CRUD is an internal call behind the normal RBAC route
+    middleware, not a network port that must be firewalled), protocol state
+    lives in the main database **under RLS** instead of an unprotected side
+    database, and codes/tokens are stored as sha256 hashes. Configuration
+    collapses from seven `HYDRA_*` values (including two long-lived shared
+    secrets) to a single `OAUTH_ISSUER`. Operational caveat: the id_token
+    signing key is sealed with `INTEGRATION_ENC_KEY`, so rotating that key is an
+    issuer key rollover — see the deployment guide's *Secrets hygiene*.
+11. **AI guardrails** — the Gemini assistant runs on a layered prompt whose
     base layer (Mongolian-only, scope enforcement, prompt-injection
     resistance) is hardcoded; only the scope/instructions layers are
     admin-editable (`settings.manage`, UPDATE-only against seeded keys). Tools
@@ -126,7 +141,12 @@ what remains for later phases. To report a vulnerability, see the repository
   `tenant_id` column + tenant policy to each table and carry the tenant in
   `rls.Identity`.
 - **Secrets manager / KMS** (guide §7.3) — use a real secret store in production;
-  `.env` is local-dev only and gitignored.
+  `.env` is local-dev only and gitignored. `INTEGRATION_ENC_KEY` is now doubly
+  load-bearing: it wraps stored integration tokens **and** the id_token signing
+  key at rest, so it is the natural first candidate to move behind a KMS. There
+  is no operator-facing key-rotation endpoint yet — `KeyManager.Rotate` exists in
+  code (retire active + generate, old public keys stay in the JWKS) but is not
+  exposed on a route.
 - **DB role separation** (guide §3.4) — ✅ **wired into the compose stack** (it is
   required: RLS, even FORCEd, is bypassed by superusers / BYPASSRLS roles, and the
   postgres image makes `POSTGRES_USER` a superuser). On first DB init,
