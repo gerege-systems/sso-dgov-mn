@@ -28,6 +28,22 @@ type OAuthClient struct {
 	UpdatedAt               *time.Time
 }
 
+// SigningKey нь id_token-д гарын үсэг зурах түлхүүр. PrivateKeyEnc нь
+// AES-256-GCM-ээр шифрлэгдсэн PKCS#8 (pkg/crypto); PublicJWK нь JWKS-д
+// нийтлэгдэх нийтийн хэсэг.
+//
+// Идэвхтэй нь ЯГ нэг байна, харин JWKS нь тэтгэвэрт гарсныг ч нийтэлнэ —
+// эс бөгөөс тэдгээрээр зурсан, хараахан хүчинтэй id_token-ууд шалгагдахгүй болно.
+type SigningKey struct {
+	KID           string
+	Alg           string
+	PrivateKeyEnc string
+	PublicJWK     []byte // jsonb
+	Active        bool
+	CreatedAt     time.Time
+	RetiredAt     *time.Time
+}
+
 // Grant / auth method-ийн зөвшөөрөгдсөн утгууд.
 const (
 	GrantAuthorizationCode = "authorization_code"

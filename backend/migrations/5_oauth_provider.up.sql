@@ -36,11 +36,12 @@ CREATE TABLE public.oauth_clients (
 );
 
 -- ── id_token гарын үсгийн түлхүүр ────────────────────────────────────────────
--- private_key_enc нь INTEGRATION_ENC_KEY-ээр AES-GCM шифрлэгдсэн PKCS#8.
+-- private_key_enc нь INTEGRATION_ENC_KEY-ээр AES-256-GCM шифрлэгдсэн PKCS#8
+-- (pkg/crypto → base64(nonce||ciphertext) тул text).
 CREATE TABLE public.oauth_signing_keys (
     kid             text PRIMARY KEY,
     alg             text NOT NULL DEFAULT 'RS256',
-    private_key_enc bytea NOT NULL,
+    private_key_enc text NOT NULL,
     public_jwk      jsonb NOT NULL,
     active          boolean NOT NULL DEFAULT true,
     created_at      timestamp with time zone NOT NULL DEFAULT now(),
