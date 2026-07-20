@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strings"
 
+	"template/internal/apperror"
 	"template/internal/business/domain"
 	oidcuc "template/internal/business/usecases/oidc"
 	"template/pkg/logger"
@@ -266,9 +267,18 @@ func (h Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 func (h Handler) EndSession(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	challenge, err := h.svc.StartLogout(r.Context(),
-		q.Get("client_id"), q.Get("post_logout_redirect_uri"), q.Get("state"))
+		q.Get("client_id"), q.Get("id_token_hint"),
+		q.Get("post_logout_redirect_uri"), q.Get("state"))
 	if err != nil {
-		writeError(w, r, http.StatusBadRequest, "invalid_request", "could not start logout")
+		// Яагаад болохгүйг RP-д хэлнэ — "could not start logout" гэдэг нь
+		// интеграц хийж буй хүнд юу ч хэлдэггүй байсан.
+		desc := "could not start logout"
+		var domErr *apperror.DomainError
+		if errors.As(err, &domErr) && domErr.Type == apperror.ErrTypeBadRequest {
+			desc = domErr.Message
+		}
+		logger.ErrorWithContext(r.Context(), "OIDC: logout эхлүүлж чадсангүй", logger.Fields{"error": err.Error()})
+		writeError(w, r, http.StatusBadRequest, "invalid_request", desc)
 		return
 	}
 	http.Redirect(w, r, h.issuer+"/oauth/logout?logout_challenge="+url.QueryEscape(challenge), http.StatusFound)

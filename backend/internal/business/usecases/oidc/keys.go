@@ -211,3 +211,34 @@ func thumbprint(pub *rsa.PublicKey) string {
 	sum := sha256.Sum256([]byte(canonical))
 	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
+
+// PublicKey нь kid-ээр нийтийн түлхүүрийг буцаана (тэтгэвэрт гарснаас нь ч).
+// id_token_hint зэрэг ӨӨРСДИЙН гаргасан token-ыг шалгахад ашиглана.
+func (m *KeyManager) PublicKey(ctx context.Context, kid string) (*rsa.PublicKey, error) {
+	keys, err := m.store.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, k := range keys {
+		if k.KID != kid {
+			continue
+		}
+		var j jwk
+		if err := json.Unmarshal(k.PublicJWK, &j); err != nil {
+			return nil, fmt.Errorf("oidc: parse stored jwk: %w", err)
+		}
+		n, err := base64.RawURLEncoding.DecodeString(j.N)
+		if err != nil {
+			return nil, fmt.Errorf("oidc: decode jwk modulus: %w", err)
+		}
+		e, err := base64.RawURLEncoding.DecodeString(j.E)
+		if err != nil {
+			return nil, fmt.Errorf("oidc: decode jwk exponent: %w", err)
+		}
+		return &rsa.PublicKey{
+			N: new(big.Int).SetBytes(n),
+			E: int(new(big.Int).SetBytes(e).Int64()),
+		}, nil
+	}
+	return nil, apperror.NotFound("signing key not found")
+}
