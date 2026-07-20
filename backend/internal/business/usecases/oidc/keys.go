@@ -202,7 +202,9 @@ func publicJWK(kid string, pub *rsa.PublicKey) jwk {
 // детерминистик гардаг тул давхардахгүй бөгөөд гадны талд утга учиргүй.
 func thumbprint(pub *rsa.PublicKey) string {
 	// RFC 7638: зөвхөн шаардлагатай талбарууд, ЦАГААН ТОЛГОЙН дарааллаар, зайгүй.
-	canonical := fmt.Sprintf(`{"e":"%s","kty":"RSA","n":"%s"}`,
+	// %q — base64url цагаан толгойд escape хийх тэмдэгт байхгүй тул гаралт нь
+	// RFC 7638-ийн шаарддаг яг тэр канон хэлбэртэй байна.
+	canonical := fmt.Sprintf(`{"e":%q,"kty":"RSA","n":%q}`,
 		base64.RawURLEncoding.EncodeToString(big.NewInt(int64(pub.E)).Bytes()),
 		base64.RawURLEncoding.EncodeToString(pub.N.Bytes()),
 	)

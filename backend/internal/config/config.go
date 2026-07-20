@@ -161,6 +161,10 @@ type Config struct {
 	// HydraPublicURL нь issuer (жишээ https://sso.dgov.mn) — login/consent redirect
 	// байгуулахад ашиглана. Хоосон бол provider урсгал inert.
 	HydraPublicURL string `mapstructure:"HYDRA_PUBLIC_URL"`
+	// OAuthIssuer нь өөрийн OIDC provider-ийн issuer (жишээ https://sso.dgov.mn).
+	// Discovery, id_token-ий `iss` болон бүх endpoint URL үүнээс гарна. Хоосон
+	// бол HydraPublicURL-ээс уналаа авна (Hydra-аас шилжих шилжилтийн үе).
+	OAuthIssuer string `mapstructure:"OAUTH_ISSUER"`
 	// SSOStateKey нь login/consent урсгалын transient state cookie HMAC түлхүүр
 	// (>=32 bytes).
 	SSOStateKey string `mapstructure:"SSO_STATE_KEY"`
@@ -185,6 +189,18 @@ func (c *Config) SSOAdminSubsList() []string { return splitCSVConfig(c.SSOAdminS
 
 // ProviderConfigured нь dan-ийг OIDC provider болгох гол тохиргоо (Hydra)
 // бүрдсэн эсэхийг мэдээлнэ.
+// Issuer нь OIDC issuer-ийг буцаана. OAUTH_ISSUER тохируулаагүй бол шилжилтийн
+// үеийн уналт болгож HYDRA_PUBLIC_URL-ийг ашиглана (хоёул ижил хаяг байсан).
+// Сүүлийн slash-ыг ХАСНА — issuer нь id_token-ий `iss`-тэй ЯГ таарах ёстой тул
+// "https://sso.dgov.mn/" ба "https://sso.dgov.mn" хоёр өөр утга болно.
+func (c *Config) Issuer() string {
+	iss := strings.TrimSpace(c.OAuthIssuer)
+	if iss == "" {
+		iss = strings.TrimSpace(c.HydraPublicURL)
+	}
+	return strings.TrimRight(iss, "/")
+}
+
 func (c *Config) ProviderConfigured() bool {
 	return c.HydraAdminURL != "" && c.HydraPublicURL != "" && len(c.SSOStateKey) >= 32
 }
@@ -267,6 +283,7 @@ func InitializeAppConfig() error {
 	// орчин-тусгай тул ил bind хийнэ.
 	_ = viper.BindEnv("HYDRA_ADMIN_URL")
 	_ = viper.BindEnv("HYDRA_PUBLIC_URL")
+	_ = viper.BindEnv("OAUTH_ISSUER")
 	_ = viper.BindEnv("SSO_STATE_KEY")
 	_ = viper.BindEnv("SSO_FIRSTPARTY_CLIENTS")
 	_ = viper.BindEnv("SSO_ADMIN_API_KEYS")
