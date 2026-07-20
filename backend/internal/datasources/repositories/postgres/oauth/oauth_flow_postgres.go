@@ -272,3 +272,180 @@ func nullableUUID(s string) any {
 	}
 	return s
 }
+
+// ── Access / refresh token ───────────────────────────────────────────────────
+
+// StoreTokens нь нэг гүйлгээнд access + (сонголтоор) refresh token-ыг бичнэ —
+// хагас гаргасан хос үлдэхээс сэргийлнэ.
+func (r *flowRepository) StoreTokens(ctx context.Context, at domain.OAuthAccessToken, rt *domain.OAuthRefreshToken) error {
+	return r.withRLS(ctx, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO oauth_access_tokens (token_hash, client_id, subject, scopes, refresh_family, expires_at)
+			VALUES ($1,$2,$3,$4,$5,$6)`,
+			at.TokenHash, at.ClientID, nullableUUID(at.Subject), strList(at.Scopes),
+			nullableUUID(at.RefreshFamily), at.ExpiresAt); err != nil {
+			return fmt.Errorf("insert access token: %w", err)
+		}
+		if rt == nil {
+			return nil
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO oauth_refresh_tokens (
+				token_hash, family_id, rotated_from, client_id, subject, scopes, nonce, auth_time, expires_at)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			rt.TokenHash, rt.FamilyID, rt.RotatedFrom, rt.ClientID, rt.Subject,
+			strList(rt.Scopes), rt.Nonce, rt.AuthTime, rt.ExpiresAt); err != nil {
+			return fmt.Errorf("insert refresh token: %w", err)
+		}
+		return nil
+	})
+}
+
+// AccessToken нь ХҮЧИНТЭЙ access token-ыг буцаана (хугацаа дуусаагүй, цуцлагдаагүй).
+func (r *flowRepository) AccessToken(ctx context.Context, tokenHash []byte) (domain.OAuthAccessToken, error) {
+	var out domain.OAuthAccessToken
+	err := r.withRLS(ctx, func(tx pgx.Tx) error {
+		var subject *string
+		scanErr := tx.QueryRow(ctx, `
+			SELECT token_hash, client_id, subject, scopes, expires_at
+			  FROM oauth_access_tokens
+			 WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()`, tokenHash).
+			Scan(&out.TokenHash, &out.ClientID, &subject, &out.Scopes, &out.ExpiresAt)
+		if errors.Is(scanErr, pgx.ErrNoRows) {
+			return apperror.NotFound("token not found")
+		}
+		if scanErr != nil {
+			return fmt.Errorf("get access token: %w", scanErr)
+		}
+		if subject != nil {
+			out.Subject = *subject
+		}
+		return nil
+	})
+	return out, err
+}
+
+// ConsumeRefreshToken нь refresh token-ыг АТОМААР зарцуулна. Аль хэдийн
+// хэрэглэгдсэн/цуцлагдсан бол reused=true — дуудагч БҮХ гэр бүлийг цуцлана.
+func (r *flowRepository) ConsumeRefreshToken(ctx context.Context, tokenHash []byte) (rt domain.OAuthRefreshToken, reused bool, err error) {
+	err = r.withRLS(ctx, func(tx pgx.Tx) error {
+		var consumedAt, revokedAt *time.Time
+		scanErr := tx.QueryRow(ctx, `
+			SELECT token_hash, family_id, client_id, subject, scopes, nonce, auth_time, expires_at, consumed_at, revoked_at
+			  FROM oauth_refresh_tokens
+			 WHERE token_hash = $1
+			 FOR UPDATE`, tokenHash).Scan(
+			&rt.TokenHash, &rt.FamilyID, &rt.ClientID, &rt.Subject, &rt.Scopes,
+			&rt.Nonce, &rt.AuthTime, &rt.ExpiresAt, &consumedAt, &revokedAt)
+		if errors.Is(scanErr, pgx.ErrNoRows) {
+			return apperror.NotFound("refresh token not found")
+		}
+		if scanErr != nil {
+			return fmt.Errorf("get refresh token: %w", scanErr)
+		}
+
+		// Аль хэдийн хэрэглэгдсэн/цуцлагдсан token дахин ирэх нь хулгайн шинж.
+		if consumedAt != nil || revokedAt != nil {
+			reused = true
+			return nil
+		}
+		if time.Now().After(rt.ExpiresAt) {
+			return apperror.BadRequest("refresh token expired")
+		}
+		if _, execErr := tx.Exec(ctx,
+			`UPDATE oauth_refresh_tokens SET consumed_at = now() WHERE token_hash = $1`, tokenHash); execErr != nil {
+			return fmt.Errorf("consume refresh token: %w", execErr)
+		}
+		return nil
+	})
+	return rt, reused, err
+}
+
+// RevokeFamily нь нэг эргэлтийн гэр бүлийн БҮХ refresh болон access token-ыг
+// цуцална — дахин ашиглалт илэрсэн үед хулгайлагдсан session-ыг бүхэлд нь хаана.
+func (r *flowRepository) RevokeFamily(ctx context.Context, familyID string) error {
+	return r.withRLS(ctx, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx,
+			`UPDATE oauth_refresh_tokens SET revoked_at = now()
+			  WHERE family_id = $1 AND revoked_at IS NULL`, familyID); err != nil {
+			return fmt.Errorf("revoke refresh family: %w", err)
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE oauth_access_tokens SET revoked_at = now()
+			  WHERE refresh_family = $1 AND revoked_at IS NULL`, familyID); err != nil {
+			return fmt.Errorf("revoke access tokens of family: %w", err)
+		}
+		return nil
+	})
+}
+
+// RevokeAccessToken / RevokeRefreshToken нь /oauth2/revoke-д ашиглагдана.
+func (r *flowRepository) RevokeAccessToken(ctx context.Context, tokenHash []byte, clientID string) (bool, error) {
+	var found bool
+	err := r.withRLS(ctx, func(tx pgx.Tx) error {
+		tag, execErr := tx.Exec(ctx,
+			`UPDATE oauth_access_tokens SET revoked_at = now()
+			  WHERE token_hash = $1 AND client_id = $2 AND revoked_at IS NULL`, tokenHash, clientID)
+		if execErr != nil {
+			return fmt.Errorf("revoke access token: %w", execErr)
+		}
+		found = tag.RowsAffected() > 0
+		return nil
+	})
+	return found, err
+}
+
+func (r *flowRepository) RevokeRefreshToken(ctx context.Context, tokenHash []byte, clientID string) (bool, error) {
+	var found bool
+	err := r.withRLS(ctx, func(tx pgx.Tx) error {
+		var familyID string
+		scanErr := tx.QueryRow(ctx,
+			`SELECT family_id FROM oauth_refresh_tokens WHERE token_hash = $1 AND client_id = $2`,
+			tokenHash, clientID).Scan(&familyID)
+		if errors.Is(scanErr, pgx.ErrNoRows) {
+			return nil
+		}
+		if scanErr != nil {
+			return fmt.Errorf("find refresh token: %w", scanErr)
+		}
+		found = true
+		// Нэг refresh token цуцлах нь тухайн session-ий БҮХ эргэлтийг цуцална —
+		// RP "гарлаа" гэж хэлж байгаа тул хагас цуцлалт утгагүй.
+		if _, execErr := tx.Exec(ctx,
+			`UPDATE oauth_refresh_tokens SET revoked_at = now() WHERE family_id = $1 AND revoked_at IS NULL`,
+			familyID); execErr != nil {
+			return fmt.Errorf("revoke refresh family: %w", execErr)
+		}
+		if _, execErr := tx.Exec(ctx,
+			`UPDATE oauth_access_tokens SET revoked_at = now() WHERE refresh_family = $1 AND revoked_at IS NULL`,
+			familyID); execErr != nil {
+			return fmt.Errorf("revoke access tokens of family: %w", execErr)
+		}
+		return nil
+	})
+	return found, err
+}
+
+// RevokeForSubjectClient нь тухайн иргэний тухайн апп дахь БҮХ идэвхтэй
+// token-ыг цуцална.
+//
+// Authorization code дахин ашиглагдсан үед хэрэглэнэ: тухайн код ямар token
+// гаргасныг холбосон бичлэг байдаггүй тул (эргэлтийн гэр бүл нь token гаргах
+// мөчид үүсдэг) хамгийн ойрын аюулгүй хүрээ болох subject+client-ээр цуцална.
+// Илүү өргөн боловч алдааны талд аюулгүй — RFC 6749 §4.1.2 нь тухайн кодоос
+// гаргасан бүх token-ыг цуцлахыг шаарддаг.
+func (r *flowRepository) RevokeForSubjectClient(ctx context.Context, subject, clientID string) error {
+	return r.withRLS(ctx, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx,
+			`UPDATE oauth_refresh_tokens SET revoked_at = now()
+			  WHERE subject = $1 AND client_id = $2 AND revoked_at IS NULL`, subject, clientID); err != nil {
+			return fmt.Errorf("revoke refresh tokens for subject: %w", err)
+		}
+		if _, err := tx.Exec(ctx,
+			`UPDATE oauth_access_tokens SET revoked_at = now()
+			  WHERE subject = $1 AND client_id = $2 AND revoked_at IS NULL`, subject, clientID); err != nil {
+			return fmt.Errorf("revoke access tokens for subject: %w", err)
+		}
+		return nil
+	})
+}

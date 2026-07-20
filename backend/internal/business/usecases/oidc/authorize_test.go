@@ -90,6 +90,24 @@ func (f *fakeFlow) CreateCode(_ context.Context, c domain.OAuthAuthCode) error {
 	return nil
 }
 
+// Доорх token-ийн методуудыг authorize-ийн тестүүд дуудахгүй — интерфейсийг
+// хангахын тулд л байна (token урсгалыг token_test.go-гийн tokenFlow тестлэнэ).
+func (f *fakeFlow) ConsumeCode(context.Context, []byte) (domain.OAuthAuthCode, bool, error) {
+	return domain.OAuthAuthCode{}, false, apperror.NotFound("authorization code not found")
+}
+
+func (f *fakeFlow) StoreTokens(context.Context, domain.OAuthAccessToken, *domain.OAuthRefreshToken) error {
+	return nil
+}
+
+func (f *fakeFlow) ConsumeRefreshToken(context.Context, []byte) (domain.OAuthRefreshToken, bool, error) {
+	return domain.OAuthRefreshToken{}, false, apperror.NotFound("refresh token not found")
+}
+
+func (f *fakeFlow) RevokeFamily(context.Context, string) error { return nil }
+
+func (f *fakeFlow) RevokeForSubjectClient(context.Context, string, string) error { return nil }
+
 const testSubject = "11111111-1111-4111-8111-111111111111"
 
 func webClient() domain.OAuthClient {

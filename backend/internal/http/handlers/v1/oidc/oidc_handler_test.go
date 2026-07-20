@@ -64,6 +64,20 @@ func (noFlow) SaveConsent(context.Context, string, string, []string, time.Durati
 }
 func (noFlow) RevokeConsent(context.Context, string, string) error    { return nil }
 func (noFlow) CreateCode(context.Context, domain.OAuthAuthCode) error { return nil }
+func (noFlow) ConsumeCode(context.Context, []byte) (domain.OAuthAuthCode, bool, error) {
+	return domain.OAuthAuthCode{}, false, apperror.NotFound("authorization code not found")
+}
+
+func (noFlow) StoreTokens(context.Context, domain.OAuthAccessToken, *domain.OAuthRefreshToken) error {
+	return nil
+}
+
+func (noFlow) ConsumeRefreshToken(context.Context, []byte) (domain.OAuthRefreshToken, bool, error) {
+	return domain.OAuthRefreshToken{}, false, apperror.NotFound("refresh token not found")
+}
+
+func (noFlow) RevokeFamily(context.Context, string) error                   { return nil }
+func (noFlow) RevokeForSubjectClient(context.Context, string, string) error { return nil }
 
 func newHandler(t *testing.T) oidchandler.Handler {
 	t.Helper()

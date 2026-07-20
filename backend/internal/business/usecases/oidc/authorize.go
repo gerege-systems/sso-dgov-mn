@@ -15,6 +15,7 @@ import (
 
 	"template/internal/apperror"
 	"template/internal/business/domain"
+	usersuc "template/internal/business/usecases/users"
 )
 
 // Хугацаанууд. Authorization code нь боломжийн хэрээр богино байх ёстой —
@@ -70,6 +71,15 @@ type Service struct {
 	clients clientStore
 	flow    flowStore
 	issuer  string
+	// keys / users нь ЗӨВХӨН id_token гаргахад хэрэгтэй. authorize урсгал
+	// тэдгээргүйгээр ажиллана (тест хийхэд хялбар).
+	keys  *KeyManager
+	users userLookup
+}
+
+// userLookup нь id_token-ий claims-д иргэний бүртгэлийг уншина.
+type userLookup interface {
+	GetByID(ctx context.Context, req usersuc.GetByIDRequest) (usersuc.GetByIDResponse, error)
 }
 
 type clientStore interface {
@@ -84,10 +94,24 @@ type flowStore interface {
 	SaveConsent(ctx context.Context, subject, clientID string, scopes []string, ttl time.Duration) error
 	RevokeConsent(ctx context.Context, subject, clientID string) error
 	CreateCode(ctx context.Context, c domain.OAuthAuthCode) error
+	ConsumeCode(ctx context.Context, codeHash []byte) (domain.OAuthAuthCode, bool, error)
+	StoreTokens(ctx context.Context, at domain.OAuthAccessToken, rt *domain.OAuthRefreshToken) error
+	ConsumeRefreshToken(ctx context.Context, tokenHash []byte) (domain.OAuthRefreshToken, bool, error)
+	RevokeFamily(ctx context.Context, familyID string) error
+	RevokeForSubjectClient(ctx context.Context, subject, clientID string) error
 }
 
 func NewService(clients clientStore, flow flowStore, issuer string) *Service {
 	return &Service{clients: clients, flow: flow, issuer: strings.TrimRight(issuer, "/")}
+}
+
+// WithTokenIssuing нь token гаргах чадварыг (id_token гарын үсэг + иргэний
+// бүртгэл) залгана. Тусад нь байгаа шалтгаан: authorize/consent урсгал эдгээрээс
+// хамаардаггүй тул тэднийг түлхүүргүйгээр тестлэх боломжтой.
+func (s *Service) WithTokenIssuing(keys *KeyManager, users userLookup) *Service {
+	s.keys = keys
+	s.users = users
+	return s
 }
 
 // Authorize нь `/oauth2/auth`-ийн хүсэлтийг шалгаж, login challenge үүсгээд

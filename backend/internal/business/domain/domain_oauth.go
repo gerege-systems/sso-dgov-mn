@@ -158,3 +158,28 @@ type OAuthAuthCode struct {
 	AuthTime            time.Time
 	ExpiresAt           time.Time
 }
+
+// OAuthAccessToken нь гаргасан access token (opaque). TokenHash нь sha256.
+// Subject нь client_credentials grant-д хоосон (хэрэглэгчгүй).
+type OAuthAccessToken struct {
+	TokenHash     []byte
+	ClientID      string
+	Subject       string
+	Scopes        []string
+	RefreshFamily string
+	ExpiresAt     time.Time
+}
+
+// OAuthRefreshToken нь эргэлттэй refresh token. FamilyID нь эргэлтийн бүх үеийг
+// нэгтгэдэг тул хулгайлагдсаныг илрүүлэхэд бүлгээр нь цуцлах боломж өгнө.
+type OAuthRefreshToken struct {
+	TokenHash   []byte
+	FamilyID    string
+	RotatedFrom []byte
+	ClientID    string
+	Subject     string
+	Scopes      []string
+	Nonce       string
+	AuthTime    time.Time
+	ExpiresAt   time.Time
+}
