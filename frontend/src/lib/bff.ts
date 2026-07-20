@@ -48,6 +48,8 @@ export function checkOrigin(req: Request): NextResponse | null {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const INT_ID_RE = /^\d{1,10}$/;
+// Hydra OAuth2 client_id — UUID биш (жишээ нь "ring-dgov-mn", "app-1a2b3c4d").
+const CLIENT_ID_RE = /^[A-Za-z0-9._~-]{1,128}$/;
 
 function invalidID(): NextResponse {
   return NextResponse.json({ ok: false, status: 400, message: 'ID буруу байна.' }, { status: 400 });
@@ -56,6 +58,14 @@ function invalidID(): NextResponse {
 /** Dynamic route-ийн UUID параметрийг шалгана (хэрэглэгчийн id). Буруу бол 400. */
 export function checkUUID(id: string): NextResponse | null {
   return UUID_RE.test(id) ? null : invalidID();
+}
+
+/**
+ * Dynamic route-ийн OAuth2 client_id параметрийг шалгана (application id).
+ * Application-ыг Hydra эзэмшдэг тул id нь client_id — UUID БИШ.
+ */
+export function checkClientID(id: string): NextResponse | null {
+  return CLIENT_ID_RE.test(id) ? null : invalidID();
 }
 
 /** Dynamic route-ийн бүхэл тоон id-г шалгана (role id г.м.). Буруу бол 400. */

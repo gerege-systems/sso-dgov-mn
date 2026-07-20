@@ -47,6 +47,7 @@ func (rt *applicationsRoute) Routes() {
 		r.Put("/{id}", v1.Wrap(rt.handler.Update))
 		r.Delete("/{id}", v1.Wrap(rt.handler.Delete))
 		r.Post("/{id}/rotate-secret", v1.Wrap(rt.handler.RotateSecret))
+		r.Put("/{id}/secret", v1.Wrap(rt.handler.SetSecret))
 		r.Put("/{id}/services", v1.Wrap(rt.handler.SetServices))
 	})
 }

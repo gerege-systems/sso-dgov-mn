@@ -177,3 +177,33 @@ func TestListMapsHydraClients(t *testing.T) {
 		t.Fatalf("no-metadata client should derive m2m + default enabled, got %+v", apps[1])
 	}
 }
+
+func TestSetSecretWritesTheGivenSecretToHydra(t *testing.T) {
+	fh := &fakeHydra{}
+	uc := NewUsecase(&fakeRepo{}, fh)
+
+	const want = "my-preconfigured-rp-secret"
+	app, err := uc.SetSecret(context.Background(), "ring-dgov-mn", want)
+	if err != nil {
+		t.Fatalf("SetSecret: %v", err)
+	}
+	// Rotate-ээс ялгаатай нь — санамсаргүй биш, ЯГ өгсөн утга очно.
+	if fh.lastCreate.ClientSecret != want {
+		t.Fatalf("hydra should receive the given secret, got %q", fh.lastCreate.ClientSecret)
+	}
+	if app.Secret != want {
+		t.Fatalf("response should echo the secret once, got %q", app.Secret)
+	}
+}
+
+func TestSetSecretRejectsShortSecret(t *testing.T) {
+	fh := &fakeHydra{}
+	uc := NewUsecase(&fakeRepo{}, fh)
+
+	if _, err := uc.SetSecret(context.Background(), "ring-dgov-mn", "  short  "); err == nil {
+		t.Fatal("expected a bad-request error for a secret under the minimum length")
+	}
+	if fh.lastCreate.ClientSecret != "" {
+		t.Fatal("hydra must not be called when validation fails")
+	}
+}

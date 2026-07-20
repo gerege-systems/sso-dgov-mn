@@ -16,6 +16,12 @@ type ApplicationRequest struct {
 	Enabled      bool     `json:"enabled"`
 }
 
+// ApplicationSecretRequest нь апп-ын Hydra client_secret-ыг гараар оноох хүсэлт
+// (санамсаргүй rotate биш — тодорхой утга).
+type ApplicationSecretRequest struct {
+	Secret string `json:"secret" validate:"required,min=16,max=128"`
+}
+
 // ApplicationServicesRequest нь апп-ын зөвшөөрсөн gateway service-үүдийг солих хүсэлт.
 type ApplicationServicesRequest struct {
 	ServiceIDs []string `json:"service_ids" validate:"omitempty,dive,uuid"`

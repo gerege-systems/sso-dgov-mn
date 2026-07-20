@@ -280,6 +280,7 @@ OAuth2 **`client_secret`** (зөвхөн confidential төрөл) нь create / 
 | PUT | `/applications/{id}` | Overlay + Hydra client-ийн хүссэн төлөвийг шинэчлэх. |
 | DELETE | `/applications/{id}` | Hydra client + overlay-г устгах. |
 | POST | `/applications/{id}/rotate-secret` | Шинэ client secret гаргаж нэг удаа буцаах (зөвхөн confidential). |
+| PUT | `/applications/{id}/secret` | Тодорхой client secret-ыг гараар оноох (зөвхөн confidential); body `{ secret }`, 16–128 тэмдэгт. |
 | PUT | `/applications/{id}/services` | Зөвшөөрсөн gateway service-үүдийг солих — тэдгээр нь client-ийн OAuth scope болно. |
 
 **Create/update body** — `{ name, app_type (web\|spa\|native\|m2m), redirect_uris[], tags[], service_ids[], enabled }`; **set-services body** — `{ service_ids[] }`.
