@@ -2,15 +2,19 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Inbox, X, Copy, Check, Settings2, RefreshCw, Pencil } from 'lucide-react';
+import { Plus, Trash2, Inbox, X, Copy, Check, Settings2, RefreshCw, Pencil, KeyRound } from 'lucide-react';
 import { getJSON, sendJSON, postJSON } from '@/lib/client';
 import type { GwService } from '@/lib/gatewayTypes';
 import type { Application, AppType } from '@/lib/applicationTypes';
 import { APP_TYPES, needsRedirect, isConfidential } from '@/lib/applicationTypes';
 import { useT } from '@/lib/lang';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Loading, EnabledChip, Tags, splitList } from '../gateway/gwShared';
 
 const empty = { name: '', app_type: 'web' as AppType, redirect_uris: '', tags: '' };
+
+// Гараар оноох client secret-ийн доод урт — backend-ийн шалгалттай тохирно.
+const MIN_SECRET_LEN = 16;
 
 // useServices нь service picker-т зориулж бүх gateway service-ийг татна.
 function useServices() {
@@ -25,12 +29,16 @@ export default function ApplicationsView() {
   const [pickedServices, setPickedServices] = useState<string[]>([]);
   const [created, setCreated] = useState<Application | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [secretId, setSecretId] = useState<string | null>(null);
   const [err, setErr] = useState('');
 
   const q = useQuery({ queryKey: ['applications'], queryFn: () => getJSON<Application[]>('/api/applications') });
   const items = q.data ?? [];
   const svcQ = useServices();
   const services = svcQ.data ?? [];
+
+  const openApp = items.find((a) => a.id === openId) ?? null;
+  const secretApp = items.find((a) => a.id === secretId) ?? null;
 
   const typeLabel = (t: AppType) => {
     const found = APP_TYPES.find((x) => x.value === t);
@@ -134,7 +142,10 @@ export default function ApplicationsView() {
                   <td><span className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Settings2 size={14} /> {a.service_ids.length}</span></td>
                   <td><EnabledChip enabled={a.enabled} /></td>
                   <td className="users-table__actions">
-                    <button className="btn btn--ghost btn--sm" type="button" title={T('apps.edit')} onClick={() => setOpenId(openId === a.id ? null : a.id)}><Pencil size={14} /></button>
+                    <button className="btn btn--ghost btn--sm" type="button" title={T('apps.edit')} onClick={() => setOpenId(a.id)}><Pencil size={14} /></button>
+                    {isConfidential(a.app_type) && (
+                      <button className="btn btn--ghost btn--sm" type="button" title={T('apps.setSecret')} onClick={() => setSecretId(a.id)}><KeyRound size={14} /></button>
+                    )}
                     <button className="btn btn--ghost btn--sm" type="button" title={T('apps.delete')} onClick={() => remove(a)}><Trash2 size={14} /></button>
                   </td>
                 </tr>
@@ -144,19 +155,23 @@ export default function ApplicationsView() {
         </div>
       )}
 
-      {openId && (() => {
-        const app = items.find((a) => a.id === openId);
-        if (!app) return null;
-        return (
-          <EditPanel
-            app={app}
-            services={services}
-            servicesLoading={svcQ.isPending}
-            onClose={() => setOpenId(null)}
-            onChanged={refresh}
-          />
-        );
-      })()}
+      {/* Засах/secret нь popup — key нь app.id тул өөр апп руу шилжихэд форм
+          заавал шинэ утгуудаар дахин эхэлнэ (хуучин аппын утга үлдэхгүй). */}
+      {openApp && (
+        <EditDialog
+          key={openApp.id}
+          app={openApp}
+          services={services}
+          servicesLoading={svcQ.isPending}
+          onClose={() => setOpenId(null)}
+          onChanged={refresh}
+          onSetSecret={() => { setOpenId(null); setSecretId(openApp.id); }}
+        />
+      )}
+
+      {secretApp && (
+        <SecretDialog key={`secret-${secretApp.id}`} app={secretApp} onClose={() => setSecretId(null)} onChanged={refresh} />
+      )}
     </>
   );
 }
@@ -211,11 +226,12 @@ function SecretBox({ app, onClose, clientIdLabel, secretLabel }: {
   );
 }
 
-// EditPanel нь нэг application-ийн бүх талбар (нэр/төрөл/redirect/tag/төлөв/
-// service) засах + secret rotate-ийг удирдана.
-function EditPanel({ app, services, servicesLoading, onClose, onChanged }: {
+// EditDialog нь нэг application-ийн бүх талбар (нэр/төрөл/redirect/tag/төлөв/
+// service) засах + secret rotate-ийг popup дотор удирдана. Форм нь app prop-оос
+// НЭГ удаа эхэлдэг тул дуудагч талд key={app.id} байх ёстой.
+function EditDialog({ app, services, servicesLoading, onClose, onChanged, onSetSecret }: {
   app: Application; services: GwService[]; servicesLoading: boolean;
-  onClose: () => void; onChanged: () => void;
+  onClose: () => void; onChanged: () => void; onSetSecret: () => void;
 }) {
   const { T, lang } = useT();
   const [name, setName] = useState(app.name);
@@ -256,53 +272,126 @@ function EditPanel({ app, services, servicesLoading, onClose, onChanged }: {
   };
 
   return (
-    <section className="card" style={{ padding: 18, marginTop: 16, borderTop: '3px solid var(--dan-blue-text, #2563eb)' }}>
-      <div className="card__head card__head--with-sub">
-        <div className="card__title"><Pencil size={18} style={{ color: 'var(--dan-blue-text)' }} /><h2>{app.name}</h2></div>
-        <button className="btn btn--ghost btn--sm" type="button" onClick={onClose}><X size={14} /> {T('apps.close')}</button>
-      </div>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent style={{ maxWidth: 720 }}>
+        <DialogHeader>
+          <DialogTitle>{app.name}</DialogTitle>
+          <DialogDescription>{app.client_id}</DialogDescription>
+        </DialogHeader>
 
-      {err && <div className="alert alert--danger" role="alert">{err}</div>}
-      {saved && <div className="alert alert--success" role="status">{T('apps.saved')}</div>}
-      {rotated && <SecretBox app={rotated} onClose={() => setRotated(null)} clientIdLabel={T('apps.clientId')} secretLabel={T('apps.secretOnce')} />}
+        {err && <div className="alert alert--danger" role="alert">{err}</div>}
+        {saved && <div className="alert alert--success" role="status">{T('apps.saved')}</div>}
+        {rotated && <SecretBox app={rotated} onClose={() => setRotated(null)} clientIdLabel={T('apps.clientId')} secretLabel={T('apps.secretOnce')} />}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 12, marginTop: 8 }}>
-        <label>{T('apps.name')}
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label>{T('apps.type')}
-          <select className="input" value={appType} onChange={(e) => setAppType(e.target.value as AppType)}>
-            {APP_TYPES.map((t) => <option key={t.value} value={t.value}>{lang === 'en' ? t.en : t.mn}</option>)}
-          </select>
-        </label>
-        <label>{T('apps.tags')}
-          <input className="input" value={tags} onChange={(e) => setTags(e.target.value)} />
-        </label>
-      </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 12, marginTop: 8 }}>
+          <label>{T('apps.name')}
+            <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label>{T('apps.type')}
+            <select className="input" value={appType} onChange={(e) => setAppType(e.target.value as AppType)}>
+              {APP_TYPES.map((t) => <option key={t.value} value={t.value}>{lang === 'en' ? t.en : t.mn}</option>)}
+            </select>
+          </label>
+          <label>{T('apps.tags')}
+            <input className="input" value={tags} onChange={(e) => setTags(e.target.value)} />
+          </label>
+        </div>
 
-      {needsRedirect(appType) && (
-        <label style={{ display: 'block', marginTop: 12 }}>{T('apps.redirectUris')}
-          <textarea className="input" rows={3} value={redirects} onChange={(e) => setRedirects(e.target.value)} />
-          <span className="muted" style={{ fontSize: 12 }}>{T('apps.redirectHint')}</span>
-        </label>
-      )}
-
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
-        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <span>{T('apps.enabledField')}</span>
-      </label>
-
-      <div style={{ marginTop: 12 }}>
-        <span className="sidepanel__group-label" style={{ display: 'block', marginBottom: 6 }}>{T('apps.services')}</span>
-        <ServiceChecklist services={services} loading={servicesLoading} checked={checked} onToggle={toggle} emptyLabel={T('apps.noServices')} />
-      </div>
-
-      <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn btn--primary btn--sm" type="button" onClick={save} disabled={saving || !name}>{T('apps.save')}</button>
-        {isConfidential(app.app_type) && (
-          <button className="btn btn--ghost btn--sm" type="button" onClick={rotate}><RefreshCw size={14} /> {T('apps.rotateSecret')}</button>
+        {needsRedirect(appType) && (
+          <label style={{ display: 'block', marginTop: 12 }}>{T('apps.redirectUris')}
+            <textarea className="input" rows={3} value={redirects} onChange={(e) => setRedirects(e.target.value)} />
+            <span className="muted" style={{ fontSize: 12 }}>{T('apps.redirectHint')}</span>
+          </label>
         )}
-      </div>
-    </section>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          <span>{T('apps.enabledField')}</span>
+        </label>
+
+        <div style={{ marginTop: 12 }}>
+          <span className="sidepanel__group-label" style={{ display: 'block', marginBottom: 6 }}>{T('apps.services')}</span>
+          <ServiceChecklist services={services} loading={servicesLoading} checked={checked} onToggle={toggle} emptyLabel={T('apps.noServices')} />
+        </div>
+
+        <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn btn--primary btn--sm" type="button" onClick={save} disabled={saving || !name}>{T('apps.save')}</button>
+          {isConfidential(app.app_type) && (
+            <>
+              <button className="btn btn--ghost btn--sm" type="button" onClick={rotate}><RefreshCw size={14} /> {T('apps.rotateSecret')}</button>
+              <button className="btn btn--ghost btn--sm" type="button" onClick={onSetSecret}><KeyRound size={14} /> {T('apps.setSecret')}</button>
+            </>
+          )}
+          <button className="btn btn--ghost btn--sm" type="button" onClick={onClose}><X size={14} /> {T('apps.close')}</button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// SecretDialog нь Hydra client secret-ыг ГАРААР оноох popup — гадаад RP дээр
+// аль хэдийн тохируулсан secret-тэй тулгах хэрэгцээнд (rotate нь санамсаргүй
+// шинэ secret үүсгэдэг тул тохирохгүй).
+function SecretDialog({ app, onClose, onChanged }: {
+  app: Application; onClose: () => void; onChanged: () => void;
+}) {
+  const { T } = useT();
+  const [secret, setSecret] = useState('');
+  const [show, setShow] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState('');
+
+  const tooShort = secret.trim().length > 0 && secret.trim().length < MIN_SECRET_LEN;
+
+  const generate = () => {
+    const bytes = new Uint8Array(30);
+    crypto.getRandomValues(bytes);
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    setSecret(Array.from(bytes, (b) => alphabet[b % alphabet.length]).join(''));
+    setShow(true);
+  };
+
+  const submit = async () => {
+    setErr(''); setSaved(false); setSaving(true);
+    const res = await sendJSON(`/api/applications/${app.id}/secret`, 'PUT', { secret: secret.trim() });
+    setSaving(false);
+    if (res.ok) { setSaved(true); onChanged(); }
+    else setErr(res.message || T('apps.setSecretErr'));
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{T('apps.setSecretTitle')}</DialogTitle>
+          <DialogDescription>{app.name} · {app.client_id}</DialogDescription>
+        </DialogHeader>
+
+        {err && <div className="alert alert--danger" role="alert">{err}</div>}
+        {saved && <div className="alert alert--success" role="status">{T('apps.secretSaved')}</div>}
+
+        <div className="alert" role="note" style={{ fontSize: 13 }}>{T('apps.setSecretHint')}</div>
+
+        <label>{T('apps.secretField')}
+          <input
+            className="input mono"
+            type={show ? 'text' : 'password'}
+            value={secret}
+            autoComplete="new-password"
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder={T('apps.secretPlaceholder')}
+          />
+          {tooShort && <span className="muted" style={{ fontSize: 12, color: 'var(--danger, #dc2626)' }}>{T('apps.secretTooShort')}</span>}
+        </label>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn btn--primary btn--sm" type="button" onClick={submit} disabled={saving || tooShort || !secret.trim()}>{T('apps.save')}</button>
+          <button className="btn btn--ghost btn--sm" type="button" onClick={generate}><RefreshCw size={14} /> {T('apps.generateSecret')}</button>
+          <button className="btn btn--ghost btn--sm" type="button" onClick={() => setShow((s) => !s)}>{show ? T('apps.hideSecret') : T('apps.showSecret')}</button>
+          <button className="btn btn--ghost btn--sm" type="button" onClick={onClose}><X size={14} /> {T('apps.close')}</button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -281,6 +281,7 @@ the create / rotate response — and never again.
 | PUT | `/applications/{id}` | Update the overlay + the Hydra client's desired state. |
 | DELETE | `/applications/{id}` | Delete the Hydra client + overlay. |
 | POST | `/applications/{id}/rotate-secret` | Issue a new client secret, returned once (confidential only). |
+| PUT | `/applications/{id}/secret` | Set a specific client secret (confidential only); body `{ secret }`, 16–128 chars. |
 | PUT | `/applications/{id}/services` | Replace the allowed gateway services — they become the client's OAuth scopes. |
 
 **Create/update body** — `{ name, app_type (web\|spa\|native\|m2m), redirect_uris[], tags[], service_ids[], enabled }`; **set-services body** — `{ service_ids[] }`.

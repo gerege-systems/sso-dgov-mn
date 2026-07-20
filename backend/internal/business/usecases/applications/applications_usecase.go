@@ -30,6 +30,9 @@ type Usecase interface {
 	Delete(ctx context.Context, id string) error
 	// RotateSecret нь confidential апп-ын client_secret-ыг сольж НЭГ удаа буцаана.
 	RotateSecret(ctx context.Context, id string) (domain.Application, error)
+	// SetSecret нь confidential апп-д админаас өгсөн ТОДОРХОЙ client_secret-ыг
+	// тавина (гадаад RP-ийн аль хэдийн тохируулсан secret-тэй тулгах хэрэгцээнд).
+	SetSecret(ctx context.Context, id, secret string) (domain.Application, error)
 	// SetServices нь апп-ын зөвшөөрсөн service-үүдийг (scope) сольж, Hydra-г шинэчилнэ.
 	SetServices(ctx context.Context, id string, serviceIDs []string) (domain.Application, error)
 	// ReconcileClients нь seed хийсэн RP overlay мөрүүд (created_by='seed-rp')-ийн

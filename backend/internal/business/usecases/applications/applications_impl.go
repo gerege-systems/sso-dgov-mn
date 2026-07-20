@@ -38,6 +38,13 @@ type serviceScopeResolver interface {
 	ServiceIDsForScopes(ctx context.Context, scopes []string) ([]string, error)
 }
 
+// Гараар оноох client secret-ийн урт (Hydra-д хязгаар байхгүй ч сул secret-ыг
+// бид зөвшөөрөхгүй).
+const (
+	minSecretLen = 16
+	maxSecretLen = 128
+)
+
 type usecase struct {
 	svc   serviceScopeResolver
 	hydra hydraClients
@@ -139,6 +146,23 @@ func (u *usecase) Delete(ctx context.Context, id string) error {
 }
 
 func (u *usecase) RotateSecret(ctx context.Context, id string) (domain.Application, error) {
+	return u.applySecret(ctx, id, randomToken(40))
+}
+
+func (u *usecase) SetSecret(ctx context.Context, id, secret string) (domain.Application, error) {
+	secret = strings.TrimSpace(secret)
+	if len(secret) < minSecretLen {
+		return domain.Application{}, apperror.BadRequest(fmt.Sprintf("client secret must be at least %d characters", minSecretLen))
+	}
+	if len(secret) > maxSecretLen {
+		return domain.Application{}, apperror.BadRequest(fmt.Sprintf("client secret too long (max %d)", maxSecretLen))
+	}
+	return u.applySecret(ctx, id, secret)
+}
+
+// applySecret нь confidential апп-ын Hydra client_secret-ыг өгөгдсөн утгаар
+// сольж, шинэ secret-ыг хариунд НЭГ удаа буцаана (rotate ба set нийтлэг зам).
+func (u *usecase) applySecret(ctx context.Context, id, secret string) (domain.Application, error) {
 	c, err := u.hydra.GetClient(ctx, id)
 	if err != nil {
 		if isNotFound(err) {
@@ -157,7 +181,6 @@ func (u *usecase) RotateSecret(ctx context.Context, id string) (domain.Applicati
 	if err != nil {
 		return domain.Application{}, err
 	}
-	secret := randomToken(40)
 	if _, err := u.hydra.UpdateClient(ctx, id, buildClient(app, scopes, secret)); err != nil {
 		return domain.Application{}, apperror.InternalCause(fmt.Errorf("rotate oauth secret: %w", err))
 	}

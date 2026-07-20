@@ -148,6 +148,27 @@ func (h Handler) RotateSecret(w http.ResponseWriter, r *http.Request) error {
 	return v1.NewSuccessResponse(w, r, http.StatusOK, "secret rotated successfully", responses.FromApplication(a))
 }
 
+// SetSecret godoc
+// @Summary      Application-ын client secret-ыг гараар оноох
+// @Tags         applications
+// @Accept       json
+// @Produce      json
+// @Param        id    path  string  true  "Application ID"
+// @Param        body  body  requests.ApplicationSecretRequest  true  "Client secret"
+// @Success      200  {object}  v1.BaseResponse
+// @Router       /applications/{id}/secret [put]
+func (h Handler) SetSecret(w http.ResponseWriter, r *http.Request) error {
+	var req requests.ApplicationSecretRequest
+	if !decode(w, r, &req) {
+		return nil
+	}
+	a, err := h.usecase.SetSecret(r.Context(), chi.URLParam(r, "id"), req.Secret)
+	if err != nil {
+		return v1.RespondWithError(w, r, err)
+	}
+	return v1.NewSuccessResponse(w, r, http.StatusOK, "secret updated successfully", responses.FromApplication(a))
+}
+
 // SetServices godoc
 // @Summary      Application-д зөвшөөрсөн gateway service-үүдийг оноох
 // @Tags         applications

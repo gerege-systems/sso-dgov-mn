@@ -144,6 +144,15 @@ definitions:
     - app_type
     - name
     type: object
+  template_internal_http_datatransfers_requests.ApplicationSecretRequest:
+    properties:
+      secret:
+        maxLength: 128
+        minLength: 16
+        type: string
+    required:
+    - secret
+    type: object
   template_internal_http_datatransfers_requests.ApplicationServicesRequest:
     properties:
       service_ids:
@@ -1729,6 +1738,32 @@ paths:
           schema:
             $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
       summary: Application-ын client secret эргүүлэх
+      tags:
+      - applications
+  /applications/{id}/secret:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Client secret
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/template_internal_http_datatransfers_requests.ApplicationSecretRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/template_internal_http_handlers_v1.BaseResponse'
+      summary: Application-ын client secret-ыг гараар оноох
       tags:
       - applications
   /applications/{id}/services:
