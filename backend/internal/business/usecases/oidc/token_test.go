@@ -28,6 +28,7 @@ type tokenFlow struct {
 	usedRT     map[string]bool
 	revokedFam map[string]bool
 	revokedSC  map[string]bool
+	revokedAT  map[string]bool
 	access     []domain.OAuthAccessToken
 	stored     []domain.OAuthRefreshToken
 }
@@ -37,7 +38,7 @@ func newTokenFlow() *tokenFlow {
 		fakeFlow: newFakeFlow(),
 		codes:    map[string]domain.OAuthAuthCode{}, usedCodes: map[string]bool{},
 		refresh: map[string]domain.OAuthRefreshToken{}, usedRT: map[string]bool{},
-		revokedFam: map[string]bool{}, revokedSC: map[string]bool{},
+		revokedFam: map[string]bool{}, revokedSC: map[string]bool{}, revokedAT: map[string]bool{},
 	}
 }
 
@@ -93,6 +94,34 @@ func (f *tokenFlow) RevokeFamily(_ context.Context, familyID string) error {
 func (f *tokenFlow) RevokeForSubjectClient(_ context.Context, subject, clientID string) error {
 	f.revokedSC[subject+"|"+clientID] = true
 	return nil
+}
+
+func (f *tokenFlow) AccessToken(_ context.Context, h []byte) (domain.OAuthAccessToken, error) {
+	for _, at := range f.access {
+		if string(at.TokenHash) == string(h) && !f.revokedAT[string(h)] && time.Now().Before(at.ExpiresAt) {
+			return at, nil
+		}
+	}
+	return domain.OAuthAccessToken{}, apperror.NotFound("token not found")
+}
+
+func (f *tokenFlow) RevokeAccessToken(_ context.Context, h []byte, clientID string) (bool, error) {
+	for _, at := range f.access {
+		if string(at.TokenHash) == string(h) && at.ClientID == clientID {
+			f.revokedAT[string(h)] = true
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (f *tokenFlow) RevokeRefreshToken(_ context.Context, h []byte, clientID string) (bool, error) {
+	rt, ok := f.refresh[string(h)]
+	if !ok || rt.ClientID != clientID {
+		return false, nil
+	}
+	f.revokedFam[rt.FamilyID] = true
+	return true, nil
 }
 
 type fakeUsers struct{ err error }
@@ -448,4 +477,128 @@ func mustErr(t *testing.T, s *Service, req TokenRequest) error {
 		t.Fatal("expected an error")
 	}
 	return err
+}
+
+// ── introspect / userinfo / revoke ───────────────────────────────────────────
+
+func TestIntrospectRevealsNothingForUnknownTokens(t *testing.T) {
+	s, flow := tokenService(t, confidentialClient(t))
+	code, verifier := issueCode(t, s, flow, "openid offline_access")
+	ctx := context.Background()
+
+	resp, err := s.Token(ctx, codeRequest(code, verifier))
+	if err != nil {
+		t.Fatalf("Token: %v", err)
+	}
+
+	live := s.Introspect(ctx, resp.AccessToken)
+	if !live.Active || live.Subject != testSubject || live.ClientID != "ring-dgov-mn" {
+		t.Fatalf("a live token should introspect as active: %+v", live)
+	}
+
+	// Танигдаагүй, хоосон, гуйвуулсан token бүгд ижилхэн "active: false" —
+	// шалтгааныг нь ялгаж хэлэхгүй.
+	for _, tok := range []string{"", "not-a-token", resp.AccessToken + "x"} {
+		if got := s.Introspect(ctx, tok); got.Active || got.Subject != "" || got.ClientID != "" {
+			t.Fatalf("introspecting %q leaked state: %+v", tok, got)
+		}
+	}
+}
+
+func TestUserinfoRequiresOpenIDAndASubject(t *testing.T) {
+	s, flow := tokenService(t, confidentialClient(t))
+	ctx := context.Background()
+
+	t.Run("openid token works", func(t *testing.T) {
+		code, verifier := issueCode(t, s, flow, "openid profile")
+		resp, err := s.Token(ctx, codeRequest(code, verifier))
+		if err != nil {
+			t.Fatalf("Token: %v", err)
+		}
+		claims, err := s.Userinfo(ctx, resp.AccessToken)
+		if err != nil {
+			t.Fatalf("Userinfo: %v", err)
+		}
+		if claims["sub"] != testSubject {
+			t.Fatalf("sub = %v, want the subject the token was issued for", claims["sub"])
+		}
+		if claims["name"] == nil {
+			t.Fatal("profile was granted so the name claim should be present")
+		}
+	})
+
+	t.Run("token without openid is refused", func(t *testing.T) {
+		code, verifier := issueCode(t, s, flow, "profile")
+		resp, err := s.Token(ctx, codeRequest(code, verifier))
+		if err != nil {
+			t.Fatalf("Token: %v", err)
+		}
+		if _, err := s.Userinfo(ctx, resp.AccessToken); err == nil {
+			t.Fatal("userinfo must require the openid scope")
+		}
+	})
+
+	t.Run("invalid token is refused", func(t *testing.T) {
+		if _, err := s.Userinfo(ctx, "nope"); err == nil {
+			t.Fatal("userinfo must reject an unknown token")
+		}
+	})
+}
+
+// client_credentials token-д хэрэглэгч байхгүй тул userinfo өгөх ёсгүй.
+func TestUserinfoRefusesSubjectlessTokens(t *testing.T) {
+	c := confidentialClient(t)
+	c.GrantTypes = []string{domain.GrantClientCredentials}
+	s, _ := tokenService(t, c)
+	ctx := context.Background()
+
+	resp, err := s.Token(ctx, TokenRequest{
+		GrantType: domain.GrantClientCredentials,
+		ClientID:  "ring-dgov-mn", ClientSecret: testClientSecret, SecretFromBasic: true,
+	})
+	if err != nil {
+		t.Fatalf("client_credentials: %v", err)
+	}
+	if _, err := s.Userinfo(ctx, resp.AccessToken); err == nil {
+		t.Fatal("a token with no subject must not yield userinfo")
+	}
+}
+
+func TestRevokeOnlyAffectsTheOwningClient(t *testing.T) {
+	c := confidentialClient(t)
+	s, flow := tokenService(t, c)
+	ctx := context.Background()
+	code, verifier := issueCode(t, s, flow, "openid offline_access")
+
+	resp, err := s.Token(ctx, codeRequest(code, verifier))
+	if err != nil {
+		t.Fatalf("Token: %v", err)
+	}
+
+	// Өөр client-ийн нэрийн өмнөөс цуцлах оролдлого нөлөөлөх ёсгүй.
+	other := c
+	other.ClientID = "someone-else"
+	if err := s.Revoke(ctx, other, resp.AccessToken, "access_token"); err != nil {
+		t.Fatalf("Revoke: %v", err)
+	}
+	if !s.Introspect(ctx, resp.AccessToken).Active {
+		t.Fatal("another client must not be able to revoke this token")
+	}
+
+	// Эзэн client цуцлахад хүчингүй болно.
+	if err := s.Revoke(ctx, c, resp.AccessToken, "access_token"); err != nil {
+		t.Fatalf("Revoke: %v", err)
+	}
+	if s.Introspect(ctx, resp.AccessToken).Active {
+		t.Fatal("the owning client's revocation must take effect")
+	}
+}
+
+// RFC 7009 §2.2 — танигдаагүй token ч алдаа биш.
+func TestRevokeUnknownTokenSucceeds(t *testing.T) {
+	c := confidentialClient(t)
+	s, _ := tokenService(t, c)
+	if err := s.Revoke(context.Background(), c, "never-existed", ""); err != nil {
+		t.Fatalf("revoking an unknown token must not error: %v", err)
+	}
 }

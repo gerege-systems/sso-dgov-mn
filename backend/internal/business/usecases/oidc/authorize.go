@@ -99,6 +99,9 @@ type flowStore interface {
 	ConsumeRefreshToken(ctx context.Context, tokenHash []byte) (domain.OAuthRefreshToken, bool, error)
 	RevokeFamily(ctx context.Context, familyID string) error
 	RevokeForSubjectClient(ctx context.Context, subject, clientID string) error
+	AccessToken(ctx context.Context, tokenHash []byte) (domain.OAuthAccessToken, error)
+	RevokeAccessToken(ctx context.Context, tokenHash []byte, clientID string) (bool, error)
+	RevokeRefreshToken(ctx context.Context, tokenHash []byte, clientID string) (bool, error)
 }
 
 func NewService(clients clientStore, flow flowStore, issuer string) *Service {

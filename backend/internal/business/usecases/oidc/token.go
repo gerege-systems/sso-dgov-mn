@@ -68,7 +68,7 @@ type TokenResponse struct {
 
 // Token нь `/oauth2/token`-ийг үйлчилнэ.
 func (s *Service) Token(ctx context.Context, req TokenRequest) (*TokenResponse, error) {
-	client, err := s.authenticateClient(ctx, req)
+	client, err := s.AuthenticateClient(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +85,12 @@ func (s *Service) Token(ctx context.Context, req TokenRequest) (*TokenResponse, 
 	}
 }
 
-// authenticateClient нь client-ийг бүртгэгдсэн auth method-оор нь баталгаажуулна.
+// AuthenticateClient нь client-ийг бүртгэгдсэн auth method-оор нь баталгаажуулна.
 //
 // Client-ийн зарласан арга нь ХАТУУ — `client_secret_basic`-тэй client биеттэй
 // secret илгээвэл татгалзана. Ингэснээр аргыг доошлуулах (downgrade) оролдлого
 // боломжгүй.
-func (s *Service) authenticateClient(ctx context.Context, req TokenRequest) (domain.OAuthClient, error) {
+func (s *Service) AuthenticateClient(ctx context.Context, req TokenRequest) (domain.OAuthClient, error) {
 	var client domain.OAuthClient
 	if req.ClientID == "" {
 		return client, &TokenError{Code: "invalid_client", Description: "client_id is required", Status: 401}
