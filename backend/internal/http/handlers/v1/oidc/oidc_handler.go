@@ -11,7 +11,10 @@ package oidc
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"net/url"
+	"strings"
 
 	oidcuc "template/internal/business/usecases/oidc"
 	"template/pkg/logger"
@@ -19,11 +22,12 @@ import (
 
 type Handler struct {
 	keys   *oidcuc.KeyManager
+	svc    *oidcuc.Service
 	issuer string
 }
 
-func NewHandler(keys *oidcuc.KeyManager, issuer string) Handler {
-	return Handler{keys: keys, issuer: issuer}
+func NewHandler(keys *oidcuc.KeyManager, svc *oidcuc.Service, issuer string) Handler {
+	return Handler{keys: keys, svc: svc, issuer: strings.TrimRight(issuer, "/")}
 }
 
 // Discovery godoc
@@ -70,4 +74,51 @@ func writeError(w http.ResponseWriter, r *http.Request, status int, code, descri
 		"error":             code,
 		"error_description": description,
 	})
+}
+
+// Authorize godoc
+// @Summary      OAuth2 authorization endpoint
+// @Tags         oidc
+// @Param        client_id      query  string  true   "Client ID"
+// @Param        redirect_uri   query  string  true   "Registered redirect URI"
+// @Param        response_type  query  string  true   "code"
+// @Param        scope          query  string  false  "Space-separated scopes"
+// @Param        state          query  string  false  "Opaque RP state"
+// @Success      302
+// @Router       /oauth2/auth [get]
+func (h Handler) Authorize(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	req := oidcuc.AuthorizeRequest{
+		ClientID:            q.Get("client_id"),
+		RedirectURI:         q.Get("redirect_uri"),
+		ResponseType:        q.Get("response_type"),
+		Scope:               q.Get("scope"),
+		State:               q.Get("state"),
+		Nonce:               q.Get("nonce"),
+		CodeChallenge:       q.Get("code_challenge"),
+		CodeChallengeMethod: q.Get("code_challenge_method"),
+		Prompt:              q.Get("prompt"),
+	}
+
+	challenge, _, err := h.svc.Authorize(r.Context(), req)
+	if err != nil {
+		var authErr *oidcuc.AuthorizeError
+		if errors.As(err, &authErr) {
+			// Зөвхөн service-ийн БАТАЛГААЖУУЛСАН хаяг руу чиглүүлнэ. Хүсэлтээс
+			// ирсэн түүхий redirect_uri-г энд огт ашиглахгүй — client эсвэл
+			// redirect_uri буруу бол алдааг шууд харуулна.
+			if !authErr.CanRedirect() {
+				writeError(w, r, http.StatusBadRequest, authErr.Code, authErr.Description)
+				return
+			}
+			http.Redirect(w, r, authErr.RedirectURL(), http.StatusFound)
+			return
+		}
+		logger.ErrorWithContext(r.Context(), "OIDC: authorize амжилтгүй", logger.Fields{"error": err.Error()})
+		writeError(w, r, http.StatusInternalServerError, "server_error", "could not start the authorization request")
+		return
+	}
+
+	// Нэвтрэх хуудас руу. Session байвал тэр хуудас шууд accept руу шилжинэ.
+	http.Redirect(w, r, h.issuer+"/oauth/login?login_challenge="+url.QueryEscape(challenge), http.StatusFound)
 }
