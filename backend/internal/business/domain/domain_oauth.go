@@ -111,3 +111,50 @@ func containsExact(list []string, v string) bool {
 	}
 	return false
 }
+
+// OAuthChallenge нь authorize урсгалын түр төлөв: RP-ийн анхны хүсэлтийн
+// параметрүүдийг хадгалж, нэвтрэх/зөвшөөрөх UI-аас буцаж ирэхэд сэргээнэ.
+//
+// Нэг удаагийн: шийдэгдмэгц (DecidedAt) дахин ашиглагдахгүй.
+type OAuthChallenge struct {
+	Challenge             string
+	Kind                  string // login | consent | logout
+	ClientID              string
+	Subject               string
+	RequestedScopes       []string
+	GrantedScopes         []string
+	RedirectURI           string
+	State                 string
+	Nonce                 string
+	ResponseType          string
+	CodeChallenge         string
+	CodeChallengeMethod   string
+	Prompt                string
+	PostLogoutRedirectURI string
+	Skip                  bool
+	DecidedAt             *time.Time
+	ExpiresAt             time.Time
+	CreatedAt             time.Time
+}
+
+// Challenge-ийн төрлүүд.
+const (
+	ChallengeLogin   = "login"
+	ChallengeConsent = "consent"
+	ChallengeLogout  = "logout"
+)
+
+// OAuthAuthCode нь authorization code-ийн хадгалагдсан хэлбэр. CodeHash нь
+// sha256(code) — түүхий code хэзээ ч хадгалагдахгүй.
+type OAuthAuthCode struct {
+	CodeHash            []byte
+	ClientID            string
+	Subject             string
+	Scopes              []string
+	RedirectURI         string
+	Nonce               string
+	CodeChallenge       string
+	CodeChallengeMethod string
+	AuthTime            time.Time
+	ExpiresAt           time.Time
+}

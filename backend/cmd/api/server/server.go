@@ -388,18 +388,20 @@ func NewApp() (*App, error) {
 	// OIDC provider (sso.dgov.mn = SSO) — Hydra урдаа тавьсан login/consent/logout
 	// цөм. Зөвхөн Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс
 	// бөгөөс providerUC == nil тул route бүртгэгдэхгүй (inert).
-	var providerUC provideruc.Usecase
 	var hydraAdmin *hydra.Admin
 	if config.AppConfig.ProviderConfigured() {
 		hydraAdmin = hydra.NewAdmin(config.AppConfig.HydraAdminURL)
-		providerUC = provideruc.NewUsecase(hydraAdmin, usersUC, config.AppConfig.SSOFirstPartyClientsList())
 	}
+	oauthClients := oauthpostgres.NewClientRepository(pool)
+	oidcSvc := oidcuc.NewService(oauthClients, oauthpostgres.NewFlowRepository(pool), config.AppConfig.Issuer())
+	providerUC := provideruc.NewUsecase(oidcSvc, oauthClients, usersUC,
+		config.AppConfig.SSOFirstPartyClientsList(), config.AppConfig.Issuer())
 
 	// Нэгдсэн Applications (Gateway consumer + SSO RP). Client бүртгэл нь одоо
 	// өөрийн DB-д (oauth_clients) амьдардаг тул Hydra-аас хамаарахаа больсон.
 	applicationsUC := applicationsuc.NewUsecase(
 		applicationspostgres.NewApplicationRepository(pool),
-		oauthpostgres.NewClientRepository(pool),
+		oauthClients,
 	)
 
 	// Өөрийн OIDC provider-ийн гарын үсгийн түлхүүр. Эхний ажиллагаанд RSA
@@ -446,7 +448,7 @@ func NewApp() (*App, error) {
 	// Өөрийн OIDC provider-ийн НИЙТИЙН endpoint-ууд. /api бүлгээс ГАДУУР, үндэс
 	// дээр — замыг нь OIDC стандарт (/.well-known/*) болон nginx-ийн одоо байгаа
 	// Hydra-руу-заадаг дүрмүүд (/oauth2/*, /userinfo) тогтоосон.
-	routes.NewOIDCRoute(r, oidcKeys, config.AppConfig.Issuer()).Routes()
+	routes.NewOIDCRoute(r, oidcKeys, oidcSvc, config.AppConfig.Issuer()).Routes()
 
 	r.Route("/api", func(api chi.Router) {
 		api.Use(gwLogMW)

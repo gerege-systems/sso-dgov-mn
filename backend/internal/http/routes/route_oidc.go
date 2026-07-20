@@ -24,9 +24,9 @@ type oidcRoute struct {
 	router  chi.Router
 }
 
-func NewOIDCRoute(router chi.Router, keys *oidcuc.KeyManager, issuer string) *oidcRoute {
+func NewOIDCRoute(router chi.Router, keys *oidcuc.KeyManager, svc *oidcuc.Service, issuer string) *oidcRoute {
 	return &oidcRoute{
-		handler: oidchandler.NewHandler(keys, issuer),
+		handler: oidchandler.NewHandler(keys, svc, issuer),
 		router:  router,
 	}
 }
@@ -34,4 +34,5 @@ func NewOIDCRoute(router chi.Router, keys *oidcuc.KeyManager, issuer string) *oi
 func (rt *oidcRoute) Routes() {
 	rt.router.Get(oidcuc.PathDiscovery, rt.handler.Discovery)
 	rt.router.Get(oidcuc.PathJWKS, rt.handler.JWKS)
+	rt.router.Get(oidcuc.PathAuthorize, rt.handler.Authorize)
 }

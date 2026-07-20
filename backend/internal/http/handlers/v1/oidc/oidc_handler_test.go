@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"template/internal/apperror"
 	"template/internal/business/domain"
@@ -43,6 +44,27 @@ func (m *memKeys) RetireActive(context.Context) error {
 	return nil
 }
 
+// Discovery/JWKS нь client эсвэл flow store-д хүрдэггүй тул хоосон хувилбар хангана.
+type noClients struct{}
+
+func (noClients) Get(context.Context, string) (domain.OAuthClient, error) {
+	return domain.OAuthClient{}, apperror.NotFound("application not found")
+}
+
+type noFlow struct{}
+
+func (noFlow) CreateChallenge(context.Context, domain.OAuthChallenge) error { return nil }
+func (noFlow) Challenge(context.Context, string, string) (domain.OAuthChallenge, error) {
+	return domain.OAuthChallenge{}, apperror.NotFound("challenge not found or already used")
+}
+func (noFlow) DecideChallenge(context.Context, string, string, []string) error { return nil }
+func (noFlow) Consent(context.Context, string, string) ([]string, error)       { return nil, nil }
+func (noFlow) SaveConsent(context.Context, string, string, []string, time.Duration) error {
+	return nil
+}
+func (noFlow) RevokeConsent(context.Context, string, string) error    { return nil }
+func (noFlow) CreateCode(context.Context, domain.OAuthAuthCode) error { return nil }
+
 func newHandler(t *testing.T) oidchandler.Handler {
 	t.Helper()
 	km, err := oidcuc.NewKeyManager(&memKeys{}, "handler-test-encryption-key")
@@ -52,7 +74,8 @@ func newHandler(t *testing.T) oidchandler.Handler {
 	if err := km.EnsureKey(context.Background()); err != nil {
 		t.Fatalf("EnsureKey: %v", err)
 	}
-	return oidchandler.NewHandler(km, testIssuer)
+	svc := oidcuc.NewService(&noClients{}, &noFlow{}, testIssuer)
+	return oidchandler.NewHandler(km, svc, testIssuer)
 }
 
 func TestDiscoveryDocument(t *testing.T) {
