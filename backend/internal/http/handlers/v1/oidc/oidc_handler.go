@@ -122,3 +122,76 @@ func (h Handler) Authorize(w http.ResponseWriter, r *http.Request) {
 	// Нэвтрэх хуудас руу. Session байвал тэр хуудас шууд accept руу шилжинэ.
 	http.Redirect(w, r, h.issuer+"/oauth/login?login_challenge="+url.QueryEscape(challenge), http.StatusFound)
 }
+
+// Token godoc
+// @Summary      OAuth2 token endpoint
+// @Tags         oidc
+// @Accept       x-www-form-urlencoded
+// @Produce      json
+// @Param        grant_type  formData  string  true  "authorization_code | refresh_token | client_credentials"
+// @Success      200  {object}  map[string]any
+// @Router       /oauth2/token [post]
+func (h Handler) Token(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_request", "malformed request body")
+		return
+	}
+
+	req := oidcuc.TokenRequest{
+		GrantType:    r.PostFormValue("grant_type"),
+		Code:         r.PostFormValue("code"),
+		RedirectURI:  r.PostFormValue("redirect_uri"),
+		CodeVerifier: r.PostFormValue("code_verifier"),
+		RefreshToken: r.PostFormValue("refresh_token"),
+		Scope:        r.PostFormValue("scope"),
+		ClientID:     r.PostFormValue("client_id"),
+		ClientSecret: r.PostFormValue("client_secret"),
+	}
+	// HTTP Basic нь биетээс давуу — хоёулаа ирвэл Basic-ыг авна (RFC 6749 §2.3.1).
+	if id, secret, ok := basicClientAuth(r); ok {
+		req.ClientID, req.ClientSecret, req.SecretFromBasic = id, secret, true
+	}
+
+	// Token нь ХЭЗЭЭ Ч кэшлэгдэх ёсгүй.
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
+	resp, err := h.svc.Token(r.Context(), req)
+	if err != nil {
+		var tokErr *oidcuc.TokenError
+		if errors.As(err, &tokErr) {
+			if tokErr.Code == "invalid_client" {
+				// RFC 6749 §5.2 — Basic ашигласан бол WWW-Authenticate буцаана.
+				w.Header().Set("WWW-Authenticate", `Basic realm="oauth2"`)
+			}
+			writeError(w, r, tokErr.Status, tokErr.Code, tokErr.Description)
+			return
+		}
+		logger.ErrorWithContext(r.Context(), "OIDC: token гаргаж чадсангүй", logger.Fields{
+			"error": err.Error(), "grant_type": req.GrantType,
+		})
+		writeError(w, r, http.StatusInternalServerError, "server_error", "could not issue a token")
+		return
+	}
+	writeJSON(w, r, http.StatusOK, resp)
+}
+
+// basicClientAuth нь Authorization: Basic-аас client итгэмжлэлийг задална.
+//
+// RFC 6749 §2.3.1 нь client_id/secret-ыг base64-ийн ӨМНӨ form-urlencode хийхийг
+// шаарддаг — тусгай тэмдэгттэй secret зөв ажиллахын тулд буцааж decode хийнэ.
+func basicClientAuth(r *http.Request) (clientID, clientSecret string, ok bool) {
+	id, secret, ok := r.BasicAuth()
+	if !ok {
+		return "", "", false
+	}
+	decodedID, err := url.QueryUnescape(id)
+	if err != nil {
+		decodedID = id
+	}
+	decodedSecret, err := url.QueryUnescape(secret)
+	if err != nil {
+		decodedSecret = secret
+	}
+	return decodedID, decodedSecret, true
+}

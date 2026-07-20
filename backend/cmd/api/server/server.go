@@ -414,6 +414,9 @@ func NewApp() (*App, error) {
 	if err := oidcKeys.EnsureKey(ctx); err != nil {
 		return nil, fmt.Errorf("oidc: ensure signing key: %w", err)
 	}
+	// Түлхүүр болон иргэний бүртгэл бэлэн болсны дараа token гаргах чадварыг
+	// залгана (id_token-ий гарын үсэг + claims).
+	oidcSvc.WithTokenIssuing(oidcKeys, usersUC)
 
 	// Гуравдагч талын RP-ийн gateway хүсэлтийг (/rp/sign, /api/v1/provider) API
 	// Gateway-ийн лог руу async бичих middleware (detached ctx тул хоцролтгүй;
