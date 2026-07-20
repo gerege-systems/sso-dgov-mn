@@ -37,12 +37,12 @@ export default function GatewayLogsView() {
           <tbody>
             {logs.map((l) => (
               <tr key={l.id}>
-                <td><StatusChip status={l.status} /></td>
-                <td><span className="badge badge--primary mono" style={{ fontSize: 11 }}>{l.method}</span></td>
-                <td className="mono">{l.path}</td>
-                <td className="mono">{l.latency_ms}ms</td>
-                <td className="mono muted">{l.client_ip || '—'}</td>
-                <td className="mono muted">{fmtDateTime(l.created_at)}</td>
+                <td data-label="Статус"><StatusChip status={l.status} /></td>
+                <td data-label="Method"><span className="badge badge--primary mono" style={{ fontSize: 11 }}>{l.method}</span></td>
+                <td className="mono" data-label="Зам">{l.path}</td>
+                <td className="mono" data-label="Латент">{l.latency_ms}ms</td>
+                <td className="mono muted" data-label="IP">{l.client_ip || '—'}</td>
+                <td className="mono muted" data-label="Огноо">{fmtDateTime(l.created_at)}</td>
               </tr>
             ))}
           </tbody>

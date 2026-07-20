@@ -136,15 +136,15 @@ export default function OrgList() {
             <tbody>
               {items.map((o) => (
                 <tr key={o.id}>
-                  <td>
+                  <td data-label={T('org.name')}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <Building2 size={16} strokeWidth={2} />
                       {lang === 'en' ? (o.name_latin?.trim() || o.name) : o.name}
                     </span>
                   </td>
-                  <td className="mono">{o.reg_no}</td>
-                  <td>{o.role ? T(roleKey(o.role)) : '—'}</td>
-                  <td className="mono">{fmtDate(o.created_at)}</td>
+                  <td className="mono" data-label={T('org.regNo')}>{o.reg_no}</td>
+                  <td data-label={T('org.role')}>{o.role ? T(roleKey(o.role)) : '—'}</td>
+                  <td className="mono" data-label={T('org.created')}>{fmtDate(o.created_at)}</td>
                   <td className="users-table__actions">
                     <Link className="btn btn--ghost btn--sm" href={`/me/organizations/${o.id}`} title={T('org.detail')}>
                       <ChevronRight size={14} strokeWidth={2} />

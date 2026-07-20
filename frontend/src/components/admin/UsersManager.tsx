@@ -129,7 +129,7 @@ export default function UsersManager({ currentUserId, currentUserRoleId, readOnl
                   (u.role_id === ROLE_ADMIN && !callerIsSuperAdmin);
                 return (
                   <tr key={u.id}>
-                    <td>
+                    <td data-label={T('users.col.name')}>
                       {(() => {
                         const name = (lang === 'en' ? (u.full_name_en?.trim() || u.full_name?.trim()) : u.full_name?.trim());
                         return (
@@ -141,8 +141,8 @@ export default function UsersManager({ currentUserId, currentUserRoleId, readOnl
                         );
                       })()}
                     </td>
-                    <td className="mono">{u.email}</td>
-                    <td>
+                    <td className="mono" data-label={T('users.col.email')}>{u.email}</td>
+                    <td data-label={T('users.col.role')}>
                       {readOnly || isProtected ? (
                         <span>{(() => {
                           const r = roles.find((x) => x.id === u.role_id);
@@ -163,12 +163,12 @@ export default function UsersManager({ currentUserId, currentUserRoleId, readOnl
                         </select>
                       )}
                     </td>
-                    <td>
+                    <td data-label={T('users.col.status')}>
                       {u.active
                         ? <span className="chip chip--success">{T('users.active')}</span>
                         : <span className="chip chip--neutral">{T('users.inactive')}</span>}
                     </td>
-                    <td className="mono">{fmtDate(u.created_at)}</td>
+                    <td className="mono" data-label={T('users.col.created')}>{fmtDate(u.created_at)}</td>
                     {!readOnly && (
                       <td className="users-table__actions">
                         {!isProtected && (

@@ -90,10 +90,10 @@ export default function GovAppointmentsView() {
             <tbody>
               {items.map((a) => (
                 <tr key={a.id}>
-                  <td>{a.service_name || '—'}</td>
-                  <td>{a.agency || '—'}<div className="muted" style={{ fontSize: 12 }}>{a.location}</div></td>
-                  <td className="mono">{fmtDateTime(a.scheduled_at)}</td>
-                  <td>
+                  <td data-label="Үйлчилгээ">{a.service_name || '—'}</td>
+                  <td data-label="Байгууллага">{a.agency || '—'}<div className="muted" style={{ fontSize: 12 }}>{a.location}</div></td>
+                  <td className="mono" data-label="Огноо, цаг">{fmtDateTime(a.scheduled_at)}</td>
+                  <td data-label="Төлөв">
                     <span className={`chip ${a.status === 'cancelled' ? 'chip--danger' : a.status === 'completed' ? 'chip--neutral' : 'chip--success'}`}>
                       {STATUS_LABEL[a.status] ?? a.status}
                     </span>

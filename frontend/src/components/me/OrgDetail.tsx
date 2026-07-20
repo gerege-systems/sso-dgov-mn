@@ -187,11 +187,11 @@ export default function OrgDetail({ orgId, currentUserId }: Props) {
                 const isOwner = m.role === 'owner';
                 return (
                   <tr key={m.user_id}>
-                    <td className="mono">
+                    <td className="mono" data-label={T('org.userId')}>
                       {m.user_id}
                       {isSelf && <span className="chip chip--neutral" style={{ marginLeft: 8 }}>{T('org.you')}</span>}
                     </td>
-                    <td>
+                    <td data-label={T('org.role')}>
                       {canManage && !isOwner ? (
                         <select
                           className="input users-table__role"
@@ -206,7 +206,7 @@ export default function OrgDetail({ orgId, currentUserId }: Props) {
                         <span>{T(roleKey(m.role))}</span>
                       )}
                     </td>
-                    <td className="mono">{fmtDate(m.created_at)}</td>
+                    <td className="mono" data-label={T('org.created')}>{fmtDate(m.created_at)}</td>
                     {canManage && (
                       <td className="users-table__actions">
                         {!isOwner && (

@@ -50,11 +50,11 @@ export default function GovPaymentsView() {
             <tbody>
               {items.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.title}</td>
-                  <td><span className="chip chip--neutral">{CAT_LABEL[p.category] ?? p.category}</span></td>
-                  <td className="mono">{money(p.amount, p.currency)}</td>
-                  <td className="mono muted">{p.status === 'paid' ? fmtDate(p.paid_at) : fmtDate(p.due_date)}</td>
-                  <td>
+                  <td data-label="Төлбөр">{p.title}</td>
+                  <td data-label="Төрөл"><span className="chip chip--neutral">{CAT_LABEL[p.category] ?? p.category}</span></td>
+                  <td className="mono" data-label="Дүн">{money(p.amount, p.currency)}</td>
+                  <td className="mono muted" data-label="Хугацаа">{p.status === 'paid' ? fmtDate(p.paid_at) : fmtDate(p.due_date)}</td>
+                  <td data-label="Төлөв">
                     {p.status === 'paid'
                       ? <span className="chip chip--success" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={12} /> Төлсөн</span>
                       : <span className="chip chip--danger">Төлөгдөөгүй</span>}

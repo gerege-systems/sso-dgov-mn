@@ -64,11 +64,11 @@ export default function GovReferencesView() {
                 const expired = r.status !== 'issued' || (r.valid_until ? new Date(r.valid_until) < new Date() : false);
                 return (
                   <tr key={r.id}>
-                    <td>{r.title}</td>
-                    <td className="mono">{r.reference_no}</td>
-                    <td className="mono muted">{fmtDate(r.issued_at)}</td>
-                    <td className="mono muted">{fmtDate(r.valid_until)}</td>
-                    <td>{expired ? <span className="chip chip--danger">Хүчингүй</span> : <span className="chip chip--success">Хүчинтэй</span>}</td>
+                    <td data-label="Лавлагаа">{r.title}</td>
+                    <td className="mono" data-label="Лавлах №">{r.reference_no}</td>
+                    <td className="mono muted" data-label="Олгосон">{fmtDate(r.issued_at)}</td>
+                    <td className="mono muted" data-label="Хүчинтэй">{fmtDate(r.valid_until)}</td>
+                    <td data-label="Төлөв">{expired ? <span className="chip chip--danger">Хүчингүй</span> : <span className="chip chip--success">Хүчинтэй</span>}</td>
                     <td className="users-table__actions">
                       <button className="btn btn--ghost btn--sm" type="button" title="Татах (PDF)" disabled={expired}><Download size={14} /></button>
                     </td>

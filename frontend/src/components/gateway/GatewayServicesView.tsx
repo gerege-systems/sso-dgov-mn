@@ -112,10 +112,10 @@ export default function GatewayServicesView() {
             <tbody>
               {items.map((s) => (
                 <tr key={s.id}>
-                  <td>{s.name}</td>
-                  <td className="mono">{upstreamURL(s.protocol, s.host, s.port, s.path)}</td>
-                  <td><Tags tags={s.tags} /></td>
-                  <td><EnabledChip enabled={s.enabled} /></td>
+                  <td data-label="Нэр">{s.name}</td>
+                  <td className="mono" data-label="Upstream">{upstreamURL(s.protocol, s.host, s.port, s.path)}</td>
+                  <td data-label="Tag"><Tags tags={s.tags} /></td>
+                  <td data-label="Төлөв"><EnabledChip enabled={s.enabled} /></td>
                   <td className="users-table__actions">
                     <button className="btn btn--ghost btn--sm" type="button" title="Засах" onClick={() => openEdit(s)}><Pencil size={14} /></button>
                     <button className="btn btn--ghost btn--sm" type="button" title={s.enabled ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'} onClick={() => toggle(s)}><Power size={14} /></button>
