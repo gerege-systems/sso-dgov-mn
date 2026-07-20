@@ -23,6 +23,46 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/.well-known/jwks.json": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "id_token шалгах нийтийн түлхүүрүүд (JWK Set)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/.well-known/openid-configuration": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OpenID Connect discovery баримт",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/admin/ai/prompts": {
             "get": {
                 "security": [
@@ -2510,6 +2550,138 @@ const docTemplate = `{
                 }
             }
         },
+        "/oauth2/auth": {
+            "get": {
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OAuth2 authorization endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Client ID",
+                        "name": "client_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Registered redirect URI",
+                        "name": "redirect_uri",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "code",
+                        "name": "response_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Space-separated scopes",
+                        "name": "scope",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Opaque RP state",
+                        "name": "state",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    }
+                }
+            }
+        },
+        "/oauth2/introspect": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OAuth2 token introspection (RFC 7662)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/oauth2/revoke": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OAuth2 token revocation (RFC 7009)",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/oauth2/sessions/logout": {
+            "get": {
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "RP-initiated logout",
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    }
+                }
+            }
+        },
+        "/oauth2/token": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OAuth2 token endpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "authorization_code | refresh_token | client_credentials",
+                        "name": "grant_type",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/site/appearance": {
             "get": {
                 "description": "Landing болон нийтийн хуудсанд хэрэглэх нийтийн харагдац (accent · font · style · theme). Нэвтрэлт шаардахгүй.",
@@ -2857,6 +3029,26 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/template_internal_http_handlers_v1.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/userinfo": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oidc"
+                ],
+                "summary": "OIDC userinfo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }

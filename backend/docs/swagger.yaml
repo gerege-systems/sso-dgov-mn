@@ -1362,6 +1362,32 @@ info:
   title: Government Template Platform V3.0 API
   version: "1.0"
 paths:
+  /.well-known/jwks.json:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: id_token шалгах нийтийн түлхүүрүүд (JWK Set)
+      tags:
+      - oidc
+  /.well-known/openid-configuration:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: OpenID Connect discovery баримт
+      tags:
+      - oidc
   /admin/ai/prompts:
     get:
       description: Тохируулдаг prompt давхаргуудыг (scope — хамрах хүрээ, instructions
@@ -2961,6 +2987,92 @@ paths:
       summary: Гарын үсэг (eID) хадгалах
       tags:
       - users
+  /oauth2/auth:
+    get:
+      parameters:
+      - description: Client ID
+        in: query
+        name: client_id
+        required: true
+        type: string
+      - description: Registered redirect URI
+        in: query
+        name: redirect_uri
+        required: true
+        type: string
+      - description: code
+        in: query
+        name: response_type
+        required: true
+        type: string
+      - description: Space-separated scopes
+        in: query
+        name: scope
+        type: string
+      - description: Opaque RP state
+        in: query
+        name: state
+        type: string
+      responses:
+        "302":
+          description: Found
+      summary: OAuth2 authorization endpoint
+      tags:
+      - oidc
+  /oauth2/introspect:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: OAuth2 token introspection (RFC 7662)
+      tags:
+      - oidc
+  /oauth2/revoke:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      responses:
+        "200":
+          description: OK
+      summary: OAuth2 token revocation (RFC 7009)
+      tags:
+      - oidc
+  /oauth2/sessions/logout:
+    get:
+      responses:
+        "302":
+          description: Found
+      summary: RP-initiated logout
+      tags:
+      - oidc
+  /oauth2/token:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: authorization_code | refresh_token | client_credentials
+        in: formData
+        name: grant_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: OAuth2 token endpoint
+      tags:
+      - oidc
   /site/appearance:
     get:
       description: Landing болон нийтийн хуудсанд хэрэглэх нийтийн харагдац (accent
@@ -3170,6 +3282,19 @@ paths:
       summary: Идэвхтэй landing theme-ийг унших
       tags:
       - site
+  /userinfo:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: OIDC userinfo
+      tags:
+      - oidc
   /users/me:
     get:
       description: Authorization header дахь JWT-ээс баталгаажуулагдсан хэрэглэгчийг

@@ -12,7 +12,7 @@
 V3.0** стек (Clean Architecture зарчим) дээр бүтээгдсэн. **chi (net/http)** (HTTP),
 **pgx (pgxpool) + PostgreSQL** (өгөгдөл), **Redis + Ristretto** (кэш), **eID
 Mongolia + Google OAuth + dgov SSO (OIDC)** (танилт) дээр суурилсан — мөн DAN өөрөө
-OIDC provider болох сонголттой **Ory Hydra** урдтай.
+OIDC issuer болох дотоод **OAuth2/OIDC provider**-тэй.
 
 ## 📌 Эх сурвалж ба нээлттэй эх (Open Source)
 
@@ -38,7 +38,7 @@ OIDC provider болох сонголттой **Ory Hydra** урдтай.
 - **eID танилт** — цорын ганц нэвтрэх арга: eID Mongolia Relying Party (QR / мобайл deep-link / РД push) + long-poll session; JWT access + refresh token гаргана (rotation, `kind` claim guard)
 - **Google OAuth холболт** — Google account-ийг eID хэрэглэгчид холбоно (code exchange зөвхөн server талд), дараа нь түүгээр нэвтэрнэ
 - **dgov SSO (OIDC) consumer** — `sso.dgov.mn`-ээр 2 дахь нэвтрэлт (start / callback / native / logout)
-- **OIDC provider (SSO)** — DAN-ийг identity provider болгох сонголттой Ory Hydra урд тал; login/consent/logout урсгал + RP client бүртгэлийн `/admin` гадаргуу (зөвхөн Hydra тохируулагдсан үед)
+- **OIDC provider (SSO)** — DAN-ийг identity provider болгох дотоод OAuth2/OIDC provider (`usecases/oidc`): `/oauth2/*`, `/userinfo`, discovery + JWKS, мөн login/consent/logout урсгал ба RP client бүртгэлийн `/admin` гадаргуу (`OAUTH_ISSUER` тохируулагдсан үед идэвхжинэ)
 - **eID PKI профайл** — нэвтэрсэн иргэний холбоотой байгууллага ба гарын үсэг зурагчид, гэрчилгээ, төхөөрөмж, идэвх
 - **Байгууллага ба гишүүнчлэл** — байгууллага үүсгэх/хайх (Gerege Verify/XYP улсын бүртгэлийн лавлагаа) + гишүүн/эрх удирдах, хэрэглэгч тус бүрт RLS-ээр
 - **Төрийн үйлчилгээний портал** — каталог, хүсэлт, лавлагаа, мэдэгдэл, төлбөр, цаг захиалга
@@ -72,8 +72,8 @@ OIDC provider болох сонголттой **Ory Hydra** урдтай.
 │   │   ├── domain/              # Domain entities (хамгийн дотоод давхарга)
 │   │   └── usecases/           # Business logic (interface + impl), модуль тус бүрт нэг package:
 │   │       #  auth · users · rbac · superadmin · ai · audit · security · site
-│   │       #  org · gov · gateway · core · sso · provider · sign · assets
-│   │       #  integrations · gspace
+│   │       #  org · gov · gateway · core · sso · provider · oidc · sign
+│   │       #  applications · assets · integrations · gspace
 │   ├── datasources/
 │   │   ├── drivers/             # pgx (pgxpool) Postgres холболт (driver_pgx.go)
 │   │   ├── caches/              # Redis + Ristretto
@@ -91,7 +91,7 @@ OIDC provider болох сонголттой **Ory Hydra** урдтай.
 ├── docs/                        # Swagger + ARCHITECTURE.md + DEVELOPMENT.md
 └── pkg/                         # jwt, logger, clock, helpers, validators,
                                  # audit, observability, gemini,
-                                 # eid, google, oidc, hydra, xyp, gspace, verify
+                                 # eid, google, secrethash, xyp, gspace, verify
 ```
 
 ## Түргэн эхлүүлэх
@@ -168,9 +168,8 @@ SSO_REDIRECT_URI=
 SSO_SCOPE=openid profile email
 SSO_NATIVE_CLIENT_ID=            # мобайл PKCE public client_id
 
-# OIDC PROVIDER тал (DAN нь issuer, Ory Hydra-аар) — тохируулаагүй бол урсгал inert
-HYDRA_ADMIN_URL=http://hydra:4445
-HYDRA_PUBLIC_URL=                # issuer, жишээ https://sso.dgov.mn (хоосон = provider унтарна)
+# OIDC PROVIDER тал (DAN нь issuer, дотоод хэрэгжилт) — тохируулаагүй бол урсгал inert
+OAUTH_ISSUER=                    # issuer, жишээ https://sso.dgov.mn (хоосон = provider унтарна)
 SSO_STATE_KEY=                   # >= 32 байт; login/consent state cookie HMAC
 SSO_FIRSTPARTY_CLIENTS=          # consent дэлгэцийг алгасах client_id-уудын CSV
 SSO_ADMIN_API_KEYS=              # /admin гадаргуугийн bootstrap key-үүдийн CSV
@@ -311,10 +310,18 @@ AI туслах давхаргат system prompt-оор ажиллана: **suur
 | PUT | `/api/v1/superadmin/admins/{id}/grant` | Байгаа хэрэглэгчид админ эрх олгох (зөвхөн super admin) |
 | DELETE | `/api/v1/superadmin/admins/{id}` | Админ эрх хасах (зөвхөн super admin) |
 
-### OIDC provider (зөвхөн Hydra тохируулагдсан үед)
-`GET /api/v1/provider/login` · `/consent`, мөн login/consent/logout-ийн
-accept/reject (Hydra-аар жолоодогдох login/consent дэлгэц). RP OAuth2 client
-бүртгэл нь mount хийсэн `/admin` гадаргуу дор.
+### OIDC provider (зөвхөн `OAUTH_ISSUER` тохируулагдсан үед)
+Протоколын нийтийн endpoint-ууд нь **үндэс** дээр сууна (OIDC нь замыг нь
+тогтоодог тул `/api/v1` дор биш) бөгөөд `BaseResponse` дугтуйгүй, RFC-ийн
+хэлбэртэй JSON-оор хариулна:
+
+`GET /oauth2/auth` · `POST /oauth2/token` · `POST /oauth2/introspect` ·
+`POST /oauth2/revoke` · `GET /oauth2/sessions/logout` · `GET|POST /userinfo` ·
+`GET /.well-known/openid-configuration` · `GET /.well-known/jwks.json`
+
+Browser талын challenge API хэвээрээ: `GET /api/v1/provider/login` · `/consent`,
+мөн login/consent/logout-ийн accept/reject (login/consent дэлгэц). RP OAuth2
+client бүртгэл нь mount хийсэн `/admin` гадаргуу дор.
 
 ### Ops
 `GET /health` (liveness) · `GET /ready` (DB+Redis) · `GET /metrics` · `GET /swagger/doc.json`

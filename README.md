@@ -51,7 +51,7 @@ dan-dgov-mn/
 - **Organizations & membership** — create/lookup organizations (state-registry lookup via Gerege Verify/XYP) and manage members/roles, RLS-scoped per user.
 - **Government services portal** — the citizen-facing `Төрийн үйлчилгээ` surface: service catalogue, applications, references, notifications, payments, appointments.
 - **API gateway** — admin-managed services / routes / consumers / API keys / policies with request telemetry (overview + logs).
-- **OIDC provider (SSO)** — Government SSO itself acts as an identity provider: an [Ory Hydra](https://www.ory.sh/hydra/) front-end drives the login/consent/logout flows so relying parties can `Sign in with Government SSO`. Enabled only when Hydra is configured.
+- **OIDC provider (SSO)** — Government SSO itself acts as an identity provider: a built-in OAuth2/OIDC provider implemented in the Go backend (`usecases/oidc`) serves `/oauth2/*`, `/userinfo` and the `.well-known` documents, and drives the login/consent/logout flows so relying parties can `Sign in with Government SSO`. Authorization code + PKCE (S256), rotating refresh tokens with reuse detection, and `client_credentials`; opaque access tokens, RS256 id_tokens. Enabled once `OAUTH_ISSUER` is set.
 - **Document signing (PAdES)** — server-side PDF signing through eID Mongolia `/v3`, with a persistent Document-Signer certificate; a sign-relay lets third-party RPs sign through Government SSO's eID credentials.
 - **Third-party integrations** — per-user OAuth links (Google Drive/Meet, Dropbox) with tokens encrypted at rest (AES-256-GCM), plus **Gerege Space** app-native SFTP storage.
 - **AI pipeline (Gemini)** — SDK-free REST client with function calling: text/voice chat, speech-to-text, text-to-speech, live translation. Layered system prompt (hardcoded guardrails + admin-configurable scope/instructions in the DB) keeps the assistant inside its configured domain; a `search_knowledge` tool grounds answers in the `ai_knowledge` table.
@@ -79,7 +79,7 @@ npm install
 npm run dev
 ```
 
-Or bring up the whole stack (db + redis + migrate + api + web, and Hydra for OIDC-provider mode):
+Or bring up the whole stack (db + migrate + redis + api + web — the OIDC provider runs inside `api`, so there is no separate issuer container):
 
 ```bash
 docker compose up -d --build
@@ -96,7 +96,7 @@ Open **http://localhost:3000** and choose **Login with eID** (scan the QR / open
 | [backend/docs/API_CONTRACT.md](backend/docs/API_CONTRACT.md) | REST endpoints, request/response shapes |
 | [backend/docs/AI_PIPELINE.md](backend/docs/AI_PIPELINE.md) | AI assistant internals: flows, prompt layers, tools, voice, how to extend |
 | [backend/docs/SECURITY.md](backend/docs/SECURITY.md) | Implemented controls + ASVS roadmap |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | VPS deployment runbook (compose, env files, nginx, Hydra, updates, rollback) |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | VPS deployment runbook (compose, env files, nginx, updates, rollback) |
 | [ROADMAP.md](ROADMAP.md) | What's shipped and what's next |
 | [SECURITY.md](SECURITY.md) | How to report a vulnerability |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |

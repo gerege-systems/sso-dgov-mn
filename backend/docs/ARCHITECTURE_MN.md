@@ -10,8 +10,8 @@ AI**, Clean Architecture зарчмаар зохион байгуулагдса�
 хучигдсан.
 
 Government SSO нь нэгэн зэрэг **eID Relying Party** (хэрэглэгч eID-ээр нэвтэрнэ)
-бөгөөд **OIDC Identity Provider** (бусад төрийн апп-ууд Ory Hydra-аар дамжуулан
-dan-*аар* нэвтэрнэ) юм. PostgreSQL дахь Row-Level Security нь хэрэглэгч тус бүрийн
+бөгөөд **OIDC Identity Provider** (бусад төрийн апп-ууд энэ backend дотор
+хэрэгжсэн OAuth2/OIDC provider-ээр дамжуулан dan-*аар* нэвтэрнэ) юм. PostgreSQL дахь Row-Level Security нь хэрэглэгч тус бүрийн
 тусгаарлалтыг үүрдэг гол хамгаалалтын хил юм —
 [Row-Level Security](#row-level-security-rls) хэсгийг үз.
 
@@ -62,10 +62,11 @@ eID/SSO/төрийн үйлчилгээний гадаргууг нэмдэг:
 | `org`          | Байгууллага + гишүүнчлэл (eID-тэй холбогдсон; **RLS**). |
 | `gov`          | Иргэний "Төрийн үйлчилгээ" портал — хүсэлт, лавлагаа, мэдэгдэл, төлбөр, цаг захиалга (per-user, **RLS**); каталог нийтийн. |
 | `gateway`      | API gateway — services / routes / policies + телеметр (service бүр OAuth `scope`-той). |
-| `applications` | Нэгдсэн OAuth2 **client бүртгэл** (RP + m2m), **Ory Hydra**-аар дэмжигдсэн — хуучин gateway consumers/API-key болон SSO RP бүртгэлийг нэгтгэнэ; service тус бүрийн хандалт = OAuth scope (`application_services` → `gateway_services.scope`). Админ удирдана (`gateway.manage`), Hydra дээр gated. |
+| `applications` | Нэгдсэн OAuth2 **client бүртгэл** (RP + m2m), `oauth_clients` хүснэгтээр дэмжигдсэн — хуучин gateway consumers/API-key болон SSO RP бүртгэлийг нэгтгэнэ; service тус бүрийн хандалт = OAuth scope (`application_services` → `gateway_services.scope`). Админ удирдана (`gateway.manage`), provider тохируулагдсан үед идэвхжинэ. |
 | `core`         | Gerege Core (`core.dgov.mn`) USER FIND / ORG FIND лавлагааны wrap. |
 | `sso`          | **dgov SSO** OIDC consumer (`sso.dgov.mn`) — eID-ийн зэрэгцээ 2 дахь нэвтрэлт. |
-| `provider`     | **OIDC Provider** — **Ory Hydra**-гийн урд талын login/consent/logout цөм; dan өөрөө SSO IdP. |
+| `oidc`         | **OAuth2/OIDC протоколын цөм** — authorize + challenge state machine, token endpoint (код солилцоо, refresh эргэлт, `client_credentials`, id_token үүсгэлт), introspect / userinfo / revoke, RS256 гарын үсгийн түлхүүр + JWKS, discovery, claims. |
+| `provider`     | **OIDC Provider** — login/consent/logout цөм; доор нь `oidc` service рүү шилжүүлнэ. dan өөрөө SSO IdP. |
 | `integrations` | Хэрэглэгчийн гуравдагч этгээдийн OAuth (Google Drive/Meet, Dropbox); токеныг **AES-256-GCM шифрлэн** хадгална (**RLS**). |
 | `assets`       | Хувь хүний гарын үсгийн зураг + байгууллагын тамга (зураг Google Drive-д, URL DB-д). |
 | `gspace`       | Gerege Space — апп-ын өөрийн SFTP хадгалалт, per-user квот (default 2 MB). |
@@ -114,7 +115,7 @@ eID/SSO/төрийн үйлчилгээний гадаргууг нэмдэг:
 │       └── signrelay/              #   доод RP-д зориулсан /rp/sign relay
 ├── migrations/                     # Дугаарласан SQL migrations (N_name.up.sql + .down.sql)
 ├── pkg/                            # Framework-agnostic client & utility (15 багц)
-│   ├── eid/ google/ oidc/ hydra/   # Identity: eID RP, Google OAuth, OIDC consumer, Hydra admin
+│   ├── eid/ google/ secrethash/    # Identity: eID RP, Google OAuth, client secret hash
 │   ├── xyp/ gspace/ verify/        # XYP байгууллагын лавлагаа, SFTP хадгалалт, GeregeCloud Verify OTP
 │   ├── gemini/                     # SDK-гүй Gemini REST (function calling, audio, PCM→WAV)
 │   ├── jwt/ logger/ clock/         # JWT, Zap logging, цагийн абстракц
@@ -154,7 +155,7 @@ HTTP → Usecase → Repository → Domain
 
 **Composition root:** `cmd/api/server/server.go` — цорын ганц гар DI холболтын цэг.
 Бүх mount-ыг харахын тулд эхнээс нь дуустал уншина. Энэ нь:
-- Tracing, pgx pool (RLS boot guard-тай), Redis/Ristretto, JWT service, бүх гадаад client-ийг (eID, Google, XYP, OIDC/Hydra, Gemini, GeregeCloud Verify, Gerege Space, Gerege Core) эхлүүлнэ.
+- Tracing, pgx pool (RLS boot guard-тай), Redis/Ristretto, JWT service, бүх гадаад client-ийг (eID, Google, XYP, dgov SSO/OIDC consumer, Gemini, GeregeCloud Verify, Gerege Space, Gerege Core) эхлүүлнэ.
 - repository → usecase → route-ийг гараар холбоно (global singleton, DI container байхгүй).
 - chi router-ийг бүтээж, global middleware stack суулгаж, route модуль бүрийг `/api/v1` дор mount хийнэ.
 - OIDC-provider гадаргууг (`/admin`, `/rp/sign`) зөвхөн тохиргоо байгаа үед нөхцөлтэйгээр mount хийнэ.
@@ -357,22 +358,55 @@ role чимээгүй алгасдаг тул `guardRLSEnforceable`
 - Role-д `rolsuper` эсвэл `rolbypassrls` байвал: **production fail-closed** (boot зогсоно, pool хаагдана); **development анхааруулга** логоод үргэлжилнэ (migrate/тест superuser хэрэглэж болно).
 - Иймд api нь production-д least-privilege non-superuser role-оор (жишээ `app_user`) холбогдох ёстой. (Compose стек санаатайгаар `ENVIRONMENT=development` ажилладаг тул guard зөвхөн production-д хатуу унагана.)
 
-## OIDC Provider (Ory Hydra)
+## OIDC Provider (дотоод хэрэгжилт)
 
-Government SSO өөрөө **Identity Provider**: бусад төрийн апп-ууд **Ory Hydra**-аар
-дамжуулан нэвтрэлтээ dan-д даалгадаг. Энэ гадаргуу нь зөвхөн `ProviderConfigured()`
-true үед идэвхжинэ (`HYDRA_ADMIN_URL` + `HYDRA_PUBLIC_URL` + `SSO_STATE_KEY ≥ 32
-байт`); эс бөгөөс inert бөгөөс route нь огт бүртгэгдэхгүй.
+Government SSO өөрөө **Identity Provider**: бусад төрийн апп-ууд нэвтрэлтээ dan-д
+даалгадаг. OAuth2/OIDC provider нь **энэ backend дотор хэрэгжсэн** — гадны issuer
+процесс байхгүй. Энэ гадаргуу нь зөвхөн `ProviderConfigured()` true үед идэвхжинэ
+(`OAUTH_ISSUER` + `SSO_STATE_KEY ≥ 32 байт`); эс бөгөөс inert бөгөөд route нь огт
+бүртгэгдэхгүй.
 
-- **Login / consent / logout цөм** — `usecases/provider` + `pkg/hydra` нь Hydra-гийн challenge-ийг зохицуулна; first-party client-ууд (`SSO_FIRSTPARTY_CLIENTS`) consent UI-г алгасна. `/api/v1/provider` дор mount.
-- **Applications (нэгдсэн client бүртгэл)** — `usecases/applications` (`/api/v1/applications` дор mount, `gateway.manage`-ээр хамгаалагдсан) нь OAuth2 client бүртгэх одоогийн арга: RP "Login with Government SSO" апп-ууд (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` нь public, PKCE, secret-гүй) болон m2m client-ууд (`client_credentials`). Тус бүр нь Hydra OAuth2 client бөгөөс scope нь зөвшөөрсөн gateway service-үүд (`application_services` → `gateway_services.scope`); confidential `client_secret` нь create/rotate үед нэг удаа харагдана.
+> **Түүх.** Өмнө нь энэ нь тусдаа контейнерээр, тусдаа `hydra` DB-тэй ажилладаг
+> **Ory Hydra** байсан. Hydra болон `pkg/hydra` устсан; compose нь одоо яг
+> `db`, `migrate`, `redis`, `api`, `web` бөгөөд бүх `HYDRA_*` хувьсагч ганц
+> `OAUTH_ISSUER` болж хураангуйлагдсан.
+
+### Кодын байршил
+
+| Зам | Үүрэг |
+|-----|-------|
+| `internal/business/usecases/oidc/` | Протоколын логик: `authorize.go` (authorize + challenge state machine), `token.go` (код солилцоо, refresh эргэлт, `client_credentials`, id_token үүсгэлт), `introspect.go` (introspect / userinfo / revoke), `keys.go` (RS256 гарын үсгийн түлхүүр + JWKS), `discovery.go`, `claims.go`. |
+| `internal/datasources/repositories/postgres/oauth/` | Client store, гарын үсгийн түлхүүр, урсгалын төлөв. |
+| `internal/http/handlers/v1/oidc/` + `internal/http/routes/route_oidc.go` | Нийтийн endpoint-ууд, **үндэс** дээр mount (OIDC замыг нь тогтоодог тул `/api/v1` дор биш). |
+| `pkg/secrethash` | Client secret-ийн hash. Ory-гийн `$pbkdf2-sha256$` форматыг шалгаж чаддаг тул Hydra-аас нүүсэн client-ууд хуучин secret-ээ хэвээр хэрэглэнэ; шинэ secret-ийг **argon2id**-аар бичнэ. |
+| `migrations/5_oauth_provider.up.sql` | `oauth_clients`, `oauth_signing_keys`, `oauth_auth_codes`, `oauth_access_tokens`, `oauth_refresh_tokens`, `oauth_challenges`, `oauth_consents`. |
+
+### Нийтийн endpoint-ууд
+
+`GET /oauth2/auth` · `POST /oauth2/token` · `POST /oauth2/revoke` ·
+`POST /oauth2/introspect` · `GET /oauth2/sessions/logout` · `GET|POST /userinfo` ·
+`GET /.well-known/openid-configuration` · `GET /.well-known/jwks.json`
+
+**Дэмждэг:** `authorization_code` + PKCE (**зөвхөн S256**), `refresh_token`
+(эргэлддэг, дахин ашиглалтыг илрүүлнэ), `client_credentials`, OIDC discovery /
+JWKS / userinfo, introspection, revocation, RP-initiated logout. Access token нь
+**opaque**; id_token нь **RS256 JWT**.
+
+**Санаатайгаар дэмжээгүй** (production-д хэзээ ч хэрэглэгдээгүй): pairwise
+subject type, DPoP, device grant, back-channel болон front-channel logout,
+implicit ба hybrid урсгал, JAR/PAR request object.
+
+### Дээр нь суусан гадаргуунууд
+
+- **Login / consent / logout цөм** — `usecases/provider` нь challenge-ийг зохицуулж, доор нь `oidc` service рүү шилжүүлнэ; интерфэйсээ хадгалсан тул frontend-ийн `/oauth/*` хуудсууд болон `/api/provider/*` BFF route-ууд ӨӨРЧЛӨГДӨӨГҮЙ. First-party client-ууд (`SSO_FIRSTPARTY_CLIENTS`) consent UI-г алгасна. `/api/v1/provider` дор mount.
+- **Applications (нэгдсэн client бүртгэл)** — `usecases/applications` (`/api/v1/applications` дор mount, `gateway.manage`-ээр хамгаалагдсан) нь OAuth2 client бүртгэх одоогийн арга: RP "Login with Government SSO" апп-ууд (`web`/`spa`/`native` → `authorization_code`; `spa`/`native` нь public, PKCE, secret-гүй) болон m2m client-ууд (`client_credentials`). Тус бүр нь `oauth_clients`-ийн мөр бөгөөд scope нь зөвшөөрсөн gateway service-үүд (`application_services` → `gateway_services.scope`); confidential `client_secret` нь create/rotate үед нэг удаа харагдана.
 - **Операторын гадаргуу (legacy)** — `internal/provider/adminapi` нь **`/admin`** дор (`http.StripPrefix`-ээр) RP OAuth2-client бүртгэл/удирдлагад mount; `devapps` (`developer_apps`) store болон `adminkeys` (bootstrap key нь `SSO_ADMIN_API_KEYS`-аас, SHA-256-аар тааруулна)-аар дэмжигдэнэ. Энэ admin-API-key операторын гадаргуу болон `developer_apps` overlay нь хэвээр байгаа ч шинэ ажилд **нэгдсэн Applications загвараар орлогдсон**.
 - **Sign relay** — `internal/provider/signrelay` нь **`/rp/sign/*`** дор mount; доод RP-үүд dan-ий eidmongolia RP credential-ээр *дамжин* eID PDF гарын үсэг зурах reverse proxy (`SIGN_RELAY_TOKEN` + `EID_RP_SECRET`-ээр идэвхжинэ).
 
 > **Enforcement caveat (хэрэгжүүлэлтийн анхааруулга).** Апп-д service оноох нь тухайн
 > client-ийн OAuth **scope**-ыг тохируулна — энэ нь зөвхөн бүртгэл/тохиргоо.
 > *Runtime* дахь хүсэлт тус бүрийн шалгалтад танилцуулсан токеныг
-> (`hydra.Admin.Introspect` байдаг) route бүрийн service scope-той тулгаж
+> (`/oauth2/introspect` endpoint байдаг) route бүрийн service scope-той тулгаж
 > introspect хийдэг gateway proxy хэрэгтэй бөгөөд тэр proxy **одоогоор
 > байхгүй**. Тиймээс өнөөдөр service оноолт нь амьд authorization биш — үүнийг
 > хэрэгжсэн authz гэж бүү андуур.
@@ -451,9 +485,10 @@ endpoint-ийг хамгаална: **development**-д үргэлж нээлтт
 Бүх API route нь `/api/v1` дор; модуль тус бүр `/v1/<module>`-ийг mount хийнэ:
 `auth`, `users`, `users/me/eid`, `rbac`, `org`, `gov`, `integrations`, `assets`,
 `gspace`, `gateway`, `core`, `sso`, `admin`, `superadmin`, `ai`, `audit`,
-`security`, `site`, `sign`, болон (Hydra тохируулагдсан үед) `provider` +
+`security`, `site`, `sign`, болон (provider тохируулагдсан үед) `provider` +
 `applications`. Infra endpoint
-(`/health`, `/ready`, `/metrics`, `/swagger`) болон provider гадаргуу (`/admin`,
+(`/health`, `/ready`, `/metrics`, `/swagger`), OIDC протоколын endpoint-ууд
+(`/oauth2/*`, `/userinfo`, `/.well-known/*`) болон provider гадаргуу (`/admin`,
 `/rp/sign`) нь root дээр байрлана. **Endpoint-ийн бүрэн хүснэгтийг
 [API_CONTRACT.md](API_CONTRACT_MN.md)** болон үүсгэсэн OpenAPI spec (`/swagger`)-ээс үз.
 
@@ -512,7 +547,7 @@ key-үүд:
 | **Gerege Core** | `CORE_API_BASE` (`https://core.dgov.mn`), `CORE_API_TOKEN` |
 | **Integrations** | `INTEGRATION_ENC_KEY` (AES-256-GCM; prod заавал) |
 | **dgov SSO (consumer)** | `SSO_ISSUER` (`https://sso.dgov.mn`), `SSO_CLIENT_ID`, `SSO_CLIENT_SECRET`, `SSO_REDIRECT_URI`, `SSO_SCOPE` (`openid profile email`), `SSO_NATIVE_CLIENT_ID` |
-| **OIDC Provider (Hydra)** | `HYDRA_ADMIN_URL` (`http://hydra:4445`), `HYDRA_PUBLIC_URL`, `SSO_STATE_KEY` (≥32), `SSO_FIRSTPARTY_CLIENTS`, `SSO_ADMIN_API_KEYS`, `SSO_ADMIN_SUBS` |
+| **OIDC Provider (дотоод)** | `OAUTH_ISSUER` (жишээ `https://sso.dgov.mn`), `SSO_STATE_KEY` (≥32), `SSO_FIRSTPARTY_CLIENTS`, `SSO_ADMIN_API_KEYS`, `SSO_ADMIN_SUBS` |
 | **Observability** | `OTEL_EXPORTER` (``/`stdout`/`otlp`), `OTEL_SAMPLE_RATIO`, `OBSERVABILITY_TOKEN` |
 | **Networking** | `ALLOWED_ORIGINS` (prod заавал), `TRUSTED_PROXIES` |
 | **Bootstrap** | `SUPERADMIN_EMAIL` |

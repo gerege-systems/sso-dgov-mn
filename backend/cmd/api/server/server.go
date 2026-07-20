@@ -30,6 +30,7 @@ import (
 	"template/internal/business/usecases/gov"
 	"template/internal/business/usecases/gspace"
 	"template/internal/business/usecases/integrations"
+	oidcuc "template/internal/business/usecases/oidc"
 	"template/internal/business/usecases/org"
 	provideruc "template/internal/business/usecases/provider"
 	"template/internal/business/usecases/rbac"
@@ -50,6 +51,7 @@ import (
 	auditpostgres "template/internal/datasources/repositories/postgres/audit"
 	gatewaypostgres "template/internal/datasources/repositories/postgres/gateway"
 	govpostgres "template/internal/datasources/repositories/postgres/gov"
+	oauthpostgres "template/internal/datasources/repositories/postgres/oauth"
 	orgpostgres "template/internal/datasources/repositories/postgres/org"
 	orgstamppostgres "template/internal/datasources/repositories/postgres/orgstamp"
 	rbacpostgres "template/internal/datasources/repositories/postgres/rbac"
@@ -73,7 +75,6 @@ import (
 	"template/pkg/gemini"
 	"template/pkg/google"
 	gspaceclient "template/pkg/gspace"
-	"template/pkg/hydra"
 	"template/pkg/jwt"
 	"template/pkg/logger"
 	"template/pkg/observability"
@@ -386,23 +387,31 @@ func NewApp() (*App, error) {
 	// OIDC provider (sso.dgov.mn = SSO) — Hydra урдаа тавьсан login/consent/logout
 	// цөм. Зөвхөн Hydra тохируулагдсан (ProviderConfigured) үед идэвхжинэ; эс
 	// бөгөөс providerUC == nil тул route бүртгэгдэхгүй (inert).
-	var providerUC provideruc.Usecase
-	var hydraAdmin *hydra.Admin
-	if config.AppConfig.ProviderConfigured() {
-		hydraAdmin = hydra.NewAdmin(config.AppConfig.HydraAdminURL)
-		providerUC = provideruc.NewUsecase(hydraAdmin, usersUC, config.AppConfig.SSOFirstPartyClientsList())
-	}
+	oauthClients := oauthpostgres.NewClientRepository(pool)
+	oidcSvc := oidcuc.NewService(oauthClients, oauthpostgres.NewFlowRepository(pool), config.AppConfig.Issuer())
+	providerUC := provideruc.NewUsecase(oidcSvc, oauthClients, usersUC,
+		config.AppConfig.SSOFirstPartyClientsList(), config.AppConfig.Issuer())
 
-	// Нэгдсэн Applications (Gateway consumer + SSO RP) — Hydra OAuth2 client-ээр
-	// ажилладаг тул зөвхөн Hydra тохируулагдсан үед идэвхжинэ (эс бөгөөс inert).
-	var applicationsUC applicationsuc.Usecase
-	if hydraAdmin != nil {
-		applicationsUC = applicationsuc.NewUsecase(applicationspostgres.NewApplicationRepository(pool), hydraAdmin)
-		// Bootstrap: seed хийсэн RP overlay мөрүүдэд (template.dgov.mn,
-		// developer.dgov.mn) Hydra OAuth2 client дутуу байвал үүсгэнэ — RP-ууд
-		// функциональ болно. Idempotent; Hydra түр бэлэн бус бол warn-лоод үргэлжилнэ.
-		bootstrapRPApplications(ctx, applicationsUC)
+	// Нэгдсэн Applications (Gateway consumer + SSO RP). Client бүртгэл нь одоо
+	// өөрийн DB-д (oauth_clients) амьдардаг тул Hydra-аас хамаарахаа больсон.
+	applicationsUC := applicationsuc.NewUsecase(
+		applicationspostgres.NewApplicationRepository(pool),
+		oauthClients,
+	)
+
+	// Өөрийн OIDC provider-ийн гарын үсгийн түлхүүр. Эхний ажиллагаанд RSA
+	// түлхүүр үүсгэж, INTEGRATION_ENC_KEY-ээр шифрлэн хадгална. Түлхүүр бэлэн
+	// биш бол id_token гаргах боломжгүй тул boot зогсоно (fail-closed).
+	oidcKeys, err := oidcuc.NewKeyManager(oauthpostgres.NewKeyRepository(pool), config.AppConfig.IntegrationEncKey)
+	if err != nil {
+		return nil, fmt.Errorf("oidc signing keys: %w", err)
 	}
+	if err := oidcKeys.EnsureKey(ctx); err != nil {
+		return nil, fmt.Errorf("oidc: ensure signing key: %w", err)
+	}
+	// Түлхүүр болон иргэний бүртгэл бэлэн болсны дараа token гаргах чадварыг
+	// залгана (id_token-ий гарын үсэг + claims).
+	oidcSvc.WithTokenIssuing(oidcKeys, usersUC)
 
 	// Гуравдагч талын RP-ийн gateway хүсэлтийг (/rp/sign, /api/v1/provider) API
 	// Gateway-ийн лог руу async бичих middleware (detached ctx тул хоцролтгүй;
@@ -434,6 +443,11 @@ func NewApp() (*App, error) {
 	})
 
 	// API Route-ууд
+	// Өөрийн OIDC provider-ийн НИЙТИЙН endpoint-ууд. /api бүлгээс ГАДУУР, үндэс
+	// дээр — замыг нь OIDC стандарт (/.well-known/*) болон nginx-ийн одоо байгаа
+	// Hydra-руу-заадаг дүрмүүд (/oauth2/*, /userinfo) тогтоосон.
+	routes.NewOIDCRoute(r, oidcKeys, oidcSvc, config.AppConfig.Issuer()).Routes()
+
 	r.Route("/api", func(api chi.Router) {
 		api.Use(gwLogMW)
 
@@ -450,9 +464,7 @@ func NewApp() (*App, error) {
 		routes.NewAssetsRoute(api, assetsUC, authMiddleware, govWriteRateLimiter).Routes()
 		routes.NewGSpaceRoute(api, gspaceUC, authMiddleware, govWriteRateLimiter).Routes()
 		routes.NewGatewayRoute(api, gatewayUC, rbacUC, authMiddleware).Routes()
-		if applicationsUC != nil {
-			routes.NewApplicationsRoute(api, applicationsUC, rbacUC, authMiddleware).Routes()
-		}
+		routes.NewApplicationsRoute(api, applicationsUC, rbacUC, authMiddleware).Routes()
 		routes.NewCoreRoute(api, coreUC, rbacUC, authMiddleware).Routes()
 		routes.NewAdminRoute(api, usersUC, rbacUC, aiUC, authMiddleware).Routes()
 		routes.NewSuperAdminRoute(api, superadminUC, authMiddleware).Routes()
@@ -468,18 +480,16 @@ func NewApp() (*App, error) {
 		routes.NewThemeRoute(api, themeUC, rbacUC, authMiddleware).Routes()
 		routes.NewSignRoute(api, signUC, usersUC, assetsUC, authMiddleware).Routes()
 		// eID service proxy — бүртгэгдсэн апп (relying party)-ууд хэрэглэгчийнхээ
-		// Hydra access token-оор ("eid" scope) SSO-ий eID service-үүдийг ДАМЖУУЛАН
-		// дуудна (/v1/eid/*). SSO өөрийн eidmongolia RP creds-ээр татаж өгнө; апп-д
-		// eID credential эзэмших шаардлагагүй. Зөвхөн Hydra тохируулагдсан
-		// (introspection боломжтой) үед идэвхжинэ.
-		if hydraAdmin != nil {
-			// Service тус бүрийн зөвшөөрөл нь client-ийн Hydra allowed scope дахь
-			// "svc:<service>"-ээр илэрхийлэгдэнэ (admin gateway UI-аас апп-д service
-			// олгоход нэмэгддэг). Олгогдоогүй апп 403 авна.
-			eidMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "svc:"+routes.EIDProxyServiceName)
-			eidOrgMW := middlewares.NewOAuthBearerMiddleware(hydraAdmin, "svc:"+routes.EIDOrgProxyServiceName)
-			routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidMW, eidOrgMW).Routes()
-		}
+		// access token-оор SSO-ий eID service-үүдийг ДАМЖУУЛАН дуудна (/v1/eid/*).
+		// SSO өөрийн eidmongolia RP creds-ээр татаж өгнө; апп-д eID credential
+		// эзэмших шаардлагагүй.
+		//
+		// Service тус бүрийн зөвшөөрөл нь client-ийн allowed scope дахь
+		// "svc:<service>"-ээр илэрхийлэгдэнэ (admin gateway UI-аас апп-д service
+		// олгоход нэмэгддэг). Олгогдоогүй апп 403 авна.
+		eidMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDProxyServiceName)
+		eidOrgMW := middlewares.NewOAuthBearerMiddleware(oidcSvc, oauthClients, "svc:"+routes.EIDOrgProxyServiceName)
+		routes.NewEIDProxyRoute(api, authUC, gatewayUC, eidMW, eidOrgMW).Routes()
 		// OIDC provider login/consent/logout (Hydra тохируулагдсан үед).
 		if providerUC != nil {
 			routes.NewProviderRoute(api, providerUC, authMiddleware).Routes()
@@ -495,9 +505,9 @@ func NewApp() (*App, error) {
 		// chi.Mount нь plain http.Handler-ийн r.URL.Path-аас prefix-ыг хасдаггүй
 		// тул StripPrefix-ээр хасна — ингэснээр доторх ServeMux нь /api/v1/...
 		// pattern-тэй таарна.
-		r.Mount("/admin", http.StripPrefix("/admin", adminapi.New(hydraAdmin, devAppsStore, adminKeyStore).Router()))
+		r.Mount("/admin", http.StripPrefix("/admin", adminapi.New(oauthClients, devAppsStore, adminKeyStore).Router()))
 		logger.Info("OIDC provider admin surface mounted at /admin", logger.Fields{
-			"hydra_admin": config.AppConfig.HydraAdminURL,
+			"issuer": config.AppConfig.Issuer(),
 		})
 	}
 
@@ -605,21 +615,6 @@ func (a *App) Run() (err error) {
 // дор ажиллана (users_service бодлого бүх мөрд хандана). Best-effort: хэрэглэгч
 // байхгүй/аль хэдийн super admin/алдаа гарвал boot-ийг эвдэлгүй warning бичнэ.
 // migration ажиллаагүй (roles(4) байхгүй) орчинд ч boot зогсохгүй.
-// bootstrapRPApplications нь seed хийсэн RP overlay мөрүүдэд Hydra OAuth2 client
-// дутуу байвал үүсгэж, RP-ууд (template.dgov.mn, developer.dgov.mn)-ыг функциональ
-// болгоно. Idempotent (байгааг алгасна) ба non-fatal (Hydra бэлэн бус бол warn).
-func bootstrapRPApplications(ctx context.Context, uc applicationsuc.Usecase) {
-	log := logger.WithFields(logger.Fields{constants.LoggerCategory: constants.LoggerCategoryConfig})
-	n, err := uc.ReconcileClients(ctx)
-	if err != nil {
-		log.Warnf("RP bootstrap: OAuth client-уудыг тулгаж чадсангүй (Hydra бэлэн бус байж болзошгүй; дараагийн эхлүүлэлтэд дахин оролдоно): %v", err)
-		return
-	}
-	if n > 0 {
-		log.Infof("RP bootstrap: %d RP-д OAuth2 client үүсгэлээ (secret-ыг UI-аас rotate-оор авна)", n)
-	}
-}
-
 func bootstrapSuperAdmin(ctx context.Context, repo repointerface.UserRepository, email string) {
 	email = domain.NormalizeEmail(email)
 	if email == "" {
