@@ -214,3 +214,58 @@ func TestRememberedConsentSkipsUnderRLS(t *testing.T) {
 	_, skip = run()
 	require.True(t, skip, "the remembered grant covers the request, so consent should be skipped")
 }
+
+// RP-үүд logout дээр `client_id` биш `id_token_hint` илгээдэг (OIDC RP-Initiated
+// Logout §3 нь түүнийг зөвлөдөг) — production дээр яг үүнээс болж logout унасан.
+// Тест нь ЖИНХЭНЭ гаргасан id_token-оор шалгана.
+func TestLogoutAcceptsIDTokenHintUnderRLS(t *testing.T) {
+	svc, subject := setup(t)
+	ctx := context.Background()
+
+	const verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+	loginChallenge, _, err := svc.Authorize(ctx, oidcuc.AuthorizeRequest{
+		ClientID: testClientID, RedirectURI: testRedirect, ResponseType: "code",
+		Scope: "openid profile", CodeChallenge: oidcuc.S256Challenge(verifier), CodeChallengeMethod: "S256",
+	})
+	require.NoError(t, err)
+	consentChallenge, _, err := svc.AcceptLogin(ctx, loginChallenge, subject)
+	require.NoError(t, err)
+	redirect, err := svc.AcceptConsent(ctx, consentChallenge, subject, nil)
+	require.NoError(t, err)
+	u, _ := url.Parse(redirect)
+
+	tok, err := svc.Token(ctx, oidcuc.TokenRequest{
+		GrantType: domain.GrantAuthorizationCode, Code: u.Query().Get("code"),
+		RedirectURI: testRedirect, CodeVerifier: verifier,
+		ClientID: testClientID, ClientSecret: testSecret, SecretFromBasic: true,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, tok.IDToken)
+
+	t.Run("hint alone identifies the client", func(t *testing.T) {
+		ch, err := svc.StartLogout(ctx, "", tok.IDToken, "https://ring.dgov.mn/", "s")
+		require.NoError(t, err, "an id_token_hint must be accepted without client_id")
+		back, err := svc.AcceptLogout(ctx, ch)
+		require.NoError(t, err)
+		require.Contains(t, back, "https://ring.dgov.mn/")
+	})
+
+	t.Run("unregistered post_logout_redirect_uri is refused", func(t *testing.T) {
+		_, err := svc.StartLogout(ctx, "", tok.IDToken, "https://evil.mn/", "s")
+		require.Error(t, err, "the hint must not authorise an unregistered return address")
+	})
+
+	t.Run("a forged hint is refused", func(t *testing.T) {
+		forged := tok.IDToken[:len(tok.IDToken)-6] + "AAAAAA"
+		_, err := svc.StartLogout(ctx, "", forged, "https://ring.dgov.mn/", "s")
+		require.Error(t, err, "a hint whose signature does not verify must be rejected")
+	})
+
+	t.Run("logout without any hint still works", func(t *testing.T) {
+		ch, err := svc.StartLogout(ctx, "", "", "", "")
+		require.NoError(t, err)
+		back, err := svc.AcceptLogout(ctx, ch)
+		require.NoError(t, err)
+		require.Equal(t, testIssuer+"/", back, "with no return address, fall back to the issuer home page")
+	})
+}

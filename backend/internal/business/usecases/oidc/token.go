@@ -399,3 +399,56 @@ func joinScope(scopes []string) string {
 	}
 	return out
 }
+
+// parseIDTokenHint нь RP-ийн logout дээр өгсөн id_token_hint-ээс аль client,
+// аль иргэний тухай яриад байгааг гаргаж авна (OIDC RP-Initiated Logout §3).
+//
+// Гарын үсгийг ЗААВАЛ шалгана — эс бөгөөс дурын хүн `aud`-аа сонгосон hint
+// зохиож, өөр апп-ийн нэрийн өмнөөс logout эхлүүлэх боломжтой болно.
+//
+// Хугацаа дууссаныг ЗӨВШӨӨРНӨ: hint нь ӨНГӨРСӨН session-ий тухай сануулга тул
+// хүчинтэй байх шаардлагагүй (спекц үүнийг тусгайлан зөвшөөрдөг). Тиймээс
+// хугацааны шалгалтыг унтраасан — энэ нь эрх олгодоггүй, зөвхөн аль client
+// гэдгийг заадаг ба буцах хаяг нь тэр client-ийн бүртгэлтэй тулгагдсаар байна.
+func (s *Service) parseIDTokenHint(ctx context.Context, hint string) (clientID, subject string, err error) {
+	if s.keys == nil {
+		return "", "", apperror.BadRequest("id_token_hint is not supported")
+	}
+	tok, err := jwt.Parse(hint, func(t *jwt.Token) (any, error) {
+		kid, _ := t.Header["kid"].(string)
+		if kid == "" {
+			return nil, fmt.Errorf("id_token_hint has no kid")
+		}
+		return s.keys.PublicKey(ctx, kid)
+	},
+		jwt.WithValidMethods([]string{"RS256"}),
+		jwt.WithIssuer(s.issuer),
+		jwt.WithoutClaimsValidation(), // exp-ийг санаатайгаар алгасна
+	)
+	if err != nil || !tok.Valid {
+		return "", "", apperror.BadRequest("id_token_hint could not be verified")
+	}
+
+	claims, ok := tok.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", "", apperror.BadRequest("id_token_hint has unexpected claims")
+	}
+	// `iss`-ийг гараар шалгана: WithoutClaimsValidation нь WithIssuer-ыг ч
+	// унтраадаг тул энд заавал тулгана.
+	if iss, _ := claims["iss"].(string); iss != s.issuer {
+		return "", "", apperror.BadRequest("id_token_hint was issued by someone else")
+	}
+	subject, _ = claims["sub"].(string)
+	switch aud := claims["aud"].(type) {
+	case string:
+		clientID = aud
+	case []any:
+		if len(aud) > 0 {
+			clientID, _ = aud[0].(string)
+		}
+	}
+	if clientID == "" {
+		return "", "", apperror.BadRequest("id_token_hint has no audience")
+	}
+	return clientID, subject, nil
+}

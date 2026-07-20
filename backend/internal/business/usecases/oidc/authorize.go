@@ -418,11 +418,23 @@ func VerifyPKCE(codeChallenge, method, verifier string) bool {
 // StartLogout нь `/oauth2/sessions/logout`-ийн хүсэлтээс logout challenge
 // үүсгэнэ. post_logout_redirect_uri өгсөн бол тухайн client-д БҮРТГЭГДСЭН байх
 // ёстой — эс бөгөөс logout-ийг дурын хаяг руу чиглүүлэх open redirect болно.
-func (s *Service) StartLogout(ctx context.Context, clientID, postLogoutRedirectURI, state string) (string, error) {
+func (s *Service) StartLogout(ctx context.Context, clientID, idTokenHint, postLogoutRedirectURI, state string) (string, error) {
+	// RP-үүд ихэвчлэн `client_id` биш `id_token_hint` илгээдэг (OIDC RP-Initiated
+	// Logout §3 нь түүнийг ЗӨВЛӨДӨГ). Hint-ээс client-ыг гаргаж авна; гарын үсэг
+	// нь баталгаажсан тул өөр апп-ийн нэрийн өмнөөс logout эхлүүлэх боломжгүй.
+	subject := ""
+	if clientID == "" && idTokenHint != "" {
+		var err error
+		clientID, subject, err = s.parseIDTokenHint(ctx, idTokenHint)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	redirect := ""
 	if postLogoutRedirectURI != "" {
 		if clientID == "" {
-			return "", apperror.BadRequest("client_id is required with post_logout_redirect_uri")
+			return "", apperror.BadRequest("client_id or id_token_hint is required with post_logout_redirect_uri")
 		}
 		client, err := s.clients.Get(ctx, clientID)
 		if err != nil {
@@ -439,6 +451,7 @@ func (s *Service) StartLogout(ctx context.Context, clientID, postLogoutRedirectU
 		Challenge:             challenge,
 		Kind:                  domain.ChallengeLogout,
 		ClientID:              clientID,
+		Subject:               subject,
 		State:                 state,
 		PostLogoutRedirectURI: redirect,
 		ExpiresAt:             time.Now().Add(ChallengeTTL),
