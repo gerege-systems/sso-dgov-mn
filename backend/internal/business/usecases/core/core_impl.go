@@ -15,9 +15,15 @@ import (
 	"time"
 
 	"template/internal/apperror"
+	"template/pkg/logger"
 )
 
 const maxRespBytes = 4 << 20 // 4 MiB
+
+// defaultCountryCode нь user/find-ийн ЗААВАЛ шаарддаг талбар. Core үүнгүйгээр
+// "country_code is required" гэж 500 буцаадаг. Энэ платформ нь Монголын төрийн
+// систем тул MN тогтмол — өөр улс шаардлагатай болбол тохиргоо болгож гаргана.
+const defaultCountryCode = "MN"
 
 type usecase struct {
 	base   string
@@ -36,7 +42,10 @@ func NewUsecase(base, token string) Usecase {
 }
 
 func (u *usecase) FindUsers(ctx context.Context, searchText string) (json.RawMessage, error) {
-	body, _ := json.Marshal(map[string]string{"search_text": searchText})
+	body, _ := json.Marshal(map[string]string{
+		"search_text":  searchText,
+		"country_code": defaultCountryCode,
+	})
 	return u.call(ctx, http.MethodPost, "/api/user/find", "", bytes.NewReader(body))
 }
 
@@ -51,7 +60,7 @@ func (u *usecase) call(ctx context.Context, method, path, query string, body io.
 		// CORE_API_TOKEN тохируулаагүй бол Core инерт — 500 биш, UI-д ойлгомжтой
 		// мессежээр (илэрцгүй шалтгаан) буцаана. CoreSearchView нь энэ data.message-
 		// ийг харуулдаг тул оператор Core-г идэвхжүүлэхэд юу дутууг шууд ойлгоно.
-		return json.RawMessage(`{"message":"Core үйлчилгээ (core.dgov.mn) тохируулаагүй байна. CORE_API_TOKEN-ыг backend.env-д тохируулна уу."}`), nil
+		return json.RawMessage(`{"message":"Core үйлчилгээ (core.gerege.mn) тохируулаагүй байна. CORE_API_TOKEN-ыг backend.env-д тохируулна уу."}`), nil
 	}
 	endpoint := u.base + path
 	if query != "" {
@@ -77,7 +86,17 @@ func (u *usecase) call(ctx context.Context, method, path, query string, body io.
 	if err != nil {
 		return nil, apperror.InternalCause(fmt.Errorf("core read: %w", err))
 	}
+	// Core нь АМЖИЛТГҮЙ статустай хэрнээ утга бүхий мессеж буцаадаг: "мэдээлэл
+	// олдсонгүй" (500), "Байгууллагын регистр оруулна уу" (400). Эдгээрийг
+	// дотоод алдаа болгон залгивал оператор "internal server error" л хараад
+	// яагаад олдоогүйг мэдэхгүй байсан — тиймээс JSON биетийг нь дамжуулна.
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		logger.WarnWithContext(ctx, "Core API амжилтгүй хариу", logger.Fields{
+			"status": res.StatusCode, "path": path,
+		})
+		if json.Valid(data) {
+			return json.RawMessage(data), nil
+		}
 		return nil, apperror.InternalCause(fmt.Errorf("core api returned %d", res.StatusCode))
 	}
 	if !json.Valid(data) {

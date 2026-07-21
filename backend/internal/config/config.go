@@ -141,8 +141,8 @@ type Config struct {
 	// болно. Хоосон бол сул default — production-д заавал тохируулна.
 	IntegrationEncKey string `mapstructure:"INTEGRATION_ENC_KEY"`
 
-	// Gerege Core (core.dgov.mn) — user/organization find. CoreAPIToken нь
-	// core.dgov.mn-д хандах урт настай service bearer (server-тал л ашиглана).
+	// Gerege Core (core.gerege.mn) — user/organization find. CoreAPIToken нь
+	// Core-д хандах урт настай service bearer (server-тал л ашиглана).
 	CoreAPIBase  string `mapstructure:"CORE_API_BASE"`
 	CoreAPIToken string `mapstructure:"CORE_API_TOKEN"`
 
@@ -425,7 +425,7 @@ func applyDefaults() {
 		AppConfig.EIDDisplayText = "template.dgov.mn"
 	}
 	if AppConfig.CoreAPIBase == "" {
-		AppConfig.CoreAPIBase = "https://core.dgov.mn"
+		AppConfig.CoreAPIBase = "https://core.gerege.mn"
 	}
 	if AppConfig.XYPAPIBase == "" {
 		AppConfig.XYPAPIBase = "https://xyp.dgov.mn"
