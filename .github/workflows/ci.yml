@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   backend:
-    name: backend · gofmt/vet/lint/swag/test/build
+    name: backend · gofmt/vet/lint/test/build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -47,8 +47,8 @@ jobs:
         run: go vet ./...
       - name: golangci-lint
         run: make ci-lint
-      - name: swagger drift
-        run: make ci-swag-check
+      # swagger drift шалгалт platform-core repo руу шилжсэн — handler-ийн
+      # annotation-ууд тэнд байрлана. Энэ репо нимгэн апп тул docs/ байхгүй.
       - name: unit tests (race + coverage)
         run: make ci-test
       - name: build api binary
