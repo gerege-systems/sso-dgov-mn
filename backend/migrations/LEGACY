@@ -1,0 +1,8 @@
+# Конвенц тогтоохоос өмнө үүссэн, production-д хэрэгжсэн migration-ууд.
+# Эдгээр нь муж/давхардлын шалгалтаас чөлөөлөгдөнө. ШИНЭ МӨР БҮҮ НЭМ.
+1_init_schema.up.sql
+2_seed_eid_proxy_service.up.sql
+3_seed_eid_org_proxy_service.up.sql
+4_remove_dan_sso_service.up.sql
+5_oauth_provider.up.sql
+6_drop_legacy_applications.up.sql

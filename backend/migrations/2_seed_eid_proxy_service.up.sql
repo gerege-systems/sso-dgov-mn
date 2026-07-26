@@ -1,4 +1,3 @@
--- Government Template Platform V3.0
 -- eID proxy service-ийг API gateway catalog-д бүртгэнэ. Ингэснээр admin gateway
 -- UI-д харагдаж, enable/disable хийж болно (route нь энэ enabled флагийг runtime-д
 -- шалгадаг). Бүртгэгдсэн апп-ууд /rp/eid/* -ээр SSO-ий eID service-үүдийг proxy-оор
