@@ -1,4 +1,3 @@
-// eID based AI enabled Government Template Platform V3.0
 import OAuthLogoutClient from './OAuthLogoutClient';
 
 export const dynamic = 'force-dynamic';

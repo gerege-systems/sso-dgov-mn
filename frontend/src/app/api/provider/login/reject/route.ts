@@ -1,4 +1,3 @@
-// eID based AI enabled Government Template Platform V3.0
 // OIDC provider — login-ыг цуцлах (RP руу access_denied-ээр буцна).
 import { authedFetch } from '@/lib/api';
 import { checkOrigin, proxyResult, readJson } from '@/lib/bff';

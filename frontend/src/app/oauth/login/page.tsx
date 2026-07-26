@@ -1,4 +1,3 @@
-// eID based AI enabled Government Template Platform V3.0
 // OIDC provider (RP-facing) login хуудас — Hydra нь browser-ыг энд login_challenge-
 // тэй чиглүүлнэ. dan-ий ӨӨРИЙН дизайнаар (SigninShell + LoginForm: eID РД/QR +
 // Google) нэвтрүүлж, буцаж ирэхэд challenge-ыг accept хийнэ. Дээр талд аль RP-ээс
