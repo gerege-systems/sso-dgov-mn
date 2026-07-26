@@ -1,4 +1,3 @@
--- Government Template Platform V3.0
 -- SSO нэвтрэлт бол СУУРЬ (built-in) service — бүртгэгдсэн апп бүрт автоматаар
 -- үйлчилдэг (base OIDC scope: openid/profile/email). Тиймээс grant/checkbox-оор
 -- олгодог "dan-sso" gateway service нь шаардлагагүй, төөрөгдүүлдэг тул хасна.
