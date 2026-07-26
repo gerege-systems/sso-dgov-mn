@@ -1,4 +1,3 @@
-// Government Template Platform V3.0
 // Gerege Systems Development Team & Claude AI, 2026
 import React from 'react';
 import { redirect } from 'next/navigation';

@@ -1,4 +1,3 @@
-// Government Template Platform V3.0
 // Gerege Systems Development Team & Claude AI, 2026
 //
 // Гадаад холбоосуудын нэг эх сурвалж. Баримт бичгийн (docs) сайтын хаяг —
