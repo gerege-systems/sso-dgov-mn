@@ -12,7 +12,13 @@ name: dan-dgov-mn
 
 services:
   db:
-    image: postgres:16-alpine
+    # postgres:16-alpine + pgvector (AI-ийн мэдлэгийн сангийн семантик хайлт).
+    # Суурийн 47_ai_knowledge_vector migration нь vector extension шаарддаг.
+    # Extension-ыг суурь image дээрээ эмхэтгэдэг — өгөгдөл alpine (musl)
+    # collation дээр үүссэн тул Debian суурьтай image рүү шилжихгүй.
+    build:
+      context: ./backend/deploy/db
+    image: dgov-postgres-pgvector:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
