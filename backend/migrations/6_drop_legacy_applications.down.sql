@@ -1,4 +1,3 @@
--- Government Template Platform V3.0
 -- Хуучин overlay хүснэгтүүдийг сэргээнэ (бүтэц; өгөгдөл нь oauth_clients-д).
 
 CREATE TABLE IF NOT EXISTS public.applications (
