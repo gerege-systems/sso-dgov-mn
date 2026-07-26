@@ -1,4 +1,3 @@
--- Government Template Platform V3.0
 -- Байгууллагатай холбоотой eID service-үүдийг (organizations/signers) тусад нь
 -- proxy service болгож API gateway catalog-д бүртгэнэ. Admin gateway UI-аас
 -- хувь хүний eID (eid-proxy)-ээс ТУСДАА enable/disable хийж болно. Route нь энэ

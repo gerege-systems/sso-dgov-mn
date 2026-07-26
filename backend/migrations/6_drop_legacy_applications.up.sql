@@ -1,4 +1,3 @@
--- Government Template Platform V3.0
 -- Хуучин `applications` / `application_services` хүснэгтүүдийг устгана.
 --
 -- Эдгээр нь Hydra-гийн үеийн үлдэгдэл: тухайн үед client-ыг Hydra эзэмшиж,
