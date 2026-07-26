@@ -1,4 +1,3 @@
-// eID based AI enabled Government Template Platform V3.0
 // OIDC provider consent хуудас — Hydra нь consent_challenge-тэй энд чиглүүлнэ.
 import { redirect } from 'next/navigation';
 import { getAccessToken } from '@/lib/session';

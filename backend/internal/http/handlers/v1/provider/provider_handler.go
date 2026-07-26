@@ -1,4 +1,3 @@
-// eID based AI enabled Government Template Platform V3.0
 // Gerege Systems Development Team болон Claude AI хамтран бүтээв, 2026.
 
 // Package provider нь OIDC provider (sso.dgov.mn = SSO) login/consent/logout-ийн
