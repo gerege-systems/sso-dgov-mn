@@ -33,3 +33,6 @@ deploy.log
 .idea/
 .vscode/
 *.swp
+
+# deploy.sh-ийн no-op хамгаалалт
+.deployed-sha
