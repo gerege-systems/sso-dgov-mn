@@ -1,0 +1,62 @@
+# Dependabot — хамаарлын автомат шинэчлэл.
+#
+# Гол зорилго: `platform-core`-ийн шинэ tag гармагц ЭНЭ репод автоматаар PR
+# ирдэг болгох. Өмнө нь суурийн засварыг repo бүрт ГАРААР зөөдөг байсан
+# (нэг засвар × 8+ репо) — тэр ажлыг энэ файл орлоно.
+#
+# Merge нь АВТОМАТ БИШ: `main` руу merge хийхэд CD ажиллаж production руу
+# deploy болдог тул хүн шалгаж merge хийнэ.
+#
+# Renovate руу шилжих бол: gerege-systems org-д Renovate GitHub App-ыг суулгаад
+# `renovate.json` нэмж, энэ файлыг устгана (хоёуланг зэрэг ажиллуулбал
+# давхар PR үүснэ).
+
+version: 2
+updates:
+  # --- Go backend ---------------------------------------------------------
+  # Өдөр бүр шалгана — суурийн шинэ хувилбарыг удаан хүлээхгүйн тулд.
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels: [dependencies, backend]
+    groups:
+      # Суурь нь тусдаа PR-аар ирнэ — юу өөрчлөгдсөнийг тод харахын тулд.
+      platform-core:
+        patterns: ["github.com/gerege-systems/platform-core"]
+      # Бусад Go хамаарлыг нэг PR болгож шуугианыг багасгана.
+      # Major шинэчлэл энд ороогүй тул тусдаа PR-аар ирж, анхаарал татна.
+      go-deps:
+        patterns: ["*"]
+        exclude-patterns: ["github.com/gerege-systems/platform-core"]
+        update-types: [minor, patch]
+
+  # --- Next.js frontend ---------------------------------------------------
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    labels: [dependencies, frontend]
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # --- GitHub Actions -----------------------------------------------------
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(ci)"
+    labels: [dependencies, ci]
+    groups:
+      actions:
+        patterns: ["*"]
