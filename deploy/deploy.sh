@@ -26,6 +26,13 @@ fi
 echo "▶ Building images (api · web · migrate)…"
 docker compose build
 
+# Migration нь ТУСДАА алхам — `up -d`-ийн нэг хэсэг БИШ. Шалтгаан: өмнө нь
+# `up -d` нь migrate-ыг дахин ажиллуулж, api+web-ийг ҮРГЭЛЖ дахин үүсгэдэг
+# байсан — код огт хөндөөгүй commit дээр ч секундын 502 (хэмжигдсэн 07-27).
+# Амжилтгүй бол deploy ЭНД зогсоно, api-д хүрэхгүй.
+echo "▶ Running migrations…"
+docker compose --profile migrate run --rm migrate
+
 echo "▶ Starting stack (migrate re-runs; applied migrations are skipped)…"
 docker compose up -d --remove-orphans
 
