@@ -23,15 +23,42 @@ if [ -n "${INTEGRATION_ENC_KEY:-}" ] && ! grep -q '^INTEGRATION_ENC_KEY=' backen
   echo "▶ INTEGRATION_ENC_KEY-г backend.env-д бичлээ (superadmin MFA идэвхжинэ)"
 fi
 
-echo "▶ Building images (api · web · migrate)…"
-docker compose build
+# ── Юу ч өөрчлөгдөөгүй бол огт хөдлөхгүй ────────────────────────────────────
+#
+# Docker-ийн build нь ТОГТВОРТОЙ БИШ: ижил эх кодоос ч build бүрд ШИНЭ image ID
+# гардаг (apk/wget/go build давхаргууд). Тиймээс `up -d` нь «image өөрчлөгдсөн»
+# гэж үзээд контейнерийг ҮРГЭЛЖ дахин үүсгэдэг — код огт хөндөөгүй commit дээр
+# ч секундын 502 (хэмжигдсэн 2026-07-27).
+#
+# Иймд хамгийн найдвартай хамгаалалт нь: HEAD өөрчлөгдөөгүй бол ЮУ Ч ХИЙХГҮЙ.
+STAMP=".deployed-sha"
+HEAD_SHA="$(git rev-parse HEAD)"
+if [ "${FORCE_DEPLOY:-0}" != "1" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$HEAD_SHA" ]; then
+  echo "▶ Өөрчлөлт алга (${HEAD_SHA:0:12}) — build/up алгасав, тасалдал үүсгэхгүй."
+  echo "  Албадах бол: FORCE_DEPLOY=1 bash deploy/deploy.sh"
+  docker compose ps
+  exit 0
+fi
+
+# Өгөгдлийн үйлчилгээг ЗОРИУД build хийхгүй. Тэдгээрийн image нь зөвхөн
+# Dockerfile нь өөрчлөгдөхөд шинэчлэгдэх ёстой; deploy бүрд дахин build хийвэл
+# шинэ image ID гарч db контейнер дахин үүсдэг — энэ нь бүх идэвхтэй DB
+# холболтыг тасалдаг тул хамгийн үнэтэй тасалдал. Шаардлагатай үед гараар:
+#   docker compose build db && docker compose up -d db
+BUILD_SVCS="$(docker compose --profile migrate config --services \
+              | grep -vxE 'db|redis|postgres' | tr '\n' ' ')"
+echo "▶ Building images ($BUILD_SVCS)…"
+# shellcheck disable=SC2086  # word splitting is intended
+docker compose build $BUILD_SVCS
 
 # Migration нь ТУСДАА алхам — `up -d`-ийн нэг хэсэг БИШ. Шалтгаан: өмнө нь
 # `up -d` нь migrate-ыг дахин ажиллуулж, api+web-ийг ҮРГЭЛЖ дахин үүсгэдэг
 # байсан — код огт хөндөөгүй commit дээр ч секундын 502 (хэмжигдсэн 07-27).
 # Амжилтгүй бол deploy ЭНД зогсоно, api-д хүрэхгүй.
 echo "▶ Running migrations…"
-docker compose --profile migrate run --rm migrate
+docker compose up -d --no-recreate db redis
+# --no-deps: migrate-ийн depends_on-оор db-д гар хүрэхээс сэргийлнэ.
+docker compose --profile migrate run --rm --no-deps migrate
 
 echo "▶ Starting stack (migrate re-runs; applied migrations are skipped)…"
 docker compose up -d --remove-orphans
@@ -61,3 +88,6 @@ docker image prune -f >/dev/null
 echo "▶ Stack status:"
 docker compose ps
 echo "✅ Deploy complete."
+
+# Амжилттай дууссан тул дараагийн no-op deploy алгасахад тамга үлдээнэ.
+echo "$HEAD_SHA" > "$STAMP"
