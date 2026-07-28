@@ -21,20 +21,20 @@ export async function POST(req: Request) {
   // дамжуулна — утас approve хийсний дараа browser-ийг тэр рүү буцаана. Байхгүй бол CROSS-DEVICE
   // (desktop QR — browser өөрөө poll хийнэ). Backend callbackUrl-ийг стандарт зам руу normalize хийнэ.
   let callbackUrl = '';
-  let loginChallenge = '';
   try {
-    const body = (await req.json()) as { callbackUrl?: unknown; login_challenge?: unknown };
+    const body = (await req.json()) as { callbackUrl?: unknown };
     if (typeof body?.callbackUrl === 'string') callbackUrl = body.callbackUrl;
-    // login_challenge (сонголт): OIDC урсгалд бүртгэгдсэн RP апп-аас нэвтэрч байвал —
-    // backend eID push-д rp_app/rp_app_url-г үүнээс resolve хийнэ.
-    if (typeof body?.login_challenge === 'string') loginChallenge = body.login_challenge;
   } catch {
     /* body-гүй → cross-device */
   }
 
+  // Клиент login_challenge-ийг мөн илгээдэг ч core (v1.0.0)-ийн eID start
+  // хүсэлтийн бүтцэд тийм талбар байхгүй тул backend руу дамжуулахгүй —
+  // /auth/eid/start-id нь strict декодтой (DisallowUnknownFields) бөгөөд
+  // нэмэлт талбараас болж 400 өгдөг. Хоёр route-ыг ижил гэрээгээр барина.
   const result = await backendFetch<EidStartData>('/auth/eid/start', {
     method: 'POST',
-    body: JSON.stringify({ callbackUrl, login_challenge: loginChallenge }),
+    body: JSON.stringify({ callbackUrl }),
   });
   return proxyResult(result);
 }

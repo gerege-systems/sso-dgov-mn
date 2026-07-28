@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const bad = checkOrigin(req);
   if (bad) return bad;
 
-  const { national_id, callbackUrl, login_challenge } = await readJson<{ national_id?: string; callbackUrl?: string; login_challenge?: string }>(req);
+  const { national_id, callbackUrl } = await readJson<{ national_id?: string; callbackUrl?: string }>(req);
 
   if (!national_id) {
     return NextResponse.json(
@@ -31,13 +31,16 @@ export async function POST(req: Request) {
   // callbackUrl (сонголт): SAME-DEVICE (утасны browser) үед клиент <origin>/auth/eid/callback
   // дамжуулна — push ижил утас руу ирж, approve-ийн дараа browser callback руу буцна. Хоосон бол
   // CROSS-DEVICE (desktop). Backend force-normalize хийнэ.
+  // ЗӨВХӨН backend-ийн мэддэг талбаруудыг дамжуулна. /auth/eid/start-id нь
+  // v1.Wrap → DecodeBody-гоор задалдаг бөгөөс DisallowUnknownFields асаалттай:
+  // EIDStartByNationalIDRequest-д байхгүй нэмэлт талбар (жишээ нь login_challenge)
+  // илгээвэл декод унаж 400 "invalid request body" буцаана — РД-аар нэвтрэх бүхэлдээ
+  // тасардаг. (/auth/eid/start нь зөөлөн декодтой тул тэнд ийм алдаа гардаггүй.)
   const result = await backendFetch<EidStartIdData>('/auth/eid/start-id', {
     method: 'POST',
     body: JSON.stringify({
       national_id,
       callbackUrl: typeof callbackUrl === 'string' ? callbackUrl : '',
-      // login_challenge (сонголт): бүртгэгдсэн RP апп-аас нэвтэрч байвал rp_app/rp_app_url resolve.
-      login_challenge: typeof login_challenge === 'string' ? login_challenge : '',
     }),
   });
   return proxyResult(result);

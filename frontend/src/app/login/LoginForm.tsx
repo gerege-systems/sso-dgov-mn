@@ -33,6 +33,10 @@ function sameDeviceCallbackUrl(): string {
 // challengeFromNext — OIDC урсгалд `next` нь /oauth/login?login_challenge=… байдаг.
 // Тэндээс login_challenge-ийг гаргана (backend eID push-д rp_app/rp_app_url-г
 // бүртгэгдсэн RP апп-аас resolve хийхэд ашиглана). Base нэвтрэлтэд хоосон.
+// АНХААР: одоогийн core (public-gerege-core v1.0.0)-ийн eID start endpoint-ууд
+// энэ талбарыг хараахан хүлээж авдаггүй — BFF түүнийг backend руу дамжуулахгүй
+// (start-id-д нэмэлт талбар илгээвэл strict декод 400 өгнө). Core дэмжих үед
+// BFF дээр буцааж асаана.
 function challengeFromNext(next: string): string {
   const i = next.indexOf('?');
   if (i < 0) return '';
@@ -41,6 +45,15 @@ function challengeFromNext(next: string): string {
   } catch {
     return '';
   }
+}
+
+// clientMessage — backend-ийн мессежийг харуулах эсэхийг шийднэ. 4xx нь
+// хэрэглэгчид зориулсан цэвэр текст (apperror.BadRequest г.м.) байдаг тул
+// шууд харуулна; 5xx/сүлжээний алдаанд дотоод шалтгааныг задлахгүй, ерөнхий
+// мессеж рүү буцна (хоосон утга = ерөнхий мессеж).
+function clientMessage(status: number, message?: string): string {
+  if (!message || status < 400 || status >= 500) return '';
+  return message;
 }
 
 interface StartData {
@@ -63,6 +76,9 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
   const [start, setStart] = useState<StartData | null>(null);
   const [nationalId, setNationalId] = useState('');
   const [idError, setIdError] = useState('');
+  // Backend-ийн хэрэглэгчид зориулсан алдаа (жишээ нь "Регистрийн дугаар олдсонгүй…").
+  // Зөвхөн 4xx үед — 5xx-ийн дотоод текстийг хэрэглэгчид харуулахгүй.
+  const [startError, setStartError] = useState('');
   // MFA-той superadmin — eID poll эсвэл Google callback дараа 2 дахь хүчин зүйл
   // шаардвал энэ challenge-ийг харуулна. mfaToken байвал eID poll урсгал (клиент
   // token эзэмшинэ); null бол Google callback (sa_mfa cookie ашиглана).
@@ -183,6 +199,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
     stopTimers();
     setStart(null);
     setIdError('');
+    setStartError('');
     lastMethod.current = 'qr';
     setPhase('starting');
 
@@ -192,6 +209,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
     if (!mounted.current) return;
 
     if (!res.ok || !res.data?.session_id) {
+      setStartError(clientMessage(res.status, res.message));
       setPhase('error');
       return;
     }
@@ -214,6 +232,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
     stopTimers();
     setStart(null);
     setIdError('');
+    setStartError('');
     lastMethod.current = 'id';
     setPhase('starting');
 
@@ -225,6 +244,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
     if (!mounted.current) return;
 
     if (!res.ok || !res.data?.session_id) {
+      setStartError(clientMessage(res.status, res.message));
       setPhase('error');
       return;
     }
@@ -244,6 +264,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
       stopTimers();
       setStart(null);
       setIdError('');
+      setStartError('');
       setPhase('idle');
       setMethod(m);
       // QR аргыг сонгомогц шууд эхлүүлнэ; РД нь дугаар оруулахыг шаардана.
@@ -305,7 +326,7 @@ export default function LoginForm({ next, notice, googleLink, googleError, mfaGa
         </button>
       </div>
 
-      {phase === 'error' && <Alert kind="danger">{T('auth.eid.startError')}</Alert>}
+      {phase === 'error' && <Alert kind="danger">{startError || T('auth.eid.startError')}</Alert>}
       {phase === 'expired' && <Alert kind="info">{T('auth.eid.expired')}</Alert>}
       {phase === 'refused' && <Alert kind="danger">{T('auth.eid.refused')}</Alert>}
       {phase === 'success' && <Alert kind="success">{T('auth.eid.success')}</Alert>}
