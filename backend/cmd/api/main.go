@@ -1,13 +1,13 @@
 // Package main нь Government Single Sign On-ий API эхлэх цэг.
 //
 // Бүх суурь чадвар (танилт, RBAC, API gateway, OIDC provider, eID proxy) нь
-// github.com/gerege-systems/platform-core модульд байрлана.
+// github.com/gerege-systems/public-gerege-core модульд байрлана.
 package main
 
 import (
-	"github.com/gerege-systems/platform-core/cmd/api/server"
-	"github.com/gerege-systems/platform-core/core/constants"
-	"github.com/gerege-systems/platform-core/pkg/logger"
+	"github.com/gerege-systems/public-gerege-core/cmd/api/server"
+	"github.com/gerege-systems/public-gerege-core/core/constants"
+	"github.com/gerege-systems/public-gerege-core/pkg/logger"
 )
 
 func main() {
