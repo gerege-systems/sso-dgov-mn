@@ -1,0 +1,85 @@
+/* DAN-Government SSO documentation — navy/gold brand palette
+   Layered on top of the Material for MkDocs theme. */
+
+:root {
+  --dan-navy: #0b2447;
+  --dan-navy-2: #143b6b;
+  --dan-gold: #c8a145;
+  --dan-gold-2: #b8912f;
+}
+
+/* Primary = navy, accent = gold (referenced by palette: primary: custom / accent: custom) */
+[data-md-color-primary="custom"] {
+  --md-primary-fg-color: var(--dan-navy);
+  --md-primary-fg-color--light: var(--dan-navy-2);
+  --md-primary-fg-color--dark: #071a35;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffffcc;
+}
+[data-md-color-accent="custom"] {
+  --md-accent-fg-color: var(--dan-gold-2);
+  --md-accent-fg-color--transparent: #c8a14520;
+}
+
+/* Links + active nav in gold for contrast against navy header */
+.md-typeset a {
+  color: var(--dan-navy-2);
+}
+[data-md-color-scheme="slate"] .md-typeset a {
+  color: var(--dan-gold);
+}
+
+/* Header brand: keep the logo crisp on navy */
+.md-header__button.md-logo img {
+  height: 1.6rem;
+  width: auto;
+}
+
+/* Section labels in the sidebar — a touch of brand weight */
+.md-nav__item--section > .md-nav__link {
+  color: var(--dan-navy);
+  font-weight: 700;
+}
+[data-md-color-scheme="slate"] .md-nav__item--section > .md-nav__link {
+  color: var(--dan-gold);
+}
+
+/* Gold left-border accent on admonitions of type "note" to echo the brand */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  border-left-color: var(--dan-gold);
+}
+
+/* Home hero card */
+.dan-hero {
+  border-radius: 12px;
+  padding: 2rem 2rem 1.5rem;
+  background: linear-gradient(135deg, var(--dan-navy) 0%, var(--dan-navy-2) 100%);
+  color: #fff;
+  margin-bottom: 1.5rem;
+}
+.dan-hero h1,
+.dan-hero p {
+  color: #fff;
+  margin: 0 0 .5rem;
+}
+.dan-hero .dan-badge {
+  display: inline-block;
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--dan-gold);
+  border: 1px solid var(--dan-gold);
+  border-radius: 999px;
+  padding: .2rem .7rem;
+  margin-bottom: .8rem;
+}
+
+/* Grid cards tuned to brand */
+.md-typeset .grid.cards > :is(ul, ol) > li:hover {
+  border-color: var(--dan-gold);
+}
+
+/* Swagger UI rendered by render_swagger — constrain width and match radius */
+.swagger-ui .info { margin: 1rem 0; }
+.swagger-ui .scheme-container { background: transparent; box-shadow: none; }

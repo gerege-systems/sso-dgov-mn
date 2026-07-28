@@ -37,11 +37,13 @@ set. Upstream attribution is retained in [AUTHORS](AUTHORS). This project is
 dan-dgov-mn/
 ├── backend/           # Go · chi (net/http) · pgx (pgxpool) · PostgreSQL · Redis · eID/Google/SSO auth
 │   └── docs/          # ARCHITECTURE · DEVELOPMENT · API_CONTRACT · SECURITY (EN/MN)
-└── frontend/          # Next.js BFF (server-side proxy to the backend; cookie sessions)
+├── frontend/          # Next.js BFF (server-side proxy to the backend; cookie sessions)
+└── docs-site/         # MkDocs Material documentation site (EN/MN) → GitHub Pages
 ```
 
 - **[backend/README.md](backend/README.md)** — Clean Architecture Go API.
 - **[frontend/README.md](frontend/README.md)** — Next.js Backend-for-Frontend.
+- **[docs-site/README.md](docs-site/README.md)** — published documentation site.
 
 ## Features
 

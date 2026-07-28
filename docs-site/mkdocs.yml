@@ -1,0 +1,173 @@
+site_name: DAN-Government SSO Documentation
+site_url: https://gerege-systems.github.io/sso-dgov-mn/
+site_description: >-
+  Technical documentation for DAN-Government SSO (sso.dgov.mn) — the eID-based,
+  AI-enabled Single Sign-On platform. Architecture, authentication, SSO/OIDC,
+  REST API, AI pipeline, document signing, security and operations.
+site_author: Gerege Systems
+copyright: Copyright &copy; 2026 Gerege Systems — MIT License
+
+repo_url: https://github.com/gerege-systems/sso-dgov-mn
+repo_name: sso-dgov-mn
+edit_uri: edit/main/docs-site/docs/
+
+theme:
+  name: material
+  language: en
+  logo: assets/logo.webp
+  favicon: assets/logo.webp
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    # Light
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/gerege-systems
+    - icon: fontawesome/solid/globe
+      link: https://sso.dgov.mn
+  generator: false
+
+plugins:
+  - search
+  - render_swagger:
+      allow_arbitrary_locations: true
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: mn
+          name: Монгол
+          build: true
+          nav_translations:
+            Home: Нүүр
+            Getting Started: Эхлэл
+            Overview: Тойм
+            Quick Start: Хурдан эхлэх
+            Environments: Орчнууд
+            Architecture: Архитектур
+            Clean Architecture: Цэвэр архитектур
+            Backend Layers: Backend давхаргууд
+            Data Model & RLS: Өгөгдлийн загвар ба RLS
+            Frontend BFF: Frontend BFF
+            Authentication: Нэвтрэлт
+            eID Login: eID нэвтрэлт
+            Sessions & JWT: Сесс ба JWT
+            Super Admin MFA: Супер админ MFA
+            SSO / Relying Party: SSO / Relying Party
+            Sign in with DAN: DAN-аар нэвтрэх
+            API Reference: API лавлах
+            REST API: REST API
+            API Explorer: API судлах
+            AI Pipeline: AI дамжуулга
+            Document Signing: Баримт гарын үсэг
+            Security: Аюулгүй байдал
+            Operations: Ашиглалт
+            Deployment: Байршуулалт
+            Configuration: Тохиргоо
+            Observability: Ажиглалт
+            Release Notes: Хувилбарын тэмдэглэл
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Overview: getting-started/overview.md
+      - Quick Start: getting-started/quick-start.md
+      - Environments: getting-started/environments.md
+  - Architecture:
+      - architecture/index.md
+      - Clean Architecture: architecture/clean-architecture.md
+      - Backend Layers: architecture/backend-layers.md
+      - Data Model & RLS: architecture/data-model.md
+      - Frontend BFF: architecture/frontend-bff.md
+  - Authentication:
+      - authentication/index.md
+      - eID Login: authentication/eid-login.md
+      - Sessions & JWT: authentication/sessions.md
+      - Super Admin MFA: authentication/super-admin-mfa.md
+  - SSO / Relying Party:
+      - Sign in with DAN: sso/index.md
+  - API Reference:
+      - api/index.md
+      - API Explorer: api/explorer.md
+  - AI Pipeline:
+      - ai/index.md
+  - Document Signing:
+      - signing/index.md
+  - Security:
+      - security/index.md
+  - Operations:
+      - operations/index.md
+      - Deployment: operations/deployment.md
+      - Configuration: operations/configuration.md
+      - Observability: operations/observability.md
+  - Release Notes: release-notes.md

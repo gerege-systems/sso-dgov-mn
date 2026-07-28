@@ -7,4 +7,4 @@
 /** Нийтийн техник баримт бичгийн сайт (MkDocs · GitHub Pages). */
 export const DOCS_URL =
   process.env.NEXT_PUBLIC_DOCS_URL ??
-  'https://gerege-systems.github.io/sso-dgov-mn-documentation/';
+  'https://gerege-systems.github.io/sso-dgov-mn/';

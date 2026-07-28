@@ -37,11 +37,13 @@ SQL-тэй [jackc/pgx](https://github.com/jackc/pgx) драйвертэй хос
 dan-dgov-mn/
 ├── backend/           # Go · chi (net/http) · pgx (pgxpool) · PostgreSQL · Redis · eID/Google/SSO танилт
 │   └── docs/          # ARCHITECTURE · DEVELOPMENT · API_CONTRACT · SECURITY (EN/MN)
-└── frontend/          # Next.js BFF (backend руу server талаас прокси; cookie session)
+├── frontend/          # Next.js BFF (backend руу server талаас прокси; cookie session)
+└── docs-site/         # MkDocs Material баримт бичгийн сайт (EN/MN) → GitHub Pages
 ```
 
 - **[backend/README_MN.md](../backend/README_MN.md)** — Clean Architecture Go API.
 - **[frontend/README.md](../frontend/README.md)** — Next.js Backend-for-Frontend.
+- **[docs-site/README.md](../docs-site/README.md)** — нийтлэгддэг баримт бичгийн сайт.
 
 ## Онцлог
 
