@@ -1,6 +1,6 @@
 # Dependabot — хамаарлын автомат шинэчлэл.
 #
-# Гол зорилго: `platform-core`-ийн шинэ tag гармагц ЭНЭ репод автоматаар PR
+# Гол зорилго: `public-gerege-core`-ийн шинэ tag гармагц ЭНЭ репод автоматаар PR
 # ирдэг болгох. Өмнө нь суурийн засварыг repo бүрт ГАРААР зөөдөг байсан
 # (нэг засвар × 8+ репо) — тэр ажлыг энэ файл орлоно.
 #
@@ -25,13 +25,13 @@ updates:
     labels: [dependencies, backend]
     groups:
       # Суурь нь тусдаа PR-аар ирнэ — юу өөрчлөгдсөнийг тод харахын тулд.
-      platform-core:
-        patterns: ["github.com/gerege-systems/platform-core"]
+      public-gerege-core:
+        patterns: ["github.com/gerege-systems/public-gerege-core"]
       # Бусад Go хамаарлыг нэг PR болгож шуугианыг багасгана.
       # Major шинэчлэл энд ороогүй тул тусдаа PR-аар ирж, анхаарал татна.
       go-deps:
         patterns: ["*"]
-        exclude-patterns: ["github.com/gerege-systems/platform-core"]
+        exclude-patterns: ["github.com/gerege-systems/public-gerege-core"]
         update-types: [minor, patch]
 
   # --- Next.js frontend ---------------------------------------------------
