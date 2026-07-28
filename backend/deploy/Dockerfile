@@ -32,13 +32,13 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # too so the same image can run `./migrate -up` in init containers.
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    go build -trimpath -ldflags="-s -w" -o /out/migrate github.com/gerege-systems/platform-core/cmd/migration
+    go build -trimpath -ldflags="-s -w" -o /out/migrate github.com/gerege-systems/public-gerege-core/cmd/migration
 
 # Жижиг health-probe binary — distroless-д shell/wget байхгүй тул HEALTHCHECK
 # энэ binary-г ажиллуулна (/health → exit 0/1).
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    go build -trimpath -ldflags="-s -w" -o /out/healthcheck github.com/gerege-systems/platform-core/cmd/healthcheck
+    go build -trimpath -ldflags="-s -w" -o /out/healthcheck github.com/gerege-systems/public-gerege-core/cmd/healthcheck
 
 # ---------- runtime ----------
 # Distroless static: no shell, no package manager, nonroot user baked in.

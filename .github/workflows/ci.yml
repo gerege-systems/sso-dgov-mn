@@ -47,7 +47,7 @@ jobs:
         run: go vet ./...
       - name: golangci-lint
         run: make ci-lint
-      # swagger drift шалгалт platform-core repo руу шилжсэн — handler-ийн
+      # swagger drift шалгалт public-gerege-core repo руу шилжсэн — handler-ийн
       # annotation-ууд тэнд байрлана. Энэ репо нимгэн апп тул docs/ байхгүй.
       - name: unit tests (race + coverage)
         run: make ci-test
