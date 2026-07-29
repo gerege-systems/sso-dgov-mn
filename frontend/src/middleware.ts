@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { REFRESH_COOKIE } from '@/lib/cookies';
+import { REFRESH_COOKIE } from '@gerege/ui-core/lib/cookies';
 
 // Хамгаалагдсан хуудаснууд — refresh токен (durable session) байхгүй бол /login руу.
 // /admin, /manager нь нэмэлтээр серверийн талд эрхээр (RBAC) шалгагдана.

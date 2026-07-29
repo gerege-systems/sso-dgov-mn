@@ -1,11 +1,12 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import EidLogsView from '@/components/me/eid/EidLogsView';
-import { fetchMe } from '@/lib/api';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import EidLogsView from '@gerege/ui-core/components/me/eid/EidLogsView';
+import { fetchMe } from '@gerege/ui-core/lib/api';
+import { pageTitle } from '@/brand.config';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Үйл ажиллагаа — Төрийн нэгдсэн нэвтрэлт' };
+export const metadata = { title: pageTitle('Үйл ажиллагаа') };
 
 export default async function EidLogsPage() {
   const me = await fetchMe();

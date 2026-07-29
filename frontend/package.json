@@ -5,28 +5,32 @@
   "description": "gerege-backend-template-v27-д тохирсон Next.js frontend — me.dgov.mn-ийн gerege theme дээр суурилсан.",
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
+    "build": "npm run check:brand && npm run check:routes && next build",
     "start": "next start -p 3000",
-    "lint": "next lint",
-    "test": "vitest run"
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check:brand": "node scripts/check-brand.mjs",
+    "check:routes": "node scripts/check-routes.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
     "lucide-react": "^1.23.0",
-    "next": "15.5.20",
+    "next": "^16.2.12",
     "qrcode.react": "^4.2.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "@gerege/ui-core": "https://github.com/gerege-systems/ui-core/archive/refs/tags/v0.6.0.tar.gz"
   },
   "devDependencies": {
     "@types/node": "20.11.30",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "eslint": "8.57.0",
-    "eslint-config-next": "15.5.20",
+    "eslint": "^10.8.0",
+    "eslint-config-next": "^16.2.12",
     "typescript": "5.4.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@typescript-eslint/parser": "^8.65.0"
   },
   "overrides": {
     "postcss": "^8.5.10",

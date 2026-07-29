@@ -3,10 +3,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
-import Alert from '@/components/Alert';
-import { postJSON } from '@/lib/client';
-import { safeNext } from '@/lib/navigation';
-import { useT } from '@/lib/lang';
+import Alert from '@gerege/ui-core/components/Alert';
+import { postJSON } from '@gerege/ui-core/lib/client';
+import { safeNext } from '@gerege/ui-core/lib/navigation';
+import { useT } from '@gerege/ui-core/lib/lang';
 
 type Phase = 'checking' | 'success' | 'expired' | 'refused' | 'error';
 

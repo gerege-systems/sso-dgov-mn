@@ -4,7 +4,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { postJSON } from '@/lib/client';
+import { postJSON } from '@gerege/ui-core/lib/client';
 
 export default function AcceptClient({ challenge }: { challenge: string }) {
   const [error, setError] = useState('');

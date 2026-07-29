@@ -1,6 +1,6 @@
 import React from 'react';
-import PageHead from '@/components/PageHead';
-import GatewayOverviewView from '@/components/gateway/GatewayOverviewView';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import GatewayOverviewView from '@gerege/ui-core/components/gateway/GatewayOverviewView';
 import { requireGatewayAccess } from '../guard';
 
 export const dynamic = 'force-dynamic';

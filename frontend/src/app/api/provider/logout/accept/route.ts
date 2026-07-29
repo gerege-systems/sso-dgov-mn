@@ -1,13 +1,2 @@
-import { authedFetch } from '@/lib/api';
-import { checkOrigin, proxyResult, readJson } from '@/lib/bff';
-
+export { POST } from '@gerege/ui-core/api/provider/logout/accept';
 export const dynamic = 'force-dynamic';
-
-export async function POST(req: Request) {
-  const bad = checkOrigin(req);
-  if (bad) return bad;
-  const body = await readJson<{ logout_challenge?: string }>(req);
-  return proxyResult(
-    await authedFetch('/provider/logout/accept', { method: 'POST', body: JSON.stringify(body) }),
-  );
-}

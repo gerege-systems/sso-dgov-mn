@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { KeyRound } from 'lucide-react';
-import Alert from '@/components/Alert';
-import PasswordField from '@/components/PasswordField';
-import { postJSON } from '@/lib/client';
+import Alert from '@gerege/ui-core/components/Alert';
+import PasswordField from '@gerege/ui-core/components/PasswordField';
+import { postJSON } from '@gerege/ui-core/lib/client';
 
 export default function ChangePasswordForm() {
   const [current, setCurrent] = useState('');

@@ -1,12 +1,13 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import OrgRepsCard from '@/components/me/OrgRepsCard';
-import ImageUploadCard from '@/components/me/ImageUploadCard';
-import { fetchMe } from '@/lib/api';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import OrgRepsCard from '@gerege/ui-core/components/me/OrgRepsCard';
+import ImageUploadCard from '@gerege/ui-core/components/me/ImageUploadCard';
+import { fetchMe } from '@gerege/ui-core/lib/api';
+import { pageTitle } from '@/brand.config';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Байгууллага — Төрийн нэгдсэн нэвтрэлт' };
+export const metadata = { title: pageTitle('Байгууллага') };
 
 export default async function MeOrganizationsPage() {
   const me = await fetchMe();

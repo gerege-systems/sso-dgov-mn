@@ -5,7 +5,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { postJSON } from '@/lib/client';
+import { postJSON } from '@gerege/ui-core/lib/client';
 
 export default function OAuthLogoutClient({ challenge }: { challenge: string }) {
   const [busy, setBusy] = useState(false);

@@ -1,11 +1,12 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import GovPaymentsView from '@/components/gov/GovPaymentsView';
-import { fetchMe } from '@/lib/api';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import GovPaymentsView from '@gerege/ui-core/components/gov/GovPaymentsView';
+import { fetchMe } from '@gerege/ui-core/lib/api';
+import { pageTitle } from '@/brand.config';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Төлбөр — Төрийн нэгдсэн нэвтрэлт' };
+export const metadata = { title: pageTitle('Төлбөр') };
 
 export default async function MePaymentsPage() {
   const me = await fetchMe();

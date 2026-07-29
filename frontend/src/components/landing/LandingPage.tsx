@@ -8,21 +8,29 @@ import {
   LogIn, Languages, KeyRound, ScrollText, Globe, Gauge, ShieldAlert,
   Menu, X,
 } from 'lucide-react';
-import { useLang } from '@/lib/lang';
-import LoginForm from '@/app/login/LoginForm';
-import { landingCopy, type LandingCopy } from './copy';
-import { deepMerge } from '@/lib/theme';
-import { DOCS_URL } from '@/lib/links';
+import { useLang } from '@gerege/ui-core/lib/lang';
+import { landingCopyFor, type LandingCopy } from './copy';
+import { deepMerge } from '@gerege/ui-core/lib/theme';
+import { brand as brandConfig } from '@/brand.config';
 
 // «Бүх боломж» хэсгийн жижиг картуудын icon-ууд (copy.ts-ийн items дараалалтай нэг эрэмбэ).
 const EVERYTHING_ICONS = [Fingerprint, Globe, KeyRound, ScrollText, CheckCircle2, Languages, Gauge, ShieldAlert];
 
 interface Props {
-  /** LoginForm-д дамжуулах — нэвтэрсний дараа буцах зам. */
-  next: string;
-  notice?: string;
-  googleLink?: boolean;
-  googleError?: boolean;
+  /**
+   * Нэвтрэх товчнуудын зорилго. `AUTH_MODE`-оос хамаарч server талд бодогдоно
+   * (`loginHref(auth, next)`): provider горимд '#login' (доорх карт руу
+   * гүйлгэнэ), client горимд '/api/auth/sso/start' (дээд SSO руу шилжүүлнэ).
+   */
+  loginHref: string;
+  /**
+   * Hero-д шигтгэх нэвтрэх карт — зөвхөн provider горимд. client горимд `null`
+   * ирнэ (нэвтрэлт өөр домэйн дээр болно) тул карт огт дүрслэгдэхгүй.
+   *
+   * Карт нь SERVER талаас бэлэн node болж ирдэг: горим нь server-only эх
+   * сурвалжаас ирдэг тул энэ client компонент түүнийг өөрөө мэдэх боломжгүй.
+   */
+  loginSlot?: React.ReactNode;
   /** Идэвхтэй theme-ийн landing текст/цэс (mn/en) — copy.ts default дээр давхарлана. */
   themeLanding?: { mn?: Partial<LandingCopy>; en?: Partial<LandingCopy> };
 }
@@ -33,14 +41,17 @@ interface Props {
  * картыг (SigninShell доторх `.signin-card` + LoginForm) шигтгэв. Брэнд токен
  * (blue + gold, light/dark) дээр найруулав.
  */
-export default function LandingPage({ next, notice, googleLink, googleError, themeLanding }: Props) {
+export default function LandingPage({ loginHref, loginSlot, themeLanding }: Props) {
   const { lang, setLang } = useLang();
   // Mobile (<900px)-д цэсний холбоосууд hamburger доор нээгдэнэ.
   const [menuOpen, setMenuOpen] = React.useState(false);
   // Идэвхтэй theme-ийн текст байвал copy.ts default дээр гүн merge хийнэ.
-  const override = themeLanding?.[lang];
-  const t = override ? deepMerge(landingCopy[lang], override) : landingCopy[lang];
-  const brand = t.brand || 'Government SSO';
+  // Landing нь зөвхөн mn/en-тэй; DB-ээс нэмэгдсэн хэлэнд англи руу уналт
+  // хийнэ (landingCopyFor). Theme-ийн текст override мөн адил.
+  const override = themeLanding?.[lang as 'mn' | 'en'];
+  const base = landingCopyFor(lang);
+  const t = override ? deepMerge(base, override) : base;
+  const brand = t.brand || brandConfig.name;
 
   return (
     <div className="lp">
@@ -57,7 +68,7 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
             <a href="#features">{t.nav.features}</a>
             <a href="#security">{t.nav.security}</a>
             <a href="#tech">{t.nav.tech}</a>
-            <a href={DOCS_URL} target="_blank" rel="noreferrer">{t.nav.docs}</a>
+            <a href={brandConfig.docsUrl} target="_blank" rel="noreferrer">{t.nav.docs}</a>
           </nav>
 
           <div className="lp-nav__actions">
@@ -70,7 +81,7 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
               <Languages size={15} strokeWidth={2} />
               <span>{lang === 'mn' ? 'EN' : 'МН'}</span>
             </button>
-            <a className="lp-btn lp-btn--gold lp-btn--sm" href="#login">
+            <a className="lp-btn lp-btn--gold lp-btn--sm" href={loginHref}>
               <LogIn size={16} strokeWidth={2} />
               <span>{t.nav.login}</span>
             </a>
@@ -93,7 +104,7 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
             <a href="#features" onClick={() => setMenuOpen(false)}>{t.nav.features}</a>
             <a href="#security" onClick={() => setMenuOpen(false)}>{t.nav.security}</a>
             <a href="#tech" onClick={() => setMenuOpen(false)}>{t.nav.tech}</a>
-            <a href={DOCS_URL} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>{t.nav.docs}</a>
+            <a href={brandConfig.docsUrl} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>{t.nav.docs}</a>
           </nav>
         )}
       </header>
@@ -116,7 +127,7 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
               <p className="lp-hero__lede">{t.hero.lede}</p>
 
               <div className="lp-hero__cta">
-                <a className="lp-btn lp-btn--gold lp-btn--lg" href="#login">
+                <a className="lp-btn lp-btn--gold lp-btn--lg" href={loginHref}>
                   {t.hero.ctaLogin}
                   <ArrowRight size={18} strokeWidth={2} />
                 </a>
@@ -135,20 +146,15 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
               </div>
             </div>
 
-            {/* ОДОО БАЙГАА нэвтрэх карт — hero-ийн баруун талд шигтгэв */}
-            <div className="lp-hero__visual">
-              <section id="login" className="signin-card lp-hero__login" aria-labelledby="login-title">
-                {/* Нүүр дээр автомат фокус хийхгүй — энэ нь маркетингийн хуудас
-                    бөгөөд карт нь mobile-д hero-гийн доор байрладаг. */}
-                <LoginForm
-                  next={next}
-                  notice={notice}
-                  googleLink={googleLink}
-                  googleError={googleError}
-                  autoFocus={false}
-                />
-              </section>
-            </div>
+            {/* Нэвтрэх карт — зөвхөн provider горимд ирнэ. client горимд
+                `loginSlot` хоосон тул hero нь ганц баганат хэвээр үлдэнэ. */}
+            {loginSlot && (
+              <div className="lp-hero__visual">
+                <section id="login" className="signin-card lp-hero__login" aria-labelledby="login-title">
+                  {loginSlot}
+                </section>
+              </div>
+            )}
           </div>
         </section>
 
@@ -302,7 +308,7 @@ export default function LandingPage({ next, notice, googleLink, googleError, the
             <h2>{t.cta.title}</h2>
             <p>{t.cta.sub}</p>
             <div className="lp-cta__buttons">
-              <a className="lp-btn lp-btn--gold lp-btn--lg" href="#login">
+              <a className="lp-btn lp-btn--gold lp-btn--lg" href={loginHref}>
                 {t.cta.ctaLogin}
                 <ArrowRight size={18} strokeWidth={2} />
               </a>

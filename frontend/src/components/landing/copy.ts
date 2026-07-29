@@ -4,6 +4,8 @@
 // Апп-ын үндсэн dict (lib/i18n.ts)-ийг бөглөхгүйн тулд landing-ийн урт мөрүүдийг
 // энд төвлөрүүлэв. Бүх түлхүүр хоёр хэлэнд адил байх ёстой (i18n.ts-тэй нэг зарчим).
 
+import type { LangCode } from '@gerege/ui-core/lib/i18n';
+
 export interface LandingCopy {
   /** Брэнд нэр (nav + footer). Хоосон бол 'Government SSO'. Theme-ээр солино. */
   brand?: string;
@@ -239,3 +241,14 @@ const en: LandingCopy = {
 };
 
 export const landingCopy: Record<'mn' | 'en', LandingCopy> = { mn, en };
+
+/**
+ * Интерфэйсийн хэлд тохирсон landing текст.
+ *
+ * Landing нь зөвхөн БАГЦЛАГДСАН хоёр хэлтэй (mn/en), харин интерфэйсийн хэл нь
+ * DB-ээс нэмэгдэж болно (`@gerege/ui-core`-ийн LangCode). Жагсаалтад байхгүй
+ * хэлээр ажиллаж байвал англи руу уналт хийнэ — хуудас хэзээ ч хоосон гарахгүй.
+ */
+export function landingCopyFor(lang: LangCode): LandingCopy {
+  return landingCopy[lang as 'mn' | 'en'] ?? landingCopy.en;
+}

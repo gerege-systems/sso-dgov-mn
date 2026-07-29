@@ -1,11 +1,12 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import EidIdView from '@/components/me/eid/EidIdView';
-import { fetchMe } from '@/lib/api';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import EidIdView from '@gerege/ui-core/components/me/eid/EidIdView';
+import { fetchMe } from '@gerege/ui-core/lib/api';
+import { pageTitle } from '@/brand.config';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'eID үнэмлэх — Төрийн нэгдсэн нэвтрэлт' };
+export const metadata = { title: pageTitle('eID үнэмлэх') };
 
 export default async function EidIdPage() {
   const me = await fetchMe();

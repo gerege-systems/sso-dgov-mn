@@ -21,6 +21,10 @@ const CSP = [
   // шууд ачаалагддаг тул зөвшөөрнө.
   "img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com",
   "font-src 'self' data:",
+  // media-src: AI-ийн ярианы хариу (TTS) нь BFF-ээс base64-ээр ирээд
+  // `new Audio('data:audio/…')`-аар тоглодог (lib/audio.ts). default-src нь
+  // media-г ч хамардаг тул энэ мөр байхгүй бол дуу гарахгүй (CSP блоклоно).
+  "media-src 'self' data: blob:",
   "connect-src 'self'",
   // frame-src: Google Drive + Dropbox файлын урьдчилан харах (preview) iframe —
   // эдгээр нь провайдерын интерактив preview хуудас тул BFF-ээр дамжуулах
@@ -33,6 +37,8 @@ const CSP = [
 ].join('; ');
 
 const nextConfig = {
+  // @gerege/ui-core нь TypeScript эх кодоор тардаг тул апп өөрөө хөрвүүлнэ.
+  transpilePackages: ['@gerege/ui-core'],
   reactStrictMode: true,
   // Standalone output → slim production Docker image (server.js + minimal
   // node_modules) instead of shipping the whole tree. See frontend/Dockerfile.
@@ -52,8 +58,14 @@ const nextConfig = {
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       {
+        // microphone=(self): AI-ийн дуут боломжууд (нүүрийн push-to-talk чат,
+        // /me/ai дуут мессеж, амьд орчуулга) нь getUserMedia({audio}) дууддаг.
+        // `microphone=()` байхад хөтөч үүнийг БАРИМТЫН түвшинд хааж, зөвшөөрөл
+        // асуухгүйгээр шууд унагаадаг байв. Camera/geolocation хэвээр хаалттай
+        // — апп тэднийг хэрэглэдэггүй. (self) нь зөвхөн энэ origin-д зөвшөөрч,
+        // гуравдагч талын iframe-д олгохгүй.
         key: 'Permissions-Policy',
-        value: 'camera=(), microphone=(), geolocation=()',
+        value: 'camera=(), microphone=(self), geolocation=()',
       },
       { key: 'Content-Security-Policy', value: CSP },
     ];

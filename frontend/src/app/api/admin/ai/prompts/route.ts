@@ -1,10 +1,2 @@
-import { authedFetch } from '@/lib/api';
-import { proxyResult } from '@/lib/bff';
-
+export { GET } from '@gerege/ui-core/api/admin/ai/prompts';
 export const dynamic = 'force-dynamic';
-
-// GET /api/admin/ai/prompts — AI prompt давхаргуудын жагсаалт.
-// settings.manage эрхээр хамгаалагдсан (backend дээр).
-export async function GET() {
-  return proxyResult(await authedFetch('/admin/ai/prompts', { method: 'GET' }));
-}

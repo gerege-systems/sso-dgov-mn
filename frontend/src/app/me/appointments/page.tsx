@@ -1,11 +1,12 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import GovAppointmentsView from '@/components/gov/GovAppointmentsView';
-import { fetchMe } from '@/lib/api';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import GovAppointmentsView from '@gerege/ui-core/components/gov/GovAppointmentsView';
+import { fetchMe } from '@gerege/ui-core/lib/api';
+import { pageTitle } from '@/brand.config';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Цаг захиалга — Төрийн нэгдсэн нэвтрэлт' };
+export const metadata = { title: pageTitle('Цаг захиалга') };
 
 export default async function MeAppointmentsPage() {
   const me = await fetchMe();
