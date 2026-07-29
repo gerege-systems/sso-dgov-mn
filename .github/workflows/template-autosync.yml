@@ -1,0 +1,101 @@
+# template-dgov-mn → энэ платформ: автомат удамшлын САНАЛ (PR).
+#
+# Gov урсгалын суурь template-д өөрчлөлт орох бүрд энэ ажил түүнийг татаж
+# merge хийж үзнэ. Зөрүүтэй файлууд (`.gitattributes` дахь `merge=ours`)
+# автоматаар манайх хэвээр үлдэнэ, иймд ердийн тохиолдолд conflict гарахгүй.
+#
+# Conflict гарвал: merge-ийг цуцалж, issue үүсгэн хүнийг дуудна — чимээгүй
+# хоцрохоос сэргийлнэ.
+name: template-autosync
+
+on:
+  schedule:
+    # Өдөрт нэг удаа (UTC 04:03) — template-ийн өөрийн autosync дууссаны дараа.
+    - cron: '3 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: template-autosync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Тохиргоо
+        run: |
+          git config user.name  'gerege-template-autosync[bot]'
+          git config user.email 'gerege-template-autosync@users.noreply.github.com'
+          # .gitattributes дахь `merge=ours`-ийг ажиллуулна.
+          git config merge.ours.driver true
+          # `template-dgov-mn` нь НЭЭЛТТЭЙ репо тул нэмэлт эрх шаардлагагүй.
+          git remote add upstream https://github.com/gerege-systems/template-dgov-mn.git
+          git fetch upstream main
+
+      - name: Шинэ commit байгаа эсэх
+        id: check
+        run: |
+          n=$(git rev-list --count HEAD..upstream/main)
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+          echo "upstream-аас $n commit хоцорсон."
+
+      - name: Merge
+        id: merge
+        if: steps.check.outputs.n != '0'
+        run: |
+          if git merge --no-edit upstream/main; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            git diff --name-only --diff-filter=U > /tmp/conflicts.txt
+            git merge --abort
+          fi
+
+      # ⚠️ Энэ бол production платформ — main руу push хийвэл шууд deploy
+      # ажиллана. Тиймээс автомат merge-ийг ШУУД оруулахгүй, PR болгож
+      # хүний хяналтад өгнө.
+      #
+      # ⚠️ PR-ийг ЗААВАЛ merge commit-оор нэгтгэнэ (squash биш) — squash хийвэл
+      # upstream-тэй холбосон эцэг алдагдаж, дараагийн merge дахин бүх түүхийг
+      # авчирна.
+      - name: PR болгож санал болгох
+        if: steps.merge.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          br="autosync/template-$(git rev-parse --short upstream/main)"
+          git push -f origin "HEAD:$br"
+          # --repo ЗААВАЛ: энэ репод upstream remote нэмэгддэг тул gh нь
+          # түүнийг сонгоод буруу (upstream) репод хандана.
+          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$br" \
+            --title "autosync: template-dgov-mn-ээс $(git rev-parse --short upstream/main)" \
+            --body $'`template-dgov-mn`-ээс автоматаар merge хийв. CI ногоон бол merge хийнэ үү — merge хийх нь production deploy ажиллуулна.\n\n**Merge commit-оор** нэгтгэнэ үү (squash биш): squash нь удамшлын холбоосыг таслана.' \
+            2>/dev/null || echo "PR аль хэдийн байна."
+
+      - name: Conflict — issue үүсгэх
+        if: steps.merge.outputs.ok == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body=$'`template-dgov-mn`-ээс автомат merge хийх үед conflict гарлаа.\n\n**Зөрчилтэй файлууд:**\n```\n'
+          body+="$(cat /tmp/conflicts.txt)"
+          body+=$'\n```\n\nГараар шийдэх:\n```bash\ngit remote add upstream https://github.com/gerege-systems/template-dgov-mn.git\ngit fetch upstream main\ngit config merge.ours.driver true\ngit merge upstream/main\n```\n\nХэрэв зөрүү нь зориудынх бол `.gitattributes`-д `merge=ours` нэмнэ.'
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "template-autosync: upstream merge conflict" --body "$body" --label autosync 2>/dev/null \
+            || gh issue create --repo "$GITHUB_REPOSITORY" --title "template-autosync: upstream merge conflict" --body "$body"
+
+      - name: Дүн
+        if: always()
+        run: |
+          echo "### template-autosync" >> "$GITHUB_STEP_SUMMARY"
+          echo "- upstream: \`template-dgov-mn\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- хоцорсон commit: ${{ steps.check.outputs.n }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- merge: ${{ steps.merge.outputs.ok || 'хийх зүйлгүй' }}" >> "$GITHUB_STEP_SUMMARY"
