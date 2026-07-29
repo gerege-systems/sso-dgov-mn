@@ -1,6 +1,6 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
-import { fetchMe, fetchMyPermissions } from '@/lib/api';
+import { fetchMe, fetchMyPermissions } from '@gerege/ui-core/lib/api';
 
 // requireGatewayAccess нь /admin/gateway/* хуудас бүрийн серверийн талын
 // хамгаалалт — нэвтрээгүй эсвэл 'gateway.manage' эрхгүй бол нүүр рүү буцаана.

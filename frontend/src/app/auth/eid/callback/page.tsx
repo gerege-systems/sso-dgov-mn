@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { postJSON } from '@/lib/client';
+import { postJSON } from '@gerege/ui-core/lib/client';
 
 // Платформ стандарт App2App буцах цэг — `/auth/eid/callback`.
 //

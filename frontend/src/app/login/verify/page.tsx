@@ -1,12 +1,13 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import SigninShell from '@/components/SigninShell';
-import { safeNext } from '@/lib/navigation';
+import SigninShell from '@gerege/ui-core/components/SigninShell';
+import { safeNext } from '@gerege/ui-core/lib/navigation';
 import EidVerify from './EidVerify';
+import { pageTitle } from '@/brand.config';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'eID баталгаажуулалт — Төрийн нэгдсэн нэвтрэлт' };
+export const metadata = { title: pageTitle('eID баталгаажуулалт') };
 
 // eID апп-аас App2App буцалтын callback (IdP-д бүртгэгдсэн
 // https://sso.dgov.mn/login/verify). eID апп буцахдаа session id-г

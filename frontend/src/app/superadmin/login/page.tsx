@@ -1,11 +1,12 @@
 import React from 'react';
-import SigninShell from '@/components/SigninShell';
-import { safeNext } from '@/lib/navigation';
-import LoginForm from '@/app/login/LoginForm';
+import SigninShell from '@gerege/ui-core/components/SigninShell';
+import { safeNext } from '@gerege/ui-core/lib/navigation';
+import LoginForm from '@gerege/ui-core/components/LoginForm';
+import { pageTitle } from '@/brand.config';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Супер админ нэвтрэх — Төрийн нэгдсэн нэвтрэлт' };
+export const metadata = { title: pageTitle('Супер админ нэвтрэх') };
 
 // Superadmin нэвтрэлт — Google / eID сонголт нь ердийн LoginForm-той адил.
 // MFA-той superadmin бол backend session-ий оронд MFA gate буцаана; LoginForm

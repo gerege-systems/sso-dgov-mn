@@ -1,10 +1,2 @@
-import { authedFetch } from '@/lib/api';
-import { proxyResult } from '@/lib/bff';
-
+export { GET } from '@gerege/ui-core/api/me/eid/summary';
 export const dynamic = 'force-dynamic';
-
-// GET /api/me/eid/summary — eID PKI самбар (backend /users/me/eid/summary руу прокси).
-export async function GET(req: Request) {
-  const qs = new URL(req.url).search;
-  return proxyResult(await authedFetch(`/users/me/eid/summary${qs}`, { method: 'GET' }));
-}

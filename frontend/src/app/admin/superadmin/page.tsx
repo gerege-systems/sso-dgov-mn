@@ -1,9 +1,9 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import SuperadminManager from '@/components/admin/SuperadminManager';
-import { fetchMe } from '@/lib/api';
-import { isSuperAdmin } from '@/lib/types';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import SuperadminManager from '@gerege/ui-core/components/admin/SuperadminManager';
+import { fetchMe } from '@gerege/ui-core/lib/api';
+import { isSuperAdmin } from '@gerege/ui-core/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Супер админ — Админуудыг удирдах' };

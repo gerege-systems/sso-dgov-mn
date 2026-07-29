@@ -1,8 +1,8 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import RolesManager from '@/components/admin/RolesManager';
-import { fetchMe, fetchMyPermissions } from '@/lib/api';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import RolesManager from '@gerege/ui-core/components/admin/RolesManager';
+import { fetchMe, fetchMyPermissions } from '@gerege/ui-core/lib/api';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Эрх (RBAC) — Админ' };

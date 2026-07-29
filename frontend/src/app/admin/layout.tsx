@@ -1,5 +1,5 @@
 import React from 'react';
-import AreaShell from '@/components/AreaShell';
+import AreaShell from '@gerege/ui-core/components/AreaShell';
 
 export const dynamic = 'force-dynamic';
 

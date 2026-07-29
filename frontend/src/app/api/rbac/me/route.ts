@@ -1,9 +1,2 @@
-import { authedFetch } from '@/lib/api';
-import { proxyResult } from '@/lib/bff';
-
+export { GET } from '@gerege/ui-core/api/rbac/me';
 export const dynamic = 'force-dynamic';
-
-// GET /api/rbac/me — нэвтэрсэн хэрэглэгчийн эрхийн түлхүүрүүд (цэс шүүхэд).
-export async function GET() {
-  return proxyResult(await authedFetch<string[]>('/rbac/me', { method: 'GET' }));
-}

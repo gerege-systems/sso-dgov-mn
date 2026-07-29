@@ -1,9 +1,2 @@
-import { authedFetch } from '@/lib/api';
-import { proxyResult } from '@/lib/bff';
-
+export { GET } from '@gerege/ui-core/api/gateway/overview';
 export const dynamic = 'force-dynamic';
-
-// GET /api/gateway/overview — dashboard-ийн нэгтгэсэн статистик. gateway.manage эрх.
-export async function GET() {
-  return proxyResult(await authedFetch('/gateway/overview', { method: 'GET' }));
-}

@@ -1,6 +1,6 @@
 // OIDC provider consent хуудас — Hydra нь consent_challenge-тэй энд чиглүүлнэ.
 import { redirect } from 'next/navigation';
-import { getAccessToken } from '@/lib/session';
+import { getAccessToken } from '@gerege/ui-core/lib/session';
 import ConsentClient from './ConsentClient';
 
 export const dynamic = 'force-dynamic';

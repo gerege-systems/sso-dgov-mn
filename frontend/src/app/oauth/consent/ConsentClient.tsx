@@ -3,7 +3,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getJSON, postJSON } from '@/lib/client';
+import { getJSON, postJSON } from '@gerege/ui-core/lib/client';
 
 type ConsentInfo = {
   ClientID: string;

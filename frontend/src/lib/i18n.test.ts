@@ -3,7 +3,7 @@
 // i18n dict-ийн mn/en түлхүүр паритетийн тест. CLAUDE.md конвенц: түлхүүр бүр
 // хоёр хэлэнд ЗААВАЛ байх ёстой — энэ тест дутуу орчуулгыг CI-д барина.
 import { describe, it, expect } from 'vitest';
-import { dict } from './i18n';
+import { dict } from '@gerege/ui-core/lib/i18n';
 
 describe('i18n dictionary parity', () => {
   const mnKeys = Object.keys(dict.mn).sort();

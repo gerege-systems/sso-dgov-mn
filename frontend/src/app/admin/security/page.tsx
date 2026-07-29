@@ -1,9 +1,9 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
-import PageHead from '@/components/PageHead';
-import SecurityViewer from '@/components/admin/SecurityViewer';
-import { fetchMe } from '@/lib/api';
-import { isAdminLevel } from '@/lib/types';
+import PageHead from '@gerege/ui-core/components/PageHead';
+import SecurityViewer from '@gerege/ui-core/components/admin/SecurityViewer';
+import { fetchMe } from '@gerege/ui-core/lib/api';
+import { isAdminLevel } from '@gerege/ui-core/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Аюулгүй байдал — Админ' };
