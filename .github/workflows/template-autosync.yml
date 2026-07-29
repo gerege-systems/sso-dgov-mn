@@ -68,18 +68,47 @@ jobs:
       # upstream-тэй холбосон эцэг алдагдаж, дараагийн merge дахин бүх түүхийг
       # авчирна.
       - name: PR болгож санал болгох
+        id: pr
         if: steps.merge.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           br="autosync/template-$(git rev-parse --short upstream/main)"
+          echo "br=$br" >> "$GITHUB_OUTPUT"
           git push -f origin "HEAD:$br"
           # --repo ЗААВАЛ: энэ репод upstream remote нэмэгддэг тул gh нь
           # түүнийг сонгоод буруу (upstream) репод хандана.
-          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$br" \
+          if out=$(gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$br" \
             --title "autosync: template-dgov-mn-ээс $(git rev-parse --short upstream/main)" \
             --body $'`template-dgov-mn`-ээс автоматаар merge хийв. CI ногоон бол merge хийнэ үү — merge хийх нь production deploy ажиллуулна.\n\n**Merge commit-оор** нэгтгэнэ үү (squash биш): squash нь удамшлын холбоосыг таслана.' \
-            2>/dev/null || echo "PR аль хэдийн байна."
+            2>&1); then
+            echo "$out"
+          elif [ -n "$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$br" --state open \
+                        --json number --jq '.[0].number // empty')" ]; then
+            echo "PR аль хэдийн байна ($br)."
+          else
+            # Өмнө нь энэ алдаа `2>/dev/null`-д залгигдаж, ажил ногоон дуусдаг
+            # байсан — удамшил чимээгүй зогсох гол шалтгаан. Одоо улаан болно.
+            echo "::error::PR үүсгэж чадсангүй: $out"
+            exit 1
+          fi
+
+      # `GITHUB_TOKEN`-оор үүсгэсэн PR нь workflow ӨДӨӨДӨГГҮЙ (GitHub-ийн рекурс
+      # хамгаалалт). Иймд autosync-ийн PR дээр шалгалт огт ажиллахгүй — «хоосон
+      # ногоон» харагдаж, шалгагдаагүй код merge хийгдэх эрсдэлтэй. Тиймээс CI-г
+      # branch дээр нь өөрсдөө дуудна.
+      #
+      # Production аюулгүй: deploy нь `main`-д уягдсан
+      # (`github.ref == 'refs/heads/main'` эсвэл `workflow_run.head_branch == 'main'`)
+      # тул энэ дуудлагаас байршуулалт хөдлөхгүй.
+      - name: PR дээр CI дуудах
+        if: steps.merge.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" \
+            --ref "${{ steps.pr.outputs.br }}"
+          echo "CI дуудагдав → ${{ steps.pr.outputs.br }}"
 
       - name: Conflict — issue үүсгэх
         if: steps.merge.outputs.ok == 'false'

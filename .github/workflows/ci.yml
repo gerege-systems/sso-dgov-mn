@@ -16,6 +16,9 @@ on:
       - '.github/workflows/deploy.yml'
       - '.github/workflows/docs.yml'
   pull_request:
+  # autosync нь PR үүсгэсний дараа энэ ажлыг branch дээр нь дууддаг —
+  # GITHUB_TOKEN-оор үүсгэсэн PR өөрөө workflow өдөөдөггүй тул.
+  workflow_dispatch:
     branches: [main]
 
 permissions:
