@@ -34,3 +34,7 @@ frontend/src/components/landing/copy.ts   merge=ours
 ios/**                      merge=ours
 
 .gitattributes              merge=ours
+
+# — нууц сканнерын allowlist (репо бүрд өөр)
+.gitleaks.toml              merge=ours
+.gitleaksignore             merge=ours
