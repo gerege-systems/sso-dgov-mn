@@ -22,6 +22,30 @@ any system. The backend uses the standard library `net/http` with the
 [go-chi/chi](https://github.com/go-chi/chi) router and the
 [jackc/pgx](https://github.com/jackc/pgx) driver with hand-written SQL — no ORM.
 
+## 🧬 Inheritance chain
+
+Where this repository sits in the fleet's inheritance tree:
+
+```
+public-gerege-template
+   └─► template-dgov-mn
+          └─► sso-dgov-mn   ← THIS REPO
+```
+
+| What is inherited | From | Mechanism |
+|---|---|---|
+| Template code (frontend · backend · deploy) | `template-dgov-mn` | `git merge` → **PR** — daily [`template-autosync`](.github/workflows/template-autosync.yml) |
+| Go core | `public-gerege-core v1.0.0` | `backend/go.mod` |
+
+**Owned by this repo — never inherited:**
+branding (`frontend/src/brand.config.ts`, `components/landing/copy.ts`), deployment (`deploy/**`, `docker-compose.yml`), CI/CD (`.github/**`), docs (`README.md`, `docs/**`), iOS/Android identifiers. These are marked `merge=ours` in [`.gitattributes`](.gitattributes), so an upstream merge never overwrites them.
+
+**Deployment:** <https://sso.dgov.mn>
+
+> ⚠️ Merge upstream PRs with a **merge commit** — squashing breaks the parent link, and the next sync drags the whole history back in as conflicts.
+
+---
+
 ## 📌 Origin & Open Source
 
 The **backend** is derived from the open-source
