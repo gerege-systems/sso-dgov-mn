@@ -114,8 +114,16 @@ jobs:
           # төлөвт зогсдог. Түүнийг зөвшөөрвөл шалгалт PR дээрээ харагдана —
           # `workflow_dispatch`-аар дуудсан ажил нь PR-тэй холбогддоггүй тул
           # шалгалтын самбар хоосон хэвээр үлддэг.
-          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&per_page=40" \
-                  --jq "[.workflow_runs[] | select(.head_branch==\"$br\")]")
+          # GitHub нь PR-ийн ажлыг үүсгэхэд хэдэн секунд зарцуулдаг — тэр болтол
+          # хүлээнэ. Эс бөгөөс «ажил огт үүсээгүй» гэж андуурч, PR-тэй холбогддоггүй
+          # `workflow_dispatch` руу дэмий ухардаг.
+          runs='[]'
+          for _ in $(seq 1 15); do
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&per_page=40" \
+                    --jq "[.workflow_runs[] | select(.head_branch==\"$br\")]")
+            [ "$(echo "$runs" | jq 'length')" != "0" ] && break
+            sleep 5
+          done
           pending=$(echo "$runs" | jq -r '.[] | select(.conclusion=="action_required") | .id')
 
           if [ -n "$pending" ]; then
