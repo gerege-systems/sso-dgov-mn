@@ -78,6 +78,7 @@ jobs:
         run: |
           br="autosync/template-$(git rev-parse --short upstream/main)"
           echo "br=$br" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           git push -f origin "HEAD:$br"
           # --repo ЗААВАЛ: энэ репод upstream remote нэмэгддэг тул gh нь
           # түүнийг сонгоод буруу (upstream) репод хандана.
@@ -110,17 +111,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           br="${{ steps.pr.outputs.br }}"
+          sha="${{ steps.pr.outputs.sha }}"
           # Bot-ийн үүсгэсэн PR-ийн CI нь «зөвшөөрөл хүлээх» (action_required)
           # төлөвт зогсдог. Түүнийг зөвшөөрвөл шалгалт PR дээрээ харагдана —
           # `workflow_dispatch`-аар дуудсан ажил нь PR-тэй холбогддоггүй тул
           # шалгалтын самбар хоосон хэвээр үлддэг.
-          # GitHub нь PR-ийн ажлыг үүсгэхэд хэдэн секунд зарцуулдаг — тэр болтол
+          # ЯГ ТЭР commit-ийн ажлыг хайна: autosync branch-аа force-push хийдэг тул
+          # нэг branch дээр өмнөх мөчлөгүүдийн ажлууд үлддэг — branch-аар шүүвэл
+          # хуучин ажлыг зөвшөөрч, шинэ PR хүлээсэн хэвээр үлдэнэ.
+          # GitHub нь ажлыг үүсгэхэд хэдэн секунд зарцуулдаг — тэр болтол
           # хүлээнэ. Эс бөгөөс «ажил огт үүсээгүй» гэж андуурч, PR-тэй холбогддоггүй
           # `workflow_dispatch` руу дэмий ухардаг.
           runs='[]'
           for _ in $(seq 1 15); do
             runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&per_page=40" \
-                    --jq "[.workflow_runs[] | select(.head_branch==\"$br\")]")
+                    --jq "[.workflow_runs[] | select(.head_sha==\"$sha\")]")
             [ "$(echo "$runs" | jq 'length')" != "0" ] && break
             sleep 5
           done
