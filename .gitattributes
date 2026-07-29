@@ -1,0 +1,36 @@
+# upstream (template-dgov-mn) -ээс merge хийхэд ЭНЭ платформын
+# хувилбарыг үргэлж хадгална — эдгээр нь тухайн ХХК-ийн өөрийн онцлог:
+# брэнд, домэйн, сервер, контейнер, bundle id, баримт.
+#
+# `merge=ours` драйвер ажиллахын тулд нэг удаа:
+#     git config merge.ours.driver true
+#
+# Энд БАЙХГҮЙ бүх зүйл (ялангуяа frontend/src-ийн код, desktop/) нь
+# upstream-ээс ердийн 3-talt merge-ээр урсаж ирнэ.
+
+# — өөрийн модуль ба цөмийн холбоос
+backend/go.mod              merge=ours
+backend/go.sum              merge=ours
+backend/cmd/api/main.go     merge=ours
+
+# — байршуулалт: хост, домэйн, контейнер, DB
+deploy/**                   merge=ours
+docker-compose.yml          merge=ours
+backend/deploy/Dockerfile   merge=ours
+
+# — CI/CD: deploy target, secret, dependabot
+.github/**                  merge=ours
+
+# — брэндийн баримт
+README.md                   merge=ours
+docs/**                     merge=ours
+docs-site/**                merge=ours
+CLAUDE.md                   merge=ours
+ROADMAP.md                  merge=ours
+
+# — брэндийн текст ба iOS таних тэмдэг
+frontend/src/brand.config.ts              merge=ours
+frontend/src/components/landing/copy.ts   merge=ours
+ios/**                      merge=ours
+
+.gitattributes              merge=ours
