@@ -104,14 +104,39 @@ jobs:
       # Production аюулгүй: deploy нь `main`-д уягдсан
       # (`github.ref == 'refs/heads/main'` эсвэл `workflow_run.head_branch == 'main'`)
       # тул энэ дуудлагаас байршуулалт хөдлөхгүй.
-      - name: PR дээр CI дуудах
+      - name: PR дээрх CI-г идэвхжүүлэх
         if: steps.merge.outputs.ok == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" \
-            --ref "${{ steps.pr.outputs.br }}"
-          echo "CI дуудагдав → ${{ steps.pr.outputs.br }}"
+          br="${{ steps.pr.outputs.br }}"
+          # Bot-ийн үүсгэсэн PR-ийн CI нь «зөвшөөрөл хүлээх» (action_required)
+          # төлөвт зогсдог. Түүнийг зөвшөөрвөл шалгалт PR дээрээ харагдана —
+          # `workflow_dispatch`-аар дуудсан ажил нь PR-тэй холбогддоггүй тул
+          # шалгалтын самбар хоосон хэвээр үлддэг.
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&per_page=40" \
+                  --jq "[.workflow_runs[] | select(.head_branch==\"$br\")]")
+          pending=$(echo "$runs" | jq -r '.[] | select(.conclusion=="action_required") | .id')
+
+          if [ -n "$pending" ]; then
+            ok=0
+            for id in $pending; do
+              if gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/approve" >/dev/null 2>&1; then
+                echo "PR-ийн CI зөвшөөрөгдөв (run $id)."; ok=1
+              fi
+            done
+            # Зөвшөөрч чадаагүй бол (эрх хүрэхгүй) ядаж branch дээр CI гүйлгэнэ —
+            # PR-ийн самбарт харагдахгүй ч шалгалт бодитоор явна.
+            if [ "$ok" = 0 ]; then
+              echo "::warning::Зөвшөөрөх боломжгүй — CI-г branch дээр шууд дуудлаа."
+              gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$br"
+            fi
+          elif [ "$(echo "$runs" | jq 'length')" != "0" ]; then
+            echo "PR-ийн CI өөрөө ажиллаж байна — хийх зүйлгүй."
+          else
+            echo "PR-ийн CI огт үүсээгүй — branch дээр шууд дуудна."
+            gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$br"
+          fi
 
       - name: Conflict — issue үүсгэх
         if: steps.merge.outputs.ok == 'false'
