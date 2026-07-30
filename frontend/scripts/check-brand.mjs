@@ -15,12 +15,51 @@ import { join, relative } from 'node:path';
 const ROOT = new URL('..', import.meta.url).pathname;
 const SRC = join(ROOT, 'src');
 
-// Флот дахь бүх платформын нэр — аль нь ч кодод шууд байж болохгүй.
-const PATTERN =
-  /Gerege Template Platform V3\.0|Gerege App|Gerege POS|Gerege Kiosk|Gerege Wallet|Ring System|Government Template Platform/;
+// Флот дахь БУСАД платформын нэр — аль нь ч кодод шууд байж болохгүй.
+const FLEET = [
+  'Gerege Template Platform V3.0',
+  'Government Template Platform V3.0',
+  'Gerege Platform V3.0',
+  'Gerege Developer Portal V3.0',
+  'Government Developer Portal V3.0',
+  'Gerege Wallet V1.0',
+  'Gerege App',
+  'Gerege POS',
+  'Gerege Kiosk',
+  'Gerege SSO',
+  'Ring System',
+  'Төрийн нэгдсэн нэвтрэлт',
+  'Төрийн үйлчилгээний «Хурдан» платформ',
+];
 
-// Зөвшөөрөгдсөн: брэндийн тохиргоо ба landing-ийн маркетингийн текст.
-const ALLOW = [/^brand\.config\.ts$/, /^components\/landing\//];
+// ЭНЭ платформын нэрийг `brand.config.ts`-ээс УНШИНА — гараар давхардуулбал
+// репо бүрт зөрч, өөрийн нэрээ хамгаалдаггүй болно (2026-07-30-нд 14 репогийн
+// 9 нь тийм байв; иймээс «Ring System» гэсэн нэр өөр платформ дээр амьд
+// үлдсэн). Уншиж чадахгүй бол ЗОГСОНО — чимээгүй сул хаалт байхаас дээр.
+const cfg = readFileSync(join(SRC, 'brand.config.ts'), 'utf8');
+const own = [...cfg.matchAll(/^\s*name:\s*'([^']+)'/gm)].map((m) => m[1]);
+if (own.length === 0) {
+  console.error('✗ brand.config.ts-ээс brand.name уншигдсангүй.');
+  process.exit(1);
+}
+
+const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const PATTERN = new RegExp([...new Set([...FLEET, ...own])].map(esc).join('|'));
+
+// Зөвшөөрөгдсөн — эдгээр нь БҮГД платформын өөрийн АГУУЛГА бөгөөд дундын
+// кодод хэзээ ч ордоггүй. Брэндийн нэрийг агуулах нь тэдний зорилго:
+//
+//   brand.config.ts       — тодорхойлолт өөрөө;
+//   components/landing/** — маркетингийн текст;
+//   lib/*I18n.ts          — платформын толь (гар утасны апп-ыг нэрээр заадаг);
+//   lib/apiCatalog.ts     — API каталог: БУСАД платформын бүтээгдэхүүнийг
+//                           нэрлэн танилцуулах нь түүний цорын ганц зорилго.
+const ALLOW = [
+  /^brand\.config\.ts$/,
+  /^components\/landing\//,
+  /^lib\/[a-z]+I18n\.ts$/,
+  /^lib\/apiCatalog\.ts$/,
+];
 
 const TEXT = /\.(ts|tsx|js|jsx|mjs|cjs|css|json|md)$/;
 
