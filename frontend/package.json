@@ -5,12 +5,13 @@
   "description": "gerege-backend-template-v27-д тохирсон Next.js frontend — me.dgov.mn-ийн gerege theme дээр суурилсан.",
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "npm run check:brand && npm run check:routes && next build",
+    "build": "npm run check:brand && npm run check:routes && npm run check:styles && next build",
     "start": "next start -p 3000",
     "lint": "eslint .",
     "test": "vitest run",
     "check:brand": "node scripts/check-brand.mjs",
-    "check:routes": "node scripts/check-routes.mjs"
+    "check:routes": "node scripts/check-routes.mjs",
+    "check:styles": "node scripts/check-styles.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
@@ -20,7 +21,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "server-only": "^0.0.1",
-    "@gerege/ui-core": "https://github.com/gerege-systems/ui-core/archive/refs/tags/v0.11.2.tar.gz"
+    "@gerege/ui-core": "https://github.com/gerege-systems/ui-core/archive/refs/tags/v0.11.3.tar.gz"
   },
   "devDependencies": {
     "@types/node": "20.11.30",
