@@ -20,7 +20,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "server-only": "^0.0.1",
-    "@gerege/ui-core": "https://github.com/gerege-systems/ui-core/archive/refs/tags/v0.10.2.tar.gz"
+    "@gerege/ui-core": "https://github.com/gerege-systems/ui-core/archive/refs/tags/v0.11.2.tar.gz"
   },
   "devDependencies": {
     "@types/node": "20.11.30",
