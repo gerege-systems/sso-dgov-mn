@@ -2089,7 +2089,11 @@ html[lang="en"] .i18n-banner { display: block; }
 @media (min-width: 900px) {
   .lp-nav__links { display: flex; }
   .lp-burger, .lp-mobile-menu { display: none; }
-  .lp-hero__inner { grid-template-columns: 1.05fr 0.95fr; padding-top: 84px; padding-bottom: 104px; }
+  /* Hero нь ЗӨВХӨН баруун талын карт (.lp-hero__visual) байгаа үед
+     хоёр баганат болно. Урьд нь болзолгүй хоёр багана байсан тул карт
+     зурдаггүй платформ дээр дэлгэцийн бараг тал ХООСОН үлддэг байв. */
+  .lp-hero__inner { padding-top: 84px; padding-bottom: 104px; }
+  .lp-hero__inner:has(> .lp-hero__visual) { grid-template-columns: 1.05fr 0.95fr; }
   .lp-bento { grid-template-columns: repeat(12, 1fr); }
   .lp-card { grid-column: span 4; }
   .lp-card--wide { grid-column: span 8; }
