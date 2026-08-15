@@ -92,7 +92,7 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 func (m *Module) Menus() []nexus.MenuDefinition {
 	return []nexus.MenuDefinition{{
 		ID: "sso_provisioning", Label: "Provisioning",
-		Path: "/module/sso-provisioning", Icon: "refresh-cw", Order: 40,
+		Path: "/module/sso-provisioning/targets", Icon: "refresh-cw", Order: 40,
 		Labels: map[string]string{
 			"mn": "Хэрэглэгч нийлүүлэлт", "ar": "التزويد", "zh": "用户预配",
 			"fr": "Provisionnement", "ru": "Подготовка учётных записей",

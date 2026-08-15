@@ -2,6 +2,7 @@ package main
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/gerege-systems/open-gerege-nexus/backend/pkg/catalog"
@@ -116,4 +117,34 @@ func loadBundledCatalogue(t *testing.T) []catalog.CatalogApp {
 		t.Fatal("the bundled catalogue is empty")
 	}
 	return apps
+}
+
+// A menu path has to be one the shell can actually render.
+//
+// The core's generic renderer is `/module/[app]/[feature]` — two segments. A
+// single-segment path like `/module/sso-federation` only works when the core's
+// frontend carries an explicit page for it, which for a distribution's own
+// modules it does not: the sidebar entry appears, the click 404s, and nothing
+// in this repository fails. That shipped once. This is what stops it shipping
+// twice.
+func TestEveryMenuPathIsOneTheShellCanRender(t *testing.T) {
+	p := nexus.NewPlatform(nil, nil)
+	for _, module := range []nexus.Module{
+		accessreview.New(p), federation.New(p), provisioning.New(p), sessions.New(p),
+	} {
+		for _, menu := range module.Menus() {
+			if menu.Path == "" {
+				continue
+			}
+			rest, isModule := strings.CutPrefix(menu.Path, "/module/")
+			if !isModule {
+				// A path outside /module is one the core owns a real route for.
+				continue
+			}
+			if app, feature, ok := strings.Cut(rest, "/"); !ok || app == "" || feature == "" {
+				t.Errorf("%s: menu %q has path %q; the shell renders /module/<app>/<feature> and would 404 on this",
+					module.ID(), menu.ID, menu.Path)
+			}
+		}
+	}
 }

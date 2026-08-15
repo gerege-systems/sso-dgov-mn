@@ -43,7 +43,7 @@
     {
       "id": "sso_access_review",
       "label": "Access Review",
-      "path": "/module/sso-access-review",
+      "path": "/module/sso-access-review/campaigns",
       "icon": "clipboard-check",
       "order": 30
     }

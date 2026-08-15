@@ -64,7 +64,7 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 func (m *Module) Menus() []nexus.MenuDefinition {
 	return []nexus.MenuDefinition{{
 		ID: "sso_sessions", Label: "Sessions",
-		Path: "/module/sso-sessions", Icon: "monitor-smartphone", Order: 20,
+		Path: "/module/sso-sessions/active", Icon: "monitor-smartphone", Order: 20,
 		Labels: map[string]string{
 			"mn": "Сессүүд", "ar": "الجلسات", "zh": "会话",
 			"fr": "Sessions", "ru": "Сеансы", "es": "Sesiones",

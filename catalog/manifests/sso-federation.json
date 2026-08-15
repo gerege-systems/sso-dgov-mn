@@ -37,7 +37,7 @@
     {
       "id": "sso_federation",
       "label": "Federation",
-      "path": "/module/sso-federation",
+      "path": "/module/sso-federation/providers",
       "icon": "network",
       "order": 10
     }

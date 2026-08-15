@@ -37,7 +37,7 @@
     {
       "id": "sso_provisioning",
       "label": "Provisioning",
-      "path": "/module/sso-provisioning",
+      "path": "/module/sso-provisioning/targets",
       "icon": "refresh-cw",
       "order": 40
     }

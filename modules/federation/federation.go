@@ -91,7 +91,7 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 func (m *Module) Menus() []nexus.MenuDefinition {
 	return []nexus.MenuDefinition{{
 		ID: "sso_federation", Label: "Federation",
-		Path: "/module/sso-federation", Icon: "network", Order: 10,
+		Path: "/module/sso-federation/providers", Icon: "network", Order: 10,
 		Labels: map[string]string{
 			"mn": "Холбоос нэвтрэлт", "ar": "الاتحاد", "zh": "身份联合",
 			"fr": "Fédération", "ru": "Федерация", "es": "Federación",

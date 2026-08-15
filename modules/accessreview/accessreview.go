@@ -78,7 +78,7 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 func (m *Module) Menus() []nexus.MenuDefinition {
 	return []nexus.MenuDefinition{{
 		ID: "sso_access_review", Label: "Access Review",
-		Path: "/module/sso-access-review", Icon: "clipboard-check", Order: 30,
+		Path: "/module/sso-access-review/campaigns", Icon: "clipboard-check", Order: 30,
 		Labels: map[string]string{
 			"mn": "Эрхийн хяналт", "ar": "مراجعة الصلاحيات", "zh": "权限复核",
 			"fr": "Revue des accès", "ru": "Пересмотр доступа", "es": "Revisión de accesos",
