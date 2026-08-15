@@ -1,0 +1,17 @@
+{
+  "app_id": "io.gerege.nexus.sso_access_review",
+  "entries": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-08-15",
+      "kind": "feature",
+      "summary": {
+        "mn": "Хэн юунд хандах эрхтэйг тогтоож, мэдэх хүнд нь харуулж, хариуг нь тэмдэглэнэ.",
+        "en": "Freeze who holds what, put it in front of somebody who would know, and record what they said."
+      },
+      "authors": [
+        "craftzbay"
+      ]
+    }
+  ]
+}

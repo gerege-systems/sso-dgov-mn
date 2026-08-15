@@ -1,0 +1,17 @@
+{
+  "app_id": "io.gerege.nexus.sso_provisioning",
+  "entries": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-08-15",
+      "kind": "feature",
+      "summary": {
+        "mn": "Нэвтрэхээс өмнө бүртгэл шаарддаг системүүд рүү хүмүүсийг SCIM 2.0-оор түлхэнэ.",
+        "en": "Push this organisation's people into the systems that need an account before a sign-in is any use, over SCIM 2.0."
+      },
+      "authors": [
+        "craftzbay"
+      ]
+    }
+  ]
+}

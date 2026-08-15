@@ -1,0 +1,160 @@
+# Gerege SSO, as a Gerege Nexus distribution.
+#
+# What makes this instance Gerege SSO is not a special build of the platform: it
+# is this product's own binary — the same platform plus four modules — pointed
+# at this product's catalogue.
+#
+# It comes up *beside* the fork it replaces, on its own ports and its own
+# database, and changes nothing about that service. The running sso.gerege.mn
+# holds 8095 and 3011; nothing about it moves until somebody deliberately moves
+# it. That is not caution for its own sake: the fork carried apps this product
+# does not have — gov_services, billing, inventory, products — and pointing the
+# domain here is the moment those screens disappear for whoever was using them.
+# Switching over is a separate, deliberate act, taken after somebody has checked
+# who was.
+#
+# Required environment (deploy/.env):
+#   SSO_NEXUS_POSTGRES_PASSWORD  this stack's own database
+#   SSO_SECRET_KEY               base64, 32 bytes: what federation client
+#                                secrets and SCIM tokens are encrypted with.
+#                                Losing it means re-entering every credential;
+#                                changing it means the stored ones stop
+#                                decrypting, which is the same thing said later.
+#   PUBLIC_ORIGIN                where this instance answers
+#   SSO_DEFAULT_CLIENT_SECRET    identity still belongs to nexus.gerege.mn
+
+# The project name is fixed here rather than taken from the directory, so
+# compose does not derive "deploy" from the folder and build a second stack
+# beside the first under names the first one holds.
+name: sso-nexus
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gerege_sso_nexus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: platform_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${SSO_NEXUS_POSTGRES_PASSWORD:?SSO_NEXUS_POSTGRES_PASSWORD is required}
+    # A port of its own: the fork's postgres already holds one on this host, and
+    # the two must not be able to reach each other's data by accident during the
+    # parallel run.
+    ports:
+      - "127.0.0.1:5437:5432"
+    volumes:
+      - gerege_sso_nexus_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d platform_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: ${IMAGE:-sso-nexus:latest}
+    container_name: gerege_sso_nexus_migrate
+    # The platform's migrations, from the core version this product's go.mod
+    # pins — the image carries both, so they cannot drift apart.
+    command: ["/app/migrate", "up"]
+    environment:
+      DATABASE_URL: postgres://postgres:${SSO_NEXUS_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # This product's own migrations, in their own history.
+  #
+  # Two histories in one database, which is why MIGRATIONS_TABLE is not optional
+  # here: goose keeps one row per applied version in one table, so this
+  # product's 00001 and the platform's 00001 would be the same row and whichever
+  # ran second would be recorded as already applied.
+  #
+  # After the platform's, because the tables here sit beside `tenants`, `users`
+  # and the RBAC tables the core's migrations create.
+  migrate-sso:
+    image: ${IMAGE:-sso-nexus:latest}
+    container_name: gerege_sso_nexus_migrate_own
+    command: ["/app/migrate", "up"]
+    environment:
+      DATABASE_URL: postgres://postgres:${SSO_NEXUS_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
+      MIGRATIONS_DIR: /app/db/sso
+      MIGRATIONS_TABLE: goose_db_version_sso
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  backend:
+    image: ${IMAGE:-sso-nexus:latest}
+    container_name: gerege_sso_nexus_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://postgres:${SSO_NEXUS_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
+      ENVIRONMENT: production
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://sso-next.gerege.mn}
+      ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-https://sso-next.gerege.mn}
+
+      # This product's own catalogue, shipped in the image: the four SSO modules
+      # and the five platform apps they sit beside.
+      APP_CATALOG_PATH: /app/catalog/apps.json
+
+      # What the federation client secrets and SCIM tokens are encrypted with.
+      # Absent, the product still starts and every other screen works — what
+      # refuses is the write that would otherwise store a credential in the
+      # clear.
+      SSO_SECRET_KEY: ${SSO_SECRET_KEY:-}
+
+      # Identity still belongs to nexus.gerege.mn: every OAuth2 client in the
+      # field is registered against that issuer, and moving it would be a change
+      # every one of them has to make.
+      SSO_ISSUER: ${SSO_ISSUER:-https://nexus.gerege.mn}
+      SSO_DEFAULT_CLIENT_SECRET: ${SSO_DEFAULT_CLIENT_SECRET}
+
+      DEMO_MODE: "false"
+    # Its own port. The fork holds 8095; nothing about it moves until somebody
+    # moves the domain.
+    ports:
+      - "127.0.0.1:8096:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      migrate-sso:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # The platform's own shell, unmodified.
+  #
+  # A distribution does not fork the frontend: the sidebar and the module
+  # screens are catalogue-driven, so the generic shell already renders this
+  # product. What it cannot be is the *published* image — the API address is
+  # compiled into the bundle at build time — so it is built here, from the core
+  # repository, for this origin. That is the one thing about the frontend a
+  # distribution owns.
+  web:
+    image: ${WEB_IMAGE:-sso-nexus-web:latest}
+    container_name: gerege_sso_nexus_web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Where the shell asks, server-side, what this deployment carries — so the
+      # catalogue is in the HTML rather than swapped in after it. The browser
+      # never uses this: it asks its own origin. A server has no origin, which is
+      # the whole reason this exists.
+      API_INTERNAL_URL: http://backend:8080/api/v1
+    # 3011 is the fork's web; this runs beside it.
+    ports:
+      - "127.0.0.1:3016:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  gerege_sso_nexus_postgres_data:

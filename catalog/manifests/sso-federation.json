@@ -1,0 +1,45 @@
+{
+  "id": "io.gerege.nexus.sso_federation",
+  "name": "Federation",
+  "version": "1.0.0",
+  "platform": ">=1.6.0 <2.0.0",
+  "publisher": "gerege",
+  "authors": [
+    {
+      "name": "Gerege Systems Development Team"
+    }
+  ],
+  "maintainers": [
+    {
+      "name": "Gerege Systems Development Team"
+    }
+  ],
+  "repository": "https://github.com/gerege-systems/sso-gerege-nexus",
+  "homepage": "https://sso.gerege.mn",
+  "license": "Apache-2.0",
+  "visibility": "public",
+  "dependencies": [],
+  "permissions": [
+    {
+      "code": "sso_federation.read",
+      "name": "See federated providers",
+      "description": "View the identity providers this organisation trusts",
+      "admin_only": true
+    },
+    {
+      "code": "sso_federation.manage",
+      "name": "Manage federated providers",
+      "description": "Register, edit, disable and remove trusted identity providers",
+      "admin_only": true
+    }
+  ],
+  "menus": [
+    {
+      "id": "sso_federation",
+      "label": "Federation",
+      "path": "/module/sso-federation",
+      "icon": "network",
+      "order": 10
+    }
+  ]
+}

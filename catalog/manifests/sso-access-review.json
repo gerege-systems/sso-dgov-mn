@@ -1,0 +1,51 @@
+{
+  "id": "io.gerege.nexus.sso_access_review",
+  "name": "Access Review",
+  "version": "1.0.0",
+  "platform": ">=1.6.0 <2.0.0",
+  "publisher": "gerege",
+  "authors": [
+    {
+      "name": "Gerege Systems Development Team"
+    }
+  ],
+  "maintainers": [
+    {
+      "name": "Gerege Systems Development Team"
+    }
+  ],
+  "repository": "https://github.com/gerege-systems/sso-gerege-nexus",
+  "homepage": "https://sso.gerege.mn",
+  "license": "Apache-2.0",
+  "visibility": "public",
+  "dependencies": [],
+  "permissions": [
+    {
+      "code": "sso_access_review.read",
+      "name": "See access reviews",
+      "description": "View campaigns and the access they cover",
+      "admin_only": true
+    },
+    {
+      "code": "sso_access_review.decide",
+      "name": "Decide on access",
+      "description": "Keep or revoke an access a campaign asks about",
+      "admin_only": true
+    },
+    {
+      "code": "sso_access_review.manage",
+      "name": "Run access reviews",
+      "description": "Create, open and close review campaigns",
+      "admin_only": true
+    }
+  ],
+  "menus": [
+    {
+      "id": "sso_access_review",
+      "label": "Access Review",
+      "path": "/module/sso-access-review",
+      "icon": "clipboard-check",
+      "order": 30
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+name: CI
+
+# A distribution's CI has one job the core's does not: to be the place where a
+# new core release stops being a rumour. Dependabot opens a pull request moving
+# one line in go.mod — see .github/dependabot.yml, where the platform is its own
+# group for exactly this reason — and this is what answers whether Gerege SSO
+# still works on it.
+#
+# The steps themselves are the core's, called rather than copied. Anything this
+# product needs and other distributions do not belongs here, not there.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: gerege-systems/open-gerege-nexus/.github/workflows/distribution-ci.yml@main
+
+  # The tests that need a database, which is this product's own business rather
+  # than every distribution's — the shared workflow's rule, applied.
+  #
+  # It is here because of what these tests are about. Three of the four modules
+  # answer questions that only rows can answer: which accesses a campaign copied
+  # out of RBAC, whether a revoked session is still listed, whether a failing
+  # SCIM job waits longer each time. Skipped for want of a database, every one
+  # of those assertions looks exactly like a passing one.
+  #
+  # Two migration histories, because this product has two: the platform's, from
+  # the core version go.mod pins, and this repository's own. MIGRATIONS_TABLE is
+  # what keeps them apart — goose writes one row per applied version in one
+  # table, so both 00001s would otherwise be the same row.
+  database:
+    name: Database-backed tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: sso_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SSO_TEST_DATABASE_URL: postgres://postgres:ci@127.0.0.1:5432/sso_ci?sslmode=disable
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      # The platform's schema, from the core version go.mod pins. Read out of
+      # the module cache rather than checked out: the schema a build is tested
+      # against has to be the schema the code in it was written against, which
+      # is the same reason the Dockerfile copies it from there.
+      - name: The platform's migrations
+        env:
+          DATABASE_URL: ${{ env.SSO_TEST_DATABASE_URL }}
+        run: |
+          # Downloaded first, because {{.Dir}} is empty for a module that is not
+          # in the local cache.
+          go mod download github.com/gerege-systems/open-gerege-nexus/backend
+          core=$(go list -m -f '{{.Dir}}' github.com/gerege-systems/open-gerege-nexus/backend)
+          if [ -z "$core" ] || [ ! -d "$core/db/migrations" ]; then
+            echo "::error::the core module's migrations are not on disk (dir: '$core')"
+            exit 1
+          fi
+          echo "core module: $core"
+          MIGRATIONS_DIR="$core/db/migrations" go tool migrate up
+
+      - name: This repository's migrations
+        env:
+          DATABASE_URL: ${{ env.SSO_TEST_DATABASE_URL }}
+          MIGRATIONS_DIR: db/migrations
+          MIGRATIONS_TABLE: goose_db_version_sso
+        run: go tool migrate up
+
+      # -count=1 rather than the cache: a test whose result depends on rows in a
+      # database is not a test Go can tell has already been run.
+      - run: go test -race -count=1 ./...

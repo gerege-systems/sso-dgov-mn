@@ -1,0 +1,17 @@
+{
+  "app_id": "io.gerege.nexus.sso_sessions",
+  "entries": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-08-15",
+      "kind": "feature",
+      "summary": {
+        "mn": "Хэн одоо нэвтэрсэн байгаа, хаанаас, мөн түүнийг таслах товч.",
+        "en": "Who is signed in right now, from where, and the button that ends it."
+      },
+      "authors": [
+        "craftzbay"
+      ]
+    }
+  ]
+}

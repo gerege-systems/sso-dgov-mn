@@ -1,0 +1,17 @@
+{
+  "app_id": "io.gerege.nexus.sso_federation",
+  "entries": [
+    {
+      "version": "1.0.0",
+      "released_at": "2026-08-15",
+      "kind": "feature",
+      "summary": {
+        "mn": "Байгууллагын итгэсэн гадны нэвтрэлтийн үйлчилгээ, тэдгээрээр орсон хүмүүс.",
+        "en": "The identity providers this organisation trusts, and who has arrived through each one."
+      },
+      "authors": [
+        "craftzbay"
+      ]
+    }
+  ]
+}

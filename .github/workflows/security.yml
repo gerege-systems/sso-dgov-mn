@@ -1,0 +1,24 @@
+name: Security
+
+# The scanning half, called from the core. The schedule has to be declared
+# here — a reusable workflow cannot bring its own cron — and it is the point of
+# the whole thing: a vulnerability is not published when we happen to be
+# committing, so a repository with no cron is one that stopped looking.
+#
+# Monday 09:40 UTC. The core scans at 09:00 and the App Store at 09:20; a third
+# slot keeps one advisory from arriving from three repositories in one minute.
+
+on:
+  schedule:
+    - cron: "40 9 * * 1"
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    uses: gerege-systems/open-gerege-nexus/.github/workflows/distribution-security.yml@main
