@@ -54,6 +54,11 @@ type Item struct {
 	Status         string `json:"status"`
 	ReviewerID     string `json:"reviewer_id"`
 	DecidedAt      string `json:"decided_at"`
+	// Filled by Queue, which spans campaigns and so has to say which one each
+	// row came from. Empty on a listing that was already given a campaign.
+	CampaignID   string `json:"campaign_id,omitempty"`
+	CampaignName string `json:"campaign_name,omitempty"`
+	DueDate      string `json:"due_date,omitempty"`
 }
 
 // Store is every line of SQL this module runs.
@@ -222,6 +227,42 @@ func (s *Store) Items(ctx context.Context, tenantID, campaignID, status string) 
 		var item Item
 		if err := rows.Scan(&item.ID, &item.UserID, &item.UserEmail, &item.RoleID, &item.RoleName,
 			&item.PermissionCode, &item.Status, &item.ReviewerID, &item.DecidedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+// Queue is everything still waiting on a reviewer, across every open campaign.
+//
+// The per-campaign listing answers "what is in this campaign". This answers the
+// question a reviewer actually has — "what is waiting for me" — which is not the
+// same query with the filter dropped: it spans campaigns, it names the campaign
+// each row came from, and it excludes the closed ones, where a pending item is
+// a decision nobody will ever be asked for.
+func (s *Store) Queue(ctx context.Context, tenantID string, limit int) ([]Item, error) {
+	rows, err := s.db.Query(ctx, `
+		SELECT i.id, i.user_id, i.user_email, COALESCE(i.role_id::text, ''), i.role_name,
+			i.permission_code, i.status, COALESCE(i.reviewer_id::text, ''),
+			COALESCE(to_char(i.decided_at, 'YYYY-MM-DD"T"HH24:MI:SSOF'), ''),
+			c.id, c.name, COALESCE(to_char(c.due_date, 'YYYY-MM-DD'), '')
+		FROM sso_review_items i
+		JOIN sso_review_campaigns c ON c.id = i.campaign_id
+		WHERE i.tenant_id = $1 AND i.status = 'pending' AND c.status = 'open'
+		ORDER BY c.due_date NULLS LAST, i.user_email, i.permission_code
+		LIMIT $2`, tenantID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []Item{}
+	for rows.Next() {
+		var item Item
+		if err := rows.Scan(&item.ID, &item.UserID, &item.UserEmail, &item.RoleID, &item.RoleName,
+			&item.PermissionCode, &item.Status, &item.ReviewerID, &item.DecidedAt,
+			&item.CampaignID, &item.CampaignName, &item.DueDate); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

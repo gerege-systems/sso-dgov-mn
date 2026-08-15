@@ -90,15 +90,26 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 }
 
 func (m *Module) Menus() []nexus.MenuDefinition {
-	return []nexus.MenuDefinition{{
-		ID: "sso_provisioning", Label: "Provisioning",
-		Path: "/module/sso-provisioning/targets", Icon: "refresh-cw", Order: 40,
-		Labels: map[string]string{
-			"mn": "Хэрэглэгч нийлүүлэлт", "ar": "التزويد", "zh": "用户预配",
-			"fr": "Provisionnement", "ru": "Подготовка учётных записей",
-			"es": "Aprovisionamiento",
+	return []nexus.MenuDefinition{
+		{
+			ID: "sso_provisioning_targets", Label: "Targets",
+			Path: "/module/sso-provisioning/targets", Icon: "refresh-cw", Order: 40,
+			Labels: map[string]string{
+				"mn": "Зорилтот системүүд", "ar": "الأنظمة المستهدفة", "zh": "目标系统",
+				"fr": "Systèmes cibles", "ru": "Целевые системы",
+				"es": "Sistemas de destino",
+			},
 		},
-	}}
+		{
+			ID: "sso_provisioning_runs", Label: "Delivery log",
+			Path: "/module/sso-provisioning/runs", Icon: "list-checks", Order: 41,
+			Labels: map[string]string{
+				"mn": "Илгээлтийн бүртгэл", "ar": "سجل الإرسال", "zh": "推送日志",
+				"fr": "Journal des envois", "ru": "Журнал отправок",
+				"es": "Registro de envíos",
+			},
+		},
+	}
 }
 
 func (m *Module) MenuPermission() string        { return "sso_provisioning.read" }

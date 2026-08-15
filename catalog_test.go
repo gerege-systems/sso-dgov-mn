@@ -148,3 +148,46 @@ func TestEveryMenuPathIsOneTheShellCanRender(t *testing.T) {
 		}
 	}
 }
+
+// The manifest's menus and the module's are the same menus.
+//
+// They are written in two places — Go for the running binary, JSON for the
+// catalogue a store publishes — and nothing but this compares them. The
+// divergence is quiet in the worst way: the sidebar comes from the compiled
+// module, so a manifest that has drifted still produces a working screen and a
+// store listing that describes a different product.
+func TestEveryManifestDescribesTheMenusItsModuleRegisters(t *testing.T) {
+	p := nexus.NewPlatform(nil, nil)
+	accessreview.New(p)
+	federation.New(p)
+	provisioning.New(p)
+	sessions.New(p)
+
+	for _, app := range loadBundledCatalogue(t) {
+		module, compiled := nexus.Get(app.ID)
+		if !compiled {
+			continue
+		}
+		declared := module.Menus()
+		if len(declared) != len(app.Manifest.Menus) {
+			t.Errorf("%s registers %d menu entries and its manifest lists %d",
+				app.ID, len(declared), len(app.Manifest.Menus))
+			continue
+		}
+		for i, menu := range declared {
+			listed := app.Manifest.Menus[i]
+			if menu.ID != listed.ID || menu.Path != listed.Path ||
+				menu.Label != listed.Label || menu.Icon != listed.Icon || menu.Order != listed.Order {
+				t.Errorf("%s menu %d: module has %+v, manifest has %+v", app.ID, i,
+					struct {
+						ID, Label, Path, Icon string
+						Order                 int
+					}{menu.ID, menu.Label, menu.Path, menu.Icon, menu.Order},
+					struct {
+						ID, Label, Path, Icon string
+						Order                 int
+					}{listed.ID, listed.Label, listed.Path, listed.Icon, listed.Order})
+			}
+		}
+	}
+}

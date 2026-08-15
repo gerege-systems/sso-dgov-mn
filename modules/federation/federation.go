@@ -89,14 +89,25 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 }
 
 func (m *Module) Menus() []nexus.MenuDefinition {
-	return []nexus.MenuDefinition{{
-		ID: "sso_federation", Label: "Federation",
-		Path: "/module/sso-federation/providers", Icon: "network", Order: 10,
-		Labels: map[string]string{
-			"mn": "Холбоос нэвтрэлт", "ar": "الاتحاد", "zh": "身份联合",
-			"fr": "Fédération", "ru": "Федерация", "es": "Federación",
+	return []nexus.MenuDefinition{
+		{
+			ID: "sso_federation_providers", Label: "Providers",
+			Path: "/module/sso-federation/providers", Icon: "network", Order: 10,
+			Labels: map[string]string{
+				"mn": "Провайдерууд", "ar": "المزودون", "zh": "身份提供方",
+				"fr": "Fournisseurs", "ru": "Провайдеры", "es": "Proveedores",
+			},
 		},
-	}}
+		{
+			ID: "sso_federation_links", Label: "Linked people",
+			Path: "/module/sso-federation/links", Icon: "link", Order: 11,
+			Labels: map[string]string{
+				"mn": "Холбогдсон хүмүүс", "ar": "الأشخاص المرتبطون", "zh": "已关联用户",
+				"fr": "Personnes liées", "ru": "Связанные пользователи",
+				"es": "Personas vinculadas",
+			},
+		},
+	}
 }
 
 // MenuPermission and RoutePermissionPrefix are this module's half of
@@ -109,6 +120,9 @@ func (m *Module) RegisterRoutes(r chi.Router, gate func(http.Handler) http.Handl
 	r.Route("/api/v1/sso/federation", func(fed chi.Router) {
 		fed.Use(gate)
 		fed.Get("/providers", m.handleList)
+		// Organisation-wide, and mounted before the parameterised group below
+		// so `links` is never read as a provider id.
+		fed.Get("/links", m.handleAllLinks)
 		fed.Post("/providers", m.handleCreate)
 		fed.Put("/providers/{id}", m.handleUpdate)
 		fed.Put("/providers/{id}/enabled", m.handleSetEnabled)
@@ -317,6 +331,21 @@ func (m *Module) handleDelete(w http.ResponseWriter, r *http.Request) {
 	nexus.Audit(r.Context(), tenantID, claims.UserID, "sso_federation.removed", "federation_provider",
 		map[string]any{"provider_id": id})
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleAllLinks is who has arrived through federation at all.
+func (m *Module) handleAllLinks(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := nexus.RequireTenant(w, r)
+	if !ok {
+		return
+	}
+	links, err := m.store.AllLinks(r.Context(), tenantID)
+	if err != nil {
+		slog.Error("federation: could not list links", "error", err)
+		nexus.Error(w, http.StatusInternalServerError, "could not load the links")
+		return
+	}
+	nexus.JSON(w, http.StatusOK, links)
 }
 
 func (m *Module) handleLinks(w http.ResponseWriter, r *http.Request) {

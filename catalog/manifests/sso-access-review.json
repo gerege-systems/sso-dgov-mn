@@ -41,11 +41,18 @@
   ],
   "menus": [
     {
-      "id": "sso_access_review",
-      "label": "Access Review",
-      "path": "/module/sso-access-review/campaigns",
+      "id": "sso_access_review_queue",
+      "label": "Waiting on a decision",
+      "path": "/module/sso-access-review/queue",
       "icon": "clipboard-check",
       "order": 30
+    },
+    {
+      "id": "sso_access_review_campaigns",
+      "label": "Campaigns",
+      "path": "/module/sso-access-review/campaigns",
+      "icon": "calendar-check",
+      "order": 31
     }
   ]
 }

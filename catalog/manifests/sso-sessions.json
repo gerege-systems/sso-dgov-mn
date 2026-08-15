@@ -35,11 +35,18 @@
   ],
   "menus": [
     {
-      "id": "sso_sessions",
-      "label": "Sessions",
+      "id": "sso_sessions_active",
+      "label": "Active sessions",
       "path": "/module/sso-sessions/active",
       "icon": "monitor-smartphone",
       "order": 20
+    },
+    {
+      "id": "sso_sessions_events",
+      "label": "Revocation history",
+      "path": "/module/sso-sessions/events",
+      "icon": "history",
+      "order": 21
     }
   ]
 }

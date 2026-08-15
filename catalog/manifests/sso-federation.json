@@ -35,11 +35,18 @@
   ],
   "menus": [
     {
-      "id": "sso_federation",
-      "label": "Federation",
+      "id": "sso_federation_providers",
+      "label": "Providers",
       "path": "/module/sso-federation/providers",
       "icon": "network",
       "order": 10
+    },
+    {
+      "id": "sso_federation_links",
+      "label": "Linked people",
+      "path": "/module/sso-federation/links",
+      "icon": "link",
+      "order": 11
     }
   ]
 }

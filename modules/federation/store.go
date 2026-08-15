@@ -43,12 +43,19 @@ type Provider struct {
 }
 
 // Link is one person's identity at one provider.
+//
+// ProviderName and Email are filled on the organisation-wide listing and left
+// empty on a provider's own. The screen that asks "who has arrived through
+// federation at all" needs both to be readable; the one already looking at a
+// provider knows its name, and a join for a column nobody reads is a join.
 type Link struct {
-	ID         string `json:"id"`
-	ProviderID string `json:"provider_id"`
-	Subject    string `json:"subject"`
-	UserID     string `json:"user_id"`
-	LinkedAt   string `json:"linked_at"`
+	ID           string `json:"id"`
+	ProviderID   string `json:"provider_id"`
+	ProviderName string `json:"provider_name,omitempty"`
+	Subject      string `json:"subject"`
+	UserID       string `json:"user_id"`
+	Email        string `json:"email,omitempty"`
+	LinkedAt     string `json:"linked_at"`
 }
 
 type Store struct{ db nexus.DB }
@@ -192,6 +199,39 @@ func (s *Store) Links(ctx context.Context, tenantID, providerID string) ([]Link,
 	for rows.Next() {
 		var link Link
 		if err := rows.Scan(&link.ID, &link.ProviderID, &link.Subject, &link.UserID, &link.LinkedAt); err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+	return links, rows.Err()
+}
+
+// AllLinks answers who has arrived through federation at all, newest first.
+//
+// The per-provider listing above answers a question somebody already inside a
+// provider is asking. This one answers the question an administrator opens the
+// module with — which of our people sign in from outside, and through whom —
+// and it is not the same query with a filter removed: it has to name the
+// provider and the person, which the other does not.
+func (s *Store) AllLinks(ctx context.Context, tenantID string) ([]Link, error) {
+	rows, err := s.db.Query(ctx, `
+		SELECT l.id, l.provider_id, p.display_name, l.subject, l.user_id, u.email,
+			to_char(l.linked_at, 'YYYY-MM-DD"T"HH24:MI:SSOF')
+		FROM sso_federation_links l
+		JOIN sso_federation_providers p ON p.id = l.provider_id
+		JOIN users u ON u.id = l.user_id
+		WHERE l.tenant_id = $1
+		ORDER BY l.linked_at DESC`, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	links := []Link{}
+	for rows.Next() {
+		var link Link
+		if err := rows.Scan(&link.ID, &link.ProviderID, &link.ProviderName, &link.Subject,
+			&link.UserID, &link.Email, &link.LinkedAt); err != nil {
 			return nil, err
 		}
 		links = append(links, link)

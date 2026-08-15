@@ -28,6 +28,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -76,14 +77,25 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 }
 
 func (m *Module) Menus() []nexus.MenuDefinition {
-	return []nexus.MenuDefinition{{
-		ID: "sso_access_review", Label: "Access Review",
-		Path: "/module/sso-access-review/campaigns", Icon: "clipboard-check", Order: 30,
-		Labels: map[string]string{
-			"mn": "Эрхийн хяналт", "ar": "مراجعة الصلاحيات", "zh": "权限复核",
-			"fr": "Revue des accès", "ru": "Пересмотр доступа", "es": "Revisión de accesos",
+	return []nexus.MenuDefinition{
+		{
+			ID: "sso_access_review_queue", Label: "Waiting on a decision",
+			Path: "/module/sso-access-review/queue", Icon: "clipboard-check", Order: 30,
+			Labels: map[string]string{
+				"mn": "Хүлээгдэж буй", "ar": "بانتظار القرار", "zh": "待复核",
+				"fr": "En attente de décision", "ru": "Ожидают решения",
+				"es": "Pendientes de decisión",
+			},
 		},
-	}}
+		{
+			ID: "sso_access_review_campaigns", Label: "Campaigns",
+			Path: "/module/sso-access-review/campaigns", Icon: "calendar-check", Order: 31,
+			Labels: map[string]string{
+				"mn": "Кампанит ажил", "ar": "الحملات", "zh": "复核批次",
+				"fr": "Campagnes", "ru": "Кампании", "es": "Campañas",
+			},
+		},
+	}
 }
 
 func (m *Module) MenuPermission() string { return "sso_access_review.read" }
@@ -103,6 +115,7 @@ func (m *Module) RegisterRoutes(r chi.Router, gate func(http.Handler) http.Handl
 
 		rev.Group(func(read chi.Router) {
 			read.Use(nexus.RequirePermission(m.permissions, "sso_access_review.read"))
+			read.Get("/queue", m.handleQueue)
 			read.Get("/campaigns", m.handleListCampaigns)
 			read.Get("/campaigns/{id}", m.handleGetCampaign)
 			read.Get("/campaigns/{id}/items", m.handleItems)
@@ -156,6 +169,27 @@ func (in *Input) validate() error {
 		}
 	}
 	return nil
+}
+
+// handleQueue is what is waiting on a reviewer, across every open campaign.
+func (m *Module) handleQueue(w http.ResponseWriter, r *http.Request) {
+	tenantID, ok := nexus.RequireTenant(w, r)
+	if !ok {
+		return
+	}
+	limit := 200
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 && parsed <= 1000 {
+			limit = parsed
+		}
+	}
+	items, err := m.store.Queue(r.Context(), tenantID, limit)
+	if err != nil {
+		slog.Error("access review: could not load the queue", "error", err)
+		nexus.Error(w, http.StatusInternalServerError, "could not load the queue")
+		return
+	}
+	nexus.JSON(w, http.StatusOK, items)
 }
 
 func (m *Module) handleListCampaigns(w http.ResponseWriter, r *http.Request) {

@@ -62,14 +62,26 @@ func (m *Module) Permissions() []nexus.PermissionDefinition {
 }
 
 func (m *Module) Menus() []nexus.MenuDefinition {
-	return []nexus.MenuDefinition{{
-		ID: "sso_sessions", Label: "Sessions",
-		Path: "/module/sso-sessions/active", Icon: "monitor-smartphone", Order: 20,
-		Labels: map[string]string{
-			"mn": "Сессүүд", "ar": "الجلسات", "zh": "会话",
-			"fr": "Sessions", "ru": "Сеансы", "es": "Sesiones",
+	return []nexus.MenuDefinition{
+		{
+			ID: "sso_sessions_active", Label: "Active sessions",
+			Path: "/module/sso-sessions/active", Icon: "monitor-smartphone", Order: 20,
+			Labels: map[string]string{
+				"mn": "Идэвхтэй сесс", "ar": "الجلسات النشطة", "zh": "活动会话",
+				"fr": "Sessions actives", "ru": "Активные сеансы",
+				"es": "Sesiones activas",
+			},
 		},
-	}}
+		{
+			ID: "sso_sessions_events", Label: "Revocation history",
+			Path: "/module/sso-sessions/events", Icon: "history", Order: 21,
+			Labels: map[string]string{
+				"mn": "Таслалтын түүх", "ar": "سجل الإنهاء", "zh": "注销记录",
+				"fr": "Historique des révocations", "ru": "История отзывов",
+				"es": "Historial de revocaciones",
+			},
+		},
+	}
 }
 
 func (m *Module) MenuPermission() string        { return "sso_sessions.read" }

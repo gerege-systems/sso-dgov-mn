@@ -35,11 +35,18 @@
   ],
   "menus": [
     {
-      "id": "sso_provisioning",
-      "label": "Provisioning",
+      "id": "sso_provisioning_targets",
+      "label": "Targets",
       "path": "/module/sso-provisioning/targets",
       "icon": "refresh-cw",
       "order": 40
+    },
+    {
+      "id": "sso_provisioning_runs",
+      "label": "Delivery log",
+      "path": "/module/sso-provisioning/runs",
+      "icon": "list-checks",
+      "order": 41
     }
   ]
 }
