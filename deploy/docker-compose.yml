@@ -140,14 +140,19 @@ services:
       retries: 5
       start_period: 20s
 
-  # The platform's own shell, unmodified.
+  # The platform's own shell, unmodified — and not rebuilt.
   #
   # A distribution does not fork the frontend: the sidebar and the module
   # screens are catalogue-driven, so the generic shell already renders this
-  # product. What it cannot be is the *published* image — the API address is
-  # compiled into the bundle at build time — so it is built here, from the core
-  # repository, for this origin. That is the one thing about the frontend a
-  # distribution owns.
+  # product. It used to have to be rebuilt per origin, because the API address
+  # was compiled into the bundle; the core stopped doing that (see
+  # frontend/lib/apiBase.ts — the browser asks its own origin now), so the
+  # *published* core image serves any installation.
+  #
+  # Which means WEB_IMAGE should name the core release this product's go.mod
+  # pins — ghcr.io/gerege-systems/open-gerege-nexus/frontend at that tag's
+  # commit — rather than anything built here. A shell from a different core
+  # version is a shell whose screens and whose API disagree about what exists.
   web:
     image: ${WEB_IMAGE:-sso-nexus-web:latest}
     container_name: gerege_sso_nexus_web
