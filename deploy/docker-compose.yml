@@ -39,9 +39,11 @@ services:
       POSTGRES_PASSWORD: ${SSO_NEXUS_POSTGRES_PASSWORD:?SSO_NEXUS_POSTGRES_PASSWORD is required}
     # A port of its own: the fork's postgres already holds one on this host, and
     # the two must not be able to reach each other's data by accident during the
-    # parallel run.
+    # parallel run. 5435 is the fork's and 5437 belongs to another product on
+    # the same box — the ports on this host are first-come, and a collision here
+    # is a stack that will not start rather than one that starts wrong.
     ports:
-      - "127.0.0.1:5437:5432"
+      - "127.0.0.1:5438:5432"
     volumes:
       - gerege_sso_nexus_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -89,6 +91,14 @@ services:
     image: ${IMAGE:-sso-nexus:latest}
     container_name: gerege_sso_nexus_backend
     restart: unless-stopped
+    # Everything this deployment holds that this product does not decide: the
+    # E-ID relying-party credentials, the Google and Dropbox client secrets, the
+    # signing certificates. The compose file it replaced named all twenty-one of
+    # them by hand, which is twenty-one places to forget one — and the list is
+    # the deployment's business rather than the product's. The explicit block
+    # below still wins where the product does have an opinion.
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgres://postgres:${SSO_NEXUS_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
       ENVIRONMENT: production
