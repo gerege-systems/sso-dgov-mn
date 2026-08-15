@@ -62,7 +62,7 @@ COPY --from=build /out/db      /app/db
 # with MIGRATIONS_DIR and a MIGRATIONS_TABLE of its own — the pair the core's
 # cmd/migrate grew for exactly this.
 COPY db/migrations /app/db/sso
-# This product's catalogue: the four SSO modules and the five platform apps they
+# This product's catalogue: the four SSO modules and the three platform apps they
 # sit beside.
 COPY catalog /app/catalog
 

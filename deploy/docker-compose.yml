@@ -106,7 +106,7 @@ services:
       ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-https://sso-next.gerege.mn}
 
       # This product's own catalogue, shipped in the image: the four SSO modules
-      # and the five platform apps they sit beside.
+      # and the three platform apps they sit beside.
       APP_CATALOG_PATH: /app/catalog/apps.json
 
       # What the federation client secrets and SCIM tokens are encrypted with.
