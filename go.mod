@@ -2,6 +2,8 @@ module github.com/gerege-systems/sso-gerege-nexus
 
 go 1.26
 
+toolchain go1.26.6
+
 // The core, by tag and nothing else. A branch or a commit here would be a fork
 // with a longer name: the whole point of the ecosystem split is that a hundred
 // products take the same released platform, and Dependabot raises this line
