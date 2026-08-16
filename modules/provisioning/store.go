@@ -264,7 +264,18 @@ func (s *Store) retry(ctx context.Context, tx pgx.Tx, j job, status int, body st
 		}
 		return logRun(ctx, tx, j, status, "gave up after "+strconv.Itoa(maxAttempts)+" attempts: "+body)
 	}
-	delay := time.Duration(1<<uint(j.attempts)) * time.Minute
+	// The shift is bounded before it is made. The branch above already caps
+	// attempts, but the count arrives from a database column rather than from
+	// this function, and a shift is the one arithmetic that turns a wrong number
+	// into a wildly wrong one: a negative count panics, a large one silently
+	// yields a zero delay and a job that retries in a tight loop.
+	shift := j.attempts
+	if shift < 0 {
+		shift = 0
+	} else if shift > maxAttempts {
+		shift = maxAttempts
+	}
+	delay := time.Duration(1<<shift) * time.Minute
 	if _, err := tx.Exec(ctx, `
 		UPDATE sso_scim_queue SET attempts = attempts + 1, last_error = $2,
 			next_attempt_at = NOW() + $3::interval
