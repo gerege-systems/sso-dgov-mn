@@ -153,10 +153,12 @@ services:
   #
   # WEB_IMAGE нь тодорхой commit дээр түгжигдсэн, `latest` биш: «өчигдөр
   # ажиллаж байсан» гэдэг нь тодорхой хувилбар байх ёстой. Одоо түгжигдсэн
-  # d135c887 бол хажуугийн open.dgov.mn-ий яг ажиллуулж байгаа бүрхүүл —
-  # нэг хост дээр хоёр өөр насны shell байлгах шалтгаан алга.
+  # ca8c49e0 нь LANDING_SECTIONS ба BRAND_DOCS_URL хоёрыг таньдаг эхний
+  # бүрхүүл (open-gerege-nexus#150) бөгөөд хажуугийн open.dgov.mn-ий яг
+  # ажиллуулж байгаа хувилбар — нэг хост дээр хоёр өөр насны shell
+  # байлгах шалтгаан алга.
   web:
-    image: ${WEB_IMAGE:-ghcr.io/gerege-systems/open-gerege-nexus/frontend:d135c8871b0e5c0f99a25c0b316979d2e0c5f76c}
+    image: ${WEB_IMAGE:-ghcr.io/gerege-systems/open-gerege-nexus/frontend:ca8c49e0a6fef22ea1763fdb42b3245d57438e5e}
     container_name: dgov_sso_web
     restart: unless-stopped
     environment:
