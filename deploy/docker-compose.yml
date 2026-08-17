@@ -154,7 +154,7 @@ services:
   # WEB_IMAGE нь тодорхой commit дээр түгжигдсэн, `latest` биш: «өчигдөр
   # ажиллаж байсан» гэдэг нь тодорхой хувилбар байх ёстой.
   #
-  # Одоогийн abeb27b нь brand.name-ыг локалиар уншдаг болсон commit: EN руу
+  # Одоогийн 66d5bdc нь brand.name-ыг локалиар уншдаг болсон commit: EN руу
   # сольсон уншигч толгойд Монгол нэр хардаг байв. Нэрнүүд нь brand/copy.json
   # дотор (`brand.name`, `brand.short_name`, `brand.description`).
   #
@@ -170,7 +170,7 @@ services:
   # Хажуугийн open.dgov.mn ч мөн энэ commit дээр гарна: нэг хост дээр хоёр
   # өөр насны shell байлгах шалтгаан алга.
   web:
-    image: ${WEB_IMAGE:-ghcr.io/gerege-systems/open-gerege-nexus/frontend:abeb27b5ea8e720bae0b76634acb489e74db470e}
+    image: ${WEB_IMAGE:-ghcr.io/gerege-systems/open-gerege-nexus/frontend:66d5bdcbf68cf71b2ebb923671f79dab63ac4e55}
     container_name: dgov_sso_web
     restart: unless-stopped
     environment:
