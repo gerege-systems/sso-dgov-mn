@@ -20,7 +20,7 @@
 цэс, HTTP сервер бүгд цөмийнх бөгөөд `go.mod`-ын нэг мөрөөр tag-аар авагдана:
 
 ```
-require github.com/gerege-systems/open-gerege-nexus/backend v1.6.0
+require github.com/gerege-systems/open-gerege-nexus/backend v1.9.0
 ```
 
 Энэ repo нэмдэг зүйл нь дөрвөн модуль ба тэднийг бүртгэх мөр:
