@@ -252,7 +252,8 @@ Row-level security-г хүснэгт бүрт өөрөө тавьдаг: цөм�
 deploy/docker-compose.yml     стек: postgres, миграц ×2, backend, бүрхүүл
 deploy/Dockerfile             бүтээгдэхүүний образ — цөм go.mod-оор ирнэ
 deploy/.env.example           бүх тохиргоо, тайлбартайгаа
-deploy/nginx/sso.dgov.mn.conf vhost: бүрхүүл, API, OIDC, хурдны хязгаар
+deploy/nginx/sso.dgov.mn.conf vhost: бүрхүүл, API, OIDC, брэндийн зураг
+deploy/brand/                 лого, favicon — nginx /brand/… доор өгнө
 deploy/deploy.sh              барих, солих, эрүүл эсэхийг асуух
 deploy/first-admin.sh         эхний байгууллага, эхний админ
 ```
