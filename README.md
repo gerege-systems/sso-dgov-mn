@@ -281,23 +281,26 @@ cd deploy && REGISTRY_USER=<github-хэрэглэгч> REGISTRY_TOKEN=<read:pack
 `https://sso.dgov.mn`, discovery ба токены `iss` бүгд энэ хаяг. `open.dgov.mn`
 нь `SSO_CLIENT_ISSUER`-ээрээ энд заасан клиент.
 
-Тэр клиентийг эндээс бүртгэнэ (`sso-clients` апп, эсвэл
-`POST /api/v1/sso/clients`):
+Бүртгэгдсэн клиентүүд (`sso-clients` апп, эсвэл
+`POST /api/v1/sso-clients/apps`):
 
-| | |
-| --- | --- |
-| `client_id` | `open-dgov-mn` |
-| `redirect_uris` | `https://open.dgov.mn/api/v1/auth/sso/callback` |
-| `post_logout_redirect_uris` | `https://open.dgov.mn/` |
-| `grant_types` | `authorization_code` |
-| `scopes` | `openid profile email` |
+| `client_id` | Хэн | Redirect |
+| --- | --- | --- |
+| `app_opendgovmn_28426259` | `open.dgov.mn` | `/api/v1/auth/sso/callback`, гарахад `/` |
+
+`grant_types: authorization_code`, `scopes: openid profile email`,
+`client_type: confidential`.
+
+`client_id`-г **гараар сонгодоггүй**: `handleCreateApp` нь `app_` + нэрний
+slug + санамсаргүй найм гэж өөрөө гаргана. Нууцыг үүсгэсэн тэр нэг хариунд
+л буцаана — сан digest хадгалдаг тул алдвал `rotate-secret`.
 
 `open.dgov.mn` нь энэ суулгацын `OAUTH_REDIRECT_HOSTS` дотор **яг таг** байх
 ёстой — тэр жагсаалт дэд домэйныг өвлүүлдэггүй.
 
-Клиент бүртгэгдэж, түүгээр нэвтрэлт батлагдсаны дараа `open-dgov-mn`-ий
-`.env` дээрх `SSO_CLIENT_LOCAL_LOGIN`-ыг `false` болгоно — тэр үед тэр мөр
-провайдер унасан үеийн буцах зам болж үлдэнэ.
+2026-08-17-ноос `open.dgov.mn`-ий `SSO_CLIENT_LOCAL_LOGIN` нь `false`:
+тэр домэйн руу орох цорын ганц зам энэ суулгац. Энэ нь ажиллахаа болих
+өдөр тэнд нэг ч хүн нэвтрэхгүй — буцах зам нь тэр репогийн README дээр.
 
 ### Эхний админ
 
@@ -307,6 +310,22 @@ cd /opt/sso-dgov-mn/deploy && ./first-admin.sh <и-мэйл> <нууц үг>
 
 Бүртгүүлэх дэлгэц байхгүй, control plane нь өөрийн vhost, TOTP шаарддаг тул
 эхний хүн SQL-ээр ордог. Скрипт нь өөрөө нэвтэрч үзэж баталгаажуулна.
+
+### Аппуудыг суулгах
+
+Каталогт байх нь суулгасан гэсэн үг биш: цөм тенант бүрээр суулгацын мөр
+хайдаг ба байхгүй бол модулийн API 403 хариулна. Шинэ тенант үүсгэсний
+дараа таван апп нь SQL-ээр биш API-аар суудаг — суулгацын мөр `apps`
+хүснэгт рүү заадаг тул гараар оруулсан мөр дутуу байна:
+
+```bash
+for s in sso-clients sso-federation sso-sessions sso-access-review sso-provisioning; do
+  curl -sb <cookie> -X POST -H 'Origin: https://sso.dgov.mn' \
+    "https://sso.dgov.mn/api/v1/store/apps/$s/install"
+done
+```
+
+`organisation` ба `egov` хоёрыг цөм өөрөө асахдаа суулгадаг.
 
 ---
 
