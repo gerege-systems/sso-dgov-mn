@@ -1,4 +1,4 @@
-# Gerege SSO
+# Цахим Засгийн нэвтрэлт — sso.dgov.mn
 
 **Нэгдсэн нэвтрэлт, эрхийн удирдлагын бүтээгдэхүүн** — federation, сесс,
 эрхийн хяналт, хэрэглэгч нийлүүлэлт.
@@ -7,9 +7,19 @@
 платформын дээр баригдсан **distribution** — экосистемийн git стратегийн
 [Түвшин 2](https://github.com/gerege-systems/open-gerege-nexus/blob/main/docs/ECOSYSTEM_GIT_STRATEGY.md).
 
+[`sso-gerege-nexus`](https://github.com/gerege-systems/sso-gerege-nexus)-ийн
+fork. **Ялгаа нь зөвхөн `deploy/`** — домэйн, портууд, nginx, орчны
+хувьсагчид. Go модулийн зам, дөрвөн модуль, каталог, миграцууд upstream-ийнх
+хэвээр байгаа нь санаатай: тэгсэн цагт upstream-ийн засварыг `git merge
+upstream/main` гэсэн нэг мөрөөр авна. Бүтээгдэхүүний код энд салбарлаж
+эхэлбэл тэр мөр зөрчлийн жагсаалт болно — засвар нь upstream руу PR.
+
+```bash
+git remote add upstream https://github.com/gerege-systems/sso-gerege-nexus.git
+git merge upstream/main
+```
+
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![CI](https://github.com/gerege-systems/sso-gerege-nexus/actions/workflows/ci.yml/badge.svg)](https://github.com/gerege-systems/sso-gerege-nexus/actions/workflows/ci.yml)
-[![Security](https://github.com/gerege-systems/sso-gerege-nexus/actions/workflows/security.yml/badge.svg)](https://github.com/gerege-systems/sso-gerege-nexus/actions/workflows/security.yml)
 
 ---
 
@@ -221,21 +231,81 @@ Row-level security-г хүснэгт бүрт өөрөө тавьдаг: цөм�
 
 ---
 
-## Deploy
+## Байрлуулалт
 
-`deploy/docker-compose.yml` нь энэ бүтээгдэхүүнийг **одоо ажиллаж байгаа
-sso.gerege.mn-ий хажууд** асаана — өөрийн порт (8096 / 3016), өөрийн өгөгдлийн
-сан. Ажиллаж байгаа fork 8095 / 3011 дээр байгаа бөгөөд түүнд юу ч хөндөгдөхгүй.
+**38.180.243.138** (Ubuntu 26.04, 4 CPU, 7GB). `dgov.mn`, `open.dgov.mn`,
+`sso.dgov.mn` гурвуулаа энэ IP рүү заана. Хост дээр хоёр стек зэрэгцэн
+ажиллана:
 
-Домэйныг энэ рүү шилжүүлэх нь **тусдаа, санаатай үйлдэл**. Fork-д энэ
-бүтээгдэхүүнд байхгүй аппууд (`gov_services`, `billing`, `inventory`,
-`products`) байсан бөгөөд домэйныг шилжүүлэх агшин гэдэг нь тэдгээр дэлгэц
-хэрэглэж байсан хүмүүсээс алга болох агшин юм. Хэн хэрэглэж байсныг шалгасны
-дараа шийднэ.
+| | Стек | Postgres | Backend | Бүрхүүл |
+| --- | --- | --- | --- | --- |
+| `open.dgov.mn` | [`open-dgov-mn`](https://github.com/gerege-systems/open-dgov-mn) (Түвшин 1) | 5434 | 8082 | 3008 |
+| `sso.dgov.mn` | энэ репо (Түвшин 2) | 5438 | 8096 | 3016 |
 
-Deploy workflow энд **зориуд байхгүй**: хараахан үүсээгүй host, үүсээгүй
-secret рүү чиглэсэн pipeline бол ажиллах үедээ л буруу зүйл хийж чадах pipeline.
-Шилжүүлэх шийдвэр гармагц нэмнэ.
+Портууд бүгд зөвхөн loopback дээр; гадагшаа nginx л гаргана. Өгөгдлийн сан
+тус тусдаа — нэг санд хоёр суулгац хийх нь тусгаарлалт байхгүй гэсэн үг.
+
+Байрлуулалт нь `/opt/sso-dgov-mn/` — энэ репогийн клон, `deploy/.env`
+(chmod 600) нь тэнд.
+
+```
+deploy/docker-compose.yml     стек: postgres, миграц ×2, backend, бүрхүүл
+deploy/Dockerfile             бүтээгдэхүүний образ — цөм go.mod-оор ирнэ
+deploy/.env.example           бүх тохиргоо, тайлбартайгаа
+deploy/nginx/sso.dgov.mn.conf vhost: бүрхүүл, API, OIDC, хурдны хязгаар
+deploy/deploy.sh              барих, солих, эрүүл эсэхийг асуух
+deploy/first-admin.sh         эхний байгууллага, эхний админ
+```
+
+### Шинэчлэх
+
+```bash
+ssh root@38.180.243.138
+cd /opt/sso-dgov-mn && git pull
+cd deploy && REGISTRY_USER=<github-хэрэглэгч> REGISTRY_TOKEN=<read:packages> ./deploy.sh
+```
+
+Хажуугийн `open-dgov-mn`-ээс нэг ялгаа: тэр репод код байхгүй тул образ
+татдаг, энд бинар нь **хост дээр баригдана**. Цөм нь `go.mod`-ын нэг мөрөөр
+түгжигдэж ирнэ; цөмийг шинэчлэх нь тэр мөрийг өсгөх ажил — Dependabot PR
+нээнэ.
+
+Бүрхүүл нь эсрэгээрээ цөмийн нийтэлсэн образ, `.env`-ийн `WEB_IMAGE` дээр
+тодорхой commit-оор түгжигдсэн. GHCR-ийн пакет хаалттай тул түүнийг татахад
+`read:packages` токен хэрэгтэй; серверт хадгалагддаггүй.
+
+### Нэвтрэлт
+
+Энэ суулгац бол Цахим Засгийн identity-гийн **эх сурвалж**: `SSO_ISSUER` нь
+`https://sso.dgov.mn`, discovery ба токены `iss` бүгд энэ хаяг. `open.dgov.mn`
+нь `SSO_CLIENT_ISSUER`-ээрээ энд заасан клиент.
+
+Тэр клиентийг эндээс бүртгэнэ (`sso-clients` апп, эсвэл
+`POST /api/v1/sso/clients`):
+
+| | |
+| --- | --- |
+| `client_id` | `open-dgov-mn` |
+| `redirect_uris` | `https://open.dgov.mn/api/v1/auth/sso/callback` |
+| `post_logout_redirect_uris` | `https://open.dgov.mn/` |
+| `grant_types` | `authorization_code` |
+| `scopes` | `openid profile email` |
+
+`open.dgov.mn` нь энэ суулгацын `OAUTH_REDIRECT_HOSTS` дотор **яг таг** байх
+ёстой — тэр жагсаалт дэд домэйныг өвлүүлдэггүй.
+
+Клиент бүртгэгдэж, түүгээр нэвтрэлт батлагдсаны дараа `open-dgov-mn`-ий
+`.env` дээрх `SSO_CLIENT_LOCAL_LOGIN`-ыг `false` болгоно — тэр үед тэр мөр
+провайдер унасан үеийн буцах зам болж үлдэнэ.
+
+### Эхний админ
+
+```bash
+cd /opt/sso-dgov-mn/deploy && ./first-admin.sh <и-мэйл> <нууц үг>
+```
+
+Бүртгүүлэх дэлгэц байхгүй, control plane нь өөрийн vhost, TOTP шаарддаг тул
+эхний хүн SQL-ээр ордог. Скрипт нь өөрөө нэвтэрч үзэж баталгаажуулна.
 
 ---
 

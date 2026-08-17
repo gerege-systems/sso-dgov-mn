@@ -1,51 +1,48 @@
-# Gerege SSO, as a Gerege Nexus distribution.
+# Цахим Засгийн нэвтрэлт — sso.dgov.mn.
 #
-# What makes this instance Gerege SSO is not a special build of the platform: it
-# is this product's own binary — the same platform plus four modules — pointed
-# at this product's catalogue.
+# Энэ бол Gerege SSO бүтээгдэхүүнийг Цахим Засгийн хост дээр асаах compose.
+# Бүтээгдэхүүн нь платформын тусгай build биш: ижил платформ дээр дөрвөн
+# модуль нэмж, энэ репогийн каталогийг зааж өгсөн өөрийн бинар.
 #
-# It comes up *beside* the fork it replaces, on its own ports and its own
-# database, and changes nothing about that service. The running sso.gerege.mn
-# holds 8095 and 3011; nothing about it moves until somebody deliberately moves
-# it. That is not caution for its own sake: the fork carried apps this product
-# does not have — gov_services, billing, inventory, products — and pointing the
-# domain here is the moment those screens disappear for whoever was using them.
-# Switching over is a separate, deliberate act, taken after somebody has checked
-# who was.
+# Хост дээр аль хэдийн `open.dgov.mn` (dgov_nexus_*) ажиллаж байна — 5434
+# postgres, 6381 redis, 8082 backend, 3008 бүрхүүл. Энэ стек түүний ХАЖУУД
+# өөрийн порт, өөрийн өгөгдлийн сангаар босно; түүнд юу ч хөндөгдөхгүй.
+# Хоёулаа loopback дээр, гадагшаа nginx л гаргана.
 #
-# Required environment (deploy/.env):
-#   SSO_NEXUS_POSTGRES_PASSWORD  this stack's own database
-#   SSO_SECRET_KEY               base64, 32 bytes: what federation client
-#                                secrets and SCIM tokens are encrypted with.
-#                                Losing it means re-entering every credential;
-#                                changing it means the stored ones stop
-#                                decrypting, which is the same thing said later.
-#   PUBLIC_ORIGIN                where this instance answers
-#   SSO_DEFAULT_CLIENT_SECRET    identity still belongs to nexus.gerege.mn
+# ЧУХАЛ: `open.dgov.mn` бол ЭНЭ суулгацын клиент (`SSO_CLIENT_ISSUER=
+# https://sso.dgov.mn`). Тиймээс SSO_ISSUER нь энэ origin — nexus.gerege.mn
+# биш. Issuer солих нь тухайн үед бүртгэлтэй RP бүрийн хийх өөрчлөлт.
+#
+# Шаардлагатай орчин (deploy/.env — .env.example-ийг үз):
+#   SSO_DGOV_POSTGRES_PASSWORD  энэ стекийн өөрийн өгөгдлийн сан
+#   SSO_SECRET_KEY              base64, 32 байт: federation-ы client secret ба
+#                               SCIM токеныг шифрлэдэг түлхүүр. Алдвал бүх
+#                               итгэмжлэлийг дахин оруулна; солих нь
+#                               хадгалагдсан нь задрахаа болино гэсэн үг.
+#   SSO_DEFAULT_CLIENT_SECRET   production дээр байхгүй бол цөм асахаас
+#                               татгалзана.
+#   OAUTH_REDIRECT_HOSTS        `open.dgov.mn` — жагсаалт дэд домэйн өвлүүлдэггүй.
 
-# The project name is fixed here rather than taken from the directory, so
-# compose does not derive "deploy" from the folder and build a second stack
-# beside the first under names the first one holds.
-name: sso-nexus
+# Төслийн нэрийг хавтаснаас биш эндээс авна: эс тэгвэл compose «deploy» гэж
+# нэрлээд, хөршийнхөө барьж байгаа нэрсээр хоёр дахь стек барина.
+name: sso-dgov
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: gerege_sso_nexus_postgres
+    container_name: dgov_sso_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: platform_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${SSO_NEXUS_POSTGRES_PASSWORD:?SSO_NEXUS_POSTGRES_PASSWORD is required}
-    # A port of its own: the fork's postgres already holds one on this host, and
-    # the two must not be able to reach each other's data by accident during the
-    # parallel run. 5435 is the fork's and 5437 belongs to another product on
-    # the same box — the ports on this host are first-come, and a collision here
-    # is a stack that will not start rather than one that starts wrong.
+      POSTGRES_PASSWORD: ${SSO_DGOV_POSTGRES_PASSWORD:?SSO_DGOV_POSTGRES_PASSWORD шаардлагатай}
+    # Өөрийн порт: 5434-ийг open.dgov.mn барьж байна. Энэ хост дээр портууд
+    # эхэлж ирсэн нь эзэмшдэг тул мөргөлдөөн бол буруу асдаг стек биш,
+    # огт асдаггүй стек.
     ports:
       - "127.0.0.1:5438:5432"
     volumes:
-      - gerege_sso_nexus_postgres_data:/var/lib/postgresql/data
+      - dgov_sso_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d platform_db"]
       interval: 5s
@@ -53,33 +50,30 @@ services:
       retries: 5
 
   migrate:
-    image: ${IMAGE:-sso-nexus:latest}
-    container_name: gerege_sso_nexus_migrate
-    # The platform's migrations, from the core version this product's go.mod
-    # pins — the image carries both, so they cannot drift apart.
+    image: ${IMAGE:-sso-dgov:latest}
+    container_name: dgov_sso_migrate
+    # Платформын миграцууд, энэ бүтээгдэхүүний go.mod түгжсэн цөмийн
+    # хувилбараас — образ хоёуланг нь агуулдаг тул салж хоцрох аргагүй.
     command: ["/app/migrate", "up"]
     environment:
-      DATABASE_URL: postgres://postgres:${SSO_NEXUS_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
+      DATABASE_URL: postgres://postgres:${SSO_DGOV_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
     restart: "no"
 
-  # This product's own migrations, in their own history.
+  # Энэ бүтээгдэхүүний өөрийн миграцууд, өөрийн түүхэндээ.
   #
-  # Two histories in one database, which is why MIGRATIONS_TABLE is not optional
-  # here: goose keeps one row per applied version in one table, so this
-  # product's 00001 and the platform's 00001 would be the same row and whichever
-  # ran second would be recorded as already applied.
-  #
-  # After the platform's, because the tables here sit beside `tenants`, `users`
-  # and the RBAC tables the core's migrations create.
+  # Нэг санд хоёр түүх байгаа тул MIGRATIONS_TABLE нь сонголт биш: goose нэг
+  # хүснэгтэд хувилбар тус бүрээр нэг мөр хадгалдаг, тэгэхээр энэ
+  # бүтээгдэхүүний 00001 ба платформын 00001 нэг мөр болж, хоёр дахь нь
+  # аль хэдийн хийгдсэн гэж бүртгэгдэнэ.
   migrate-sso:
-    image: ${IMAGE:-sso-nexus:latest}
-    container_name: gerege_sso_nexus_migrate_own
+    image: ${IMAGE:-sso-dgov:latest}
+    container_name: dgov_sso_migrate_own
     command: ["/app/migrate", "up"]
     environment:
-      DATABASE_URL: postgres://postgres:${SSO_NEXUS_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
+      DATABASE_URL: postgres://postgres:${SSO_DGOV_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
       MIGRATIONS_DIR: /app/db/sso
       MIGRATIONS_TABLE: goose_db_version_sso
     depends_on:
@@ -88,42 +82,51 @@ services:
     restart: "no"
 
   backend:
-    image: ${IMAGE:-sso-nexus:latest}
-    container_name: gerege_sso_nexus_backend
+    image: ${IMAGE:-sso-dgov:latest}
+    # Нийтлэгдсэн образ байхгүй: энэ репод цөмийн код байхгүй ч бинар нь
+    # эндээс баригддаг. deploy.sh хостын дээр барина.
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: dgov_sso_backend
     restart: unless-stopped
-    # Everything this deployment holds that this product does not decide: the
-    # E-ID relying-party credentials, the Google and Dropbox client secrets, the
-    # signing certificates. The compose file it replaced named all twenty-one of
-    # them by hand, which is twenty-one places to forget one — and the list is
-    # the deployment's business rather than the product's. The explicit block
-    # below still wins where the product does have an opinion.
+    # Энэ байрлуулалтын барьдаг, бүтээгдэхүүний шийддэггүй бүх зүйл: eID-ийн
+    # RP итгэмжлэл, Google/Dropbox-ын нууц, брэндийн нэр, гарын үсгийн
+    # сертификат. Доорх тодорхой блок нь бүтээгдэхүүнд бодол байгаа газартаа
+    # хэвээр давамгайлна.
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgres://postgres:${SSO_NEXUS_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
+      DATABASE_URL: postgres://postgres:${SSO_DGOV_POSTGRES_PASSWORD}@postgres:5432/platform_db?sslmode=disable
       ENVIRONMENT: production
-      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://sso-next.gerege.mn}
-      ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-https://sso-next.gerege.mn}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://sso.dgov.mn}
+      ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-https://sso.dgov.mn}
 
-      # This product's own catalogue, shipped in the image: the four SSO modules
-      # and the three platform apps they sit beside.
+      # Энэ бүтээгдэхүүний өөрийн каталог, образ дотор ирсэн: дөрвөн SSO
+      # модуль ба хажууд нь суудаг платформын гурван апп.
       APP_CATALOG_PATH: /app/catalog/apps.json
 
-      # What the federation client secrets and SCIM tokens are encrypted with.
-      # Absent, the product still starts and every other screen works — what
-      # refuses is the write that would otherwise store a credential in the
-      # clear.
+      # Federation-ы client secret ба SCIM токеныг юугаар шифрлэх. Байхгүй ч
+      # бүтээгдэхүүн асна, бусад бүх дэлгэц ажиллана — татгалзах нь
+      # итгэмжлэлийг цэвэр текстээр хадгалах гэсэн бичилт.
       SSO_SECRET_KEY: ${SSO_SECRET_KEY:-}
 
-      # Identity still belongs to nexus.gerege.mn: every OAuth2 client in the
-      # field is registered against that issuer, and moving it would be a change
-      # every one of them has to make.
-      SSO_ISSUER: ${SSO_ISSUER:-https://nexus.gerege.mn}
+      # Энэ суулгац бол Цахим Засгийн identity-гийн ЭХ СУРВАЛЖ. open.dgov.mn
+      # нь SSO_CLIENT_ISSUER=https://sso.dgov.mn гэж заасан тул discovery,
+      # токены `iss` бүгд яг энэ хаяг байх ёстой.
+      SSO_ISSUER: ${PUBLIC_ORIGIN:-https://sso.dgov.mn}
       SSO_DEFAULT_CLIENT_SECRET: ${SSO_DEFAULT_CLIENT_SECRET}
+      # Дотоод клиентийн эзэн тенант. Анхдагч нь "demo" — байхгүй тенантад
+      # клиент үүсгэхгүй, чимээгүй алгасна.
+      SSO_DEFAULT_CLIENT_TENANT: ${SSO_DEFAULT_CLIENT_TENANT:-dgov}
+
+      # Хурдны хязгаарлалт хүн бүрийг nginx гэж үзэхгүйн тулд. Энэ стек
+      # зөвхөн loopback дээр сонсдог тул X-Forwarded-For-ыг өөр хэн ч
+      # хуурамчаар өгөх боломжгүй.
+      TRUST_PROXY_HEADERS: "true"
 
       DEMO_MODE: "false"
-    # Its own port. The fork holds 8095; nothing about it moves until somebody
-    # moves the domain.
+    # Өөрийн порт: 8082-ыг open.dgov.mn барьж байна.
     ports:
       - "127.0.0.1:8096:8080"
     depends_on:
@@ -140,31 +143,37 @@ services:
       retries: 5
       start_period: 20s
 
-  # The platform's own shell, unmodified — and not rebuilt.
+  # Платформын өөрийн бүрхүүл, өөрчлөгдөөгүй — бас эндээс баригдаагүй.
   #
-  # A distribution does not fork the frontend: the sidebar and the module
-  # screens are catalogue-driven, so the generic shell already renders this
-  # product. It used to have to be rebuilt per origin, because the API address
-  # was compiled into the bundle; the core stopped doing that (see
-  # frontend/lib/apiBase.ts — the browser asks its own origin now), so the
-  # *published* core image serves any installation.
+  # Distribution нь frontend-ээ fork хийдэггүй: хажуугийн цэс, модулийн
+  # дэлгэцүүд каталогоор явдаг тул ерөнхий бүрхүүл энэ бүтээгдэхүүнийг аль
+  # хэдийн зурдаг. Урьд нь origin бүрээр дахин барих шаардлагатай байсан
+  # (API-гийн хаяг bundle дотор компилдэгддэг байсан); цөм үүнийг больсон —
+  # frontend/lib/apiBase.ts, хөтөч одоо өөрийн origin-оос асууна.
   #
-  # Which means WEB_IMAGE should name the core release this product's go.mod
-  # pins — ghcr.io/gerege-systems/open-gerege-nexus/frontend at that tag's
-  # commit — rather than anything built here. A shell from a different core
-  # version is a shell whose screens and whose API disagree about what exists.
+  # WEB_IMAGE нь тодорхой commit дээр түгжигдсэн, `latest` биш: «өчигдөр
+  # ажиллаж байсан» гэдэг нь тодорхой хувилбар байх ёстой. Одоо түгжигдсэн
+  # d135c887 бол хажуугийн open.dgov.mn-ий яг ажиллуулж байгаа бүрхүүл —
+  # нэг хост дээр хоёр өөр насны shell байлгах шалтгаан алга.
   web:
-    image: ${WEB_IMAGE:-sso-nexus-web:latest}
-    container_name: gerege_sso_nexus_web
+    image: ${WEB_IMAGE:-ghcr.io/gerege-systems/open-gerege-nexus/frontend:d135c8871b0e5c0f99a25c0b316979d2e0c5f76c}
+    container_name: dgov_sso_web
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      # Where the shell asks, server-side, what this deployment carries — so the
-      # catalogue is in the HTML rather than swapped in after it. The browser
-      # never uses this: it asks its own origin. A server has no origin, which is
-      # the whole reason this exists.
+      # Сервер талаас нь энэ суулгац юу агуулж байгааг бүрхүүл хаанаас
+      # асуух — каталог нь HTML дотор ирнэ, дараа нь солигдох биш. Хөтөч
+      # үүнийг хэзээ ч ашиглахгүй: тэр өөрийн origin-оос асууна. Сервэрт
+      # origin гэж байхгүй, энэ мөр яг тийм учраас байна.
       API_INTERNAL_URL: http://backend:8080/api/v1
-    # 3011 is the fork's web; this runs beside it.
+      # Брэнд бүрхүүлийн талд ч хэрэгтэй: /login дэлгэц дээрх нэр.
+      BRAND_NAME: ${BRAND_NAME:-}
+      BRAND_SHORT_NAME: ${BRAND_SHORT_NAME:-}
+      BRAND_DESCRIPTION: ${BRAND_DESCRIPTION:-}
+      BRAND_THEME_COLOR: ${BRAND_THEME_COLOR:-}
+      BRAND_LOGO_URL: ${BRAND_LOGO_URL:-}
+      BRAND_ICON_URL: ${BRAND_ICON_URL:-}
+    # 3008-ыг open.dgov.mn барьж байна.
     ports:
       - "127.0.0.1:3016:3000"
     depends_on:
@@ -172,4 +181,4 @@ services:
         condition: service_healthy
 
 volumes:
-  gerege_sso_nexus_postgres_data:
+  dgov_sso_postgres_data:

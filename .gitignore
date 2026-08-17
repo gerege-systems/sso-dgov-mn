@@ -7,3 +7,6 @@ go.work.sum
 bin/
 *.log
 .DS_Store
+
+# Байрлуулалтын нууцууд. Сервер дээрх /opt/sso-dgov-mn/deploy/.env-д амьдарна.
+deploy/.env
