@@ -1,4 +1,16 @@
 {
+  "brand.name": {
+    "mn": "Засгийн газрын нэгдсэн нэвтрэлт",
+    "en": "Government Single Sign-On"
+  },
+  "brand.short_name": {
+    "mn": "Нэгдсэн нэвтрэлт",
+    "en": "Single Sign-On"
+  },
+  "brand.description": {
+    "mn": "Төрийн үйлчилгээний нэгдсэн нэвтрэлт",
+    "en": "Single sign-on for government services"
+  },
   "website.view.hero_title_lead": {
     "mn": "Хэн болохыг тогтоодог",
     "en": "The one place that decides"
@@ -15,29 +27,38 @@
     "mn": "{brand} өөр юу ч хийхгүй. Танилт, сесс, эрх, хэрэглэгчийн амьдралын мөчлөг — дөрөв. Тэр хязгаарлалт нь дутагдал биш: хэн нэвтрэх эрхтэйг шийддэг систем бол санамсаргүйгээр нэмэлт гарц ургуулах хамгийн сүүлийн газар.",
     "en": "{brand} does nothing else. Authentication, sessions, access and the user lifecycle — four things. The narrowness is the point: a system that decides who may sign in is the last place that should grow an extra door by accident."
   },
-
-  "website.stat.apps_count": { "mn": "3", "en": "3" },
+  "website.stat.apps_count": {
+    "mn": "3",
+    "en": "3"
+  },
   "website.stat.apps": {
     "mn": "танилтын арга — eID, ДАН, нууц үг",
     "en": "ways to prove identity: eID, DAN, password"
   },
-  "website.stat.languages_count": { "mn": "1", "en": "1" },
+  "website.stat.languages_count": {
+    "mn": "1",
+    "en": "1"
+  },
   "website.stat.languages": {
     "mn": "сессийн жагсаалт — бүх холбогдсон систем",
     "en": "session list, across every connected system"
   },
-  "website.stat.binary_count": { "mn": "0", "en": "0" },
+  "website.stat.binary_count": {
+    "mn": "0",
+    "en": "0"
+  },
   "website.stat.binary": {
     "mn": "баталгаажуулалтгүй нээлттэй зам",
     "en": "routes open without a session"
   },
-
   "website.action.see_features": {
     "mn": "Юу шийддэг вэ",
     "en": "What it decides"
   },
-
-  "website.view.trust_eyebrow": { "mn": "БАТАЛГААНЫ ГИНЖ", "en": "THE CHAIN OF PROOF" },
+  "website.view.trust_eyebrow": {
+    "mn": "БАТАЛГААНЫ ГИНЖ",
+    "en": "THE CHAIN OF PROOF"
+  },
   "website.view.trust_lede": {
     "mn": "eID эсвэл ДАН → серверийн session → байгууллагын гишүүнчлэл → роль ба зөвшөөрөл → OIDC клиент. Алхам бүр сервер талд шалгагдана; хөтчөөс ирсэн ямар ч мэдэгдэл эрх олгодоггүй.",
     "en": "eID or DAN → server session → organisation membership → roles and permissions → OIDC client. Every link is checked on the server; nothing the browser claims grants anything."
@@ -58,8 +79,10 @@
     "mn": "Сесс таслалт бүр хэн тасалсан, яагаад гэдгээ үлдээнэ",
     "en": "Every revoked session records who revoked it and why"
   },
-
-  "website.view.features_eyebrow": { "mn": "ЮУ ШИЙДДЭГ ВЭ", "en": "WHAT IT DECIDES" },
+  "website.view.features_eyebrow": {
+    "mn": "ЮУ ШИЙДДЭГ ВЭ",
+    "en": "WHAT IT DECIDES"
+  },
   "website.view.features_title": {
     "mn": "Нэвтрэлт бол тусдаа дэлгэц биш, төрийн системийн суурь",
     "en": "Sign-in is not a screen: it is the floor the state's systems stand on"
@@ -92,7 +115,6 @@
     "mn": "SCIM 2.0-оор хүний бүртгэлийг холбогдсон систем рүү түлхэнэ. Байгууллага өөрийн итгэх гадны IdP-үүдээ бүртгэнэ — хадгалагдсан secret буцаж уншигдахгүй.",
     "en": "SCIM 2.0 pushes people into connected systems. An organisation registers the external identity providers it trusts; a stored secret is never readable back."
   },
-
   "website.tech.erp_body": {
     "mn": "Сесс, эрх, аудит — нэг эх сурвалж",
     "en": "Sessions, permissions and audit from one source"
@@ -101,7 +123,6 @@
     "mn": "Discovery, JWKS, PKCE — стандарт OIDC",
     "en": "Discovery, JWKS, PKCE — standard OIDC"
   },
-
   "website.message.footer_note": {
     "mn": "eID-д суурилсан · Нээлттэй эх, Apache 2.0 · Нээлттэй суурь платформ нь open.dgov.mn",
     "en": "Built on eID · Open source, Apache 2.0 · The platform itself is open.dgov.mn"
