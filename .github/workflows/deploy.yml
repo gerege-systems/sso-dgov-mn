@@ -1,0 +1,79 @@
+name: Deploy
+
+# sso.dgov.mn-ийг шинэчилнэ — CI ногоон болмогц, хүн хүлээхгүйгээр.
+#
+# Урьд нь роллаут гараар байсан: сервер дээр `git pull && ./deploy/deploy.sh`.
+# Тэр шийдвэрийн үндэслэл нь «төрийн үйлчилгээг хүн харж байхад л сольё»
+# байсан ч бодит үр дүн нь өөр байв: засвар GitHub дээр хэвтэж, сайт хуучин
+# кодоор үргэлжлэн ажиллана. Зөвшөөрлийн дэлгэц унасан өдөр яг ингэсэн —
+# алдаа нь хагас цагт засагдаад, суулгац дээр нь гарсангүй. Эзэмшигчийн
+# шийдвэрээр роллаут автомат боллоо.
+#
+# Аюулгүй байдлын тал нь CI-д үлдэнэ: энэ workflow тестийг өөрөө гүйлгэдэггүй,
+# ногоон болсны дараа л асдаг. Улаан CI бол роллаут байхгүй гэсэн үг.
+#
+# Шаардлагатай secret:
+#   DEPLOY_SSH_KEY   серверийн root-ийн authorized_keys дотор байгаа хувийн
+#                    түлхүүр. Байхгүй бол роллаут алгасагдана (fork-ууд).
+#   GHCR_READ_TOKEN  бүрхүүлийн хаалттай образыг татах токен (read:packages).
+#   DEPLOY_HOST      анхдагч 38.180.243.138
+#   DEPLOY_USER      анхдагч root
+
+on:
+  workflow_run:
+    # ci.yml-ийн `name:`-тэй яг таарах ёстой.
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Хажуугийн open.dgov.mn нь ӨӨР репо тул энэ бүлэгт орж чадахгүй — GitHub-ийн
+  # concurrency нь репо доторх ойлголт. Хоёр стек өөр өөр контейнер, өөр порт,
+  # өөр өгөгдлийн сантай тул зэрэг гарах нь асуудал биш; нийтлэг зүйл нь зөвхөн
+  # docker-ийн бүртгэлийн нэвтрэлт бөгөөд deploy.sh бүр өөрөө нэвтэрч гардаг.
+  group: sso-dgov-rollout
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Roll out to sso.dgov.mn
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Check deployment secrets
+        id: guard
+        run: |
+          if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "::warning::DEPLOY_SSH_KEY тохируулаагүй — роллаут алгаслаа."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pull, build and roll out
+        if: steps.guard.outputs.ready == 'true'
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST || '38.180.243.138' }}
+          username: ${{ secrets.DEPLOY_USER || 'root' }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: REGISTRY_USER,REGISTRY_TOKEN
+          # Бинар нь хост дээр баригддаг (энэ репо нийтлэгдсэн образгүй), тул
+          # 10 минутын анхдагч богино.
+          command_timeout: 25m
+          script: |
+            set -euo pipefail
+            cd /opt/sso-dgov-mn
+            git fetch --prune origin main
+            # merge --ff-only, reset --hard биш: сервер дээр хэн нэгний үлдээсэн
+            # commit байвал түүнийг чимээгүй устгахаас чанга унасан нь дээр.
+            git merge --ff-only origin/main
+            cd deploy
+            ./deploy.sh
