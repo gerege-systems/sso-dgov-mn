@@ -165,9 +165,11 @@ services:
   # WEB_IMAGE нь тодорхой commit дээр түгжигдсэн, `latest` биш: «өчигдөр
   # ажиллаж байсан» гэдэг нь тодорхой хувилбар байх ёстой.
   #
-  # Одоогийн 66d5bdc нь brand.name-ыг локалиар уншдаг болсон commit: EN руу
-  # сольсон уншигч толгойд Монгол нэр хардаг байв. Нэрнүүд нь brand/copy.json
-  # дотор (`brand.name`, `brand.short_name`, `brand.description`).
+  # Одоогийн 983d0ad нь service worker-ийн засвартай: навигацийн нэг хүсэлт
+  # татгалзмагц «Сүлжээнд холбогдож чадсангүй» гэсэн бүтэн дэлгэц гардаг
+  # байсныг нэг дахин оролдлогоор солив. Мөн доор нь brand.name локалиар
+  # уншигддаг болсон (brand/copy.json доторх `brand.*` түлхүүрүүд) ба табын
+  # гарчиг хэлээ дагадаг болсон засварууд.
   #
   # Бинар нь go.mod-ын backend/v1.9.1-ээс баригдана — тэр засвар зөвхөн
   # бүрхүүлийнх тул цөмийн шинэ tag шаардаагүй.
@@ -181,7 +183,7 @@ services:
   # Хажуугийн open.dgov.mn ч мөн энэ commit дээр гарна: нэг хост дээр хоёр
   # өөр насны shell байлгах шалтгаан алга.
   web:
-    image: ${WEB_IMAGE:-ghcr.io/gerege-systems/open-gerege-nexus/frontend:66d5bdcbf68cf71b2ebb923671f79dab63ac4e55}
+    image: ${WEB_IMAGE:-ghcr.io/gerege-systems/open-gerege-nexus/frontend:983d0addf72a879ff4e2c3a13619a897b74812e8}
     container_name: dgov_sso_web
     restart: unless-stopped
     environment:
